@@ -32,12 +32,13 @@ desktop.ini
 .idea/
 *.swp
 
-# Local/private OOTP runtime files (not part of regressions or webapp)
-/The Sheets BLM/
-/The Sheets TGS/
+# Unused alternative projection method (not used by webapp/regressions)
+/batting/
+/pitching/
+
+# OOTP filter exports and local launchers (not part of regressions/webapp)
 /perfekt filters and views/
 /Launch TGS.bat
-/Update Data.bat
 /OOTP Baseball 26.lnk
 
 # Claude workspace metadata

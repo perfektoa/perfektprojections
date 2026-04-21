@@ -1,0 +1,16 @@
+BNN Top 100 Prospects List Published
+The season is about to start, so it's time to publish the annual BNN Top 100 Prospects list. This year, 17 year-old RF <Pablo Villarreal:player#1326> of the <Omaha Blue Falcons:team#31> is the #1 prospect overall.
+
+Here is the top 10:
+1) RF <Pablo Villarreal:player#1326>, 17, <Omaha Blue Falcons:team#31>
+2) LHP <Justin Anderson:player#1255>, 20, <Tulsa Flying Squirrels:team#22>
+3) 3B <Vincent Durand:player#518>, 17, <Albuquerque Tempest:team#5>
+4) RHP <Danny Robinson:player#906>, 21, <Jersey City Timberjacks:team#27>
+5) SS <Matt Peters:player#820>, 20, <Boston Slammers:team#19>
+6) 3B <Keith Hatt:player#1068>, 19, <Indianapolis Quakers:team#20>
+7) RHP <Daniel Felix:player#453>, 19, <Denver Swordfish:team#9>
+8) SS <Andres Saavedra:player#69>, 18, <Columbus Bears:team#16>
+9) RHP <Danny Vergara:player#1153>, 17, <Memphis Barbarians:team#18>
+10) RHP <Javier Rendon:player#1252>, 18, <Tulsa Flying Squirrels:team#22>
+
+You can view the full list in the <Top Prospects Report:page#38> from the reports menu. The <Top Minor League Systems Report:page#39> has been updated as well.

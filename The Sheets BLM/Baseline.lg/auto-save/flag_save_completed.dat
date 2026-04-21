@@ -1,0 +1,19 @@
+2025-12-16 20:27:49	Started save_database
+2025-12-16 20:27:49	Moving saved game files to auto-save backup folder
+2025-12-16 20:27:49	Successfully moved saved game files to auto-save backup folder
+2025-12-16 20:27:49	Saved and zipped text database
+2025-12-16 20:27:49	Successfully saved names
+2025-12-16 20:27:50	Successfully saved players
+2025-12-16 20:27:50	Successfully saved coaches
+2025-12-16 20:27:50	Successfully saved teams
+2025-12-16 20:27:50	Successfully saved weather
+2025-12-16 20:27:50	Successfully saved ballparks
+2025-12-16 20:27:50	Successfully saved scouting sets
+2025-12-16 20:27:50	Successfully saved contract offers
+2025-12-16 20:27:50	Successfully saved trades
+2025-12-16 20:27:50	Successfully saved messages
+2025-12-16 20:27:50	Successfully saved human managers
+2025-12-16 20:27:50	Successfully saved faces
+2025-12-16 20:27:50	Successfully saved storylines
+2025-12-16 20:27:50	Successfully saved leagues
+2025-12-16 20:27:50	Finished save_database, closing flag file now

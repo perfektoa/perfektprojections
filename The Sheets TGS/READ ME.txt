@@ -1,0 +1,17 @@
+These spreadsheets are tuned for a live start in OOTP 26. If you are playing in a different environment you should at least update the metadata sheet and copy the data points to get better results. If you are playing a different version of OOTP other than 26 I would not expect anything to work properly without updating the Regressions sheet. The Regressions sheet uses the baseline league simmed 10 years 5 times to collect 50 years of data. The Metadata sheet can be updated with a single year of data from your current league. None of this stuff will work with PT, but I am sure you people will try anyway.
+
+
+Make sure to have manual calc turned on in Excel when using these spreadsheets or they will probably just crash. 
+
+
+When updating the Metadata or the Regressions sheet because they rely heavily on the data model you need to click calc now > refresh all > calc now to properly update the data.
+
+
+If you want my Filters and Views you can past them into Documents > Out of the Park Developments > OOTP Baseball 26 > tables. This will overwrite your existing filters and views. So either make a copy of those or be prepared to lose them. 
+
+
+Sliders are only set individually for players who can steal. I will set them to override and max out the stealing slider. You can adjust fatigue settings for bench players accordingly.
+
+
+My Discord: https://discord.gg/MAV9V99xXh (No real reason to join this)
+SOBR Discord: https://discord.gg/CjkXqWqTRn (Probably the best place to learn about OOTP)
