@@ -4,7 +4,7 @@ A player valuation and draft-ranking system for **Out of the Park Baseball 26** 
 Exports data from in-game Excel sheets, runs it through Future Value (FV) and
 Draft FV models, and displays everything in a local web app you open in your browser.
 
-Originally built for my own league; this guide explains how to set it up for yours.
+Originally built for an online competitive league featuring the best players in the OOTP community; this guide explains how to set it up for yours.
 
 ---
 
