@@ -1,0 +1,303 @@
+================================================================================
+TGS PROJECTIONS - PLAYER VALUATION SYSTEMS
+================================================================================
+
+This document explains the two player valuation systems used in the TGS
+Projections web app: Future Value (FV) and Draft FV. They answer different
+questions and are designed to work alongside each other.
+
+
+================================================================================
+1. FUTURE VALUE (FV) — "What is this player's total career value?"
+================================================================================
+
+PURPOSE:
+  FV measures the total cumulative WAA (Wins Above Average) a player is
+  projected to produce from now through the end of their career. It answers
+  the trade/roster question: "How much total value will I get from this guy?"
+
+  Displayed as both a raw dollar figure (Future$) and a 20-80 scouting scale (FV).
+
+DATA INPUTS:
+  - Current WAA: Best of Max WAA wtd, Max WAA vR, WAA wtd, WAA wtd RP
+  - Potential WAA: Best of MAX WAA P, WAP, WAP RP (only exists for ages ~16-23)
+  - Player age
+
+HOW IT WORKS:
+
+  Step 1 — Determine Current vs Potential
+    The model reads the player's best current WAA across all positions/splits,
+    then checks if potential ratings exist. Players age 24+ typically have no
+    potential data — they are "established" and their current WAA IS their value.
+    Younger players have a "gap" between current and potential that represents
+    their development upside.
+
+  Step 2 — Development S-Curve (Gap Factor)
+    For prospects, the model uses a logistic S-curve to estimate how much of
+    the current-to-potential gap they'll close by each age:
+      - Age 16: ~5% developed (barely started)
+      - Age 20: ~50% developed (inflection point)
+      - Age 25: ~95% developed (maturity — OOTP stops development here)
+    The steepness parameter (0.6) controls how sharp the S-curve is.
+
+  Step 3 — Risk Factor
+    Not every prospect reaches their potential. The risk factor (0.80 to 0.95)
+    discounts the expected peak based on two things:
+      a) Development progress (60% weight): Older = more certain. A 22-year-old
+         near maturity is safer than a 16-year-old.
+      b) Gap magnitude (40% weight): Smaller gaps are safer. Closing a 2 WAA
+         gap is much more likely than closing a 13 WAA gap.
+    Established players get the maximum risk credit (0.95 — no development risk).
+
+  Step 4 — Expected Peak WAA
+    For prospects: currentWAA + gap x 0.95 (max dev) x riskFactor
+    For established: just their current WAA (they are what they are)
+
+  Step 5 — Year-by-Year Projection
+    Starting from the player's current age through age 34:
+      - Before age 25: WAA follows the development S-curve toward peak
+      - At age 25: Peak (maturity reached)
+      - Ages 25-30: 6% annual decline
+      - Ages 30+: 12% annual decline (the "cliff")
+    Each future year is also discounted by 3% annually for time value
+    (a WAA produced 8 years from now is worth less than one produced today).
+
+  Step 6 — Cumulative Future Value
+    PROSPECTS: Only count WAA from age 25 onward (skip development years).
+    A 17-year-old producing -8 WAA in Rookie ball shouldn't be penalized for
+    that — what matters is what they'll produce once they mature.
+
+    ESTABLISHED PLAYERS: Sum all projected years from current age forward.
+    They're already producing; every year counts.
+
+  Step 7 — 20-80 Scale Conversion
+    The raw cumulative WAA is mapped to the scouting scale:
+      Raw -15 -> FV 20 (no value)
+      Raw   0 -> FV 40 (replacement level)
+      Raw   5 -> FV 50 (fringe regular)
+      Raw  14 -> FV 60 (solid regular)
+      Raw  28 -> FV 70 (franchise player)
+      Raw  45 -> FV 80 (elite/generational)
+
+COLUMNS DISPLAYED:
+  FV (20-80)      The scouting scale grade
+  Future$         The raw cumulative projected WAA
+  Current WAA     Best current WAA across all positions
+  Potential WAA   Best potential WAA (or current if no potential data)
+  Peak WAA        Highest single-year projected WAA
+  % to Peak       How close current WAA is to potential (0-100%)
+  Yrs to Peak     Years until maturity age (25)
+
+KEY BEHAVIORS:
+  - Young prospects with high potential but bad current WAA can still have
+    high FV because the model projects forward past the development years.
+  - Older players (28+) have declining FV because the aging curve eats into
+    their remaining productive years.
+  - FV deliberately penalizes youth through time discounting — a prospect
+    who won't produce for 7 years has lower present value than a player
+    producing right now.
+  - This makes FV excellent for TRADE decisions (total remaining value)
+    but less useful for DRAFT decisions (who has the most upside).
+
+
+================================================================================
+2. DRAFT FV — "How good is this prospect relative to his age?"
+================================================================================
+
+PURPOSE:
+  Draft FV was built specifically for the amateur draft. It answers two
+  questions that matter when scouting draft-eligible players:
+    1. Can this player compete against others his age RIGHT NOW?
+    2. How high is his ceiling by maturity?
+
+  Unlike FV (which penalizes youth through cumulative projections and time
+  discounting), Draft FV rewards players who are already performing well
+  relative to their age group, and weights ceiling potential heavily.
+
+FORMULA:
+  Draft FV Raw = (Age Percentile x 0.35 + Ceiling Score x 0.65)
+                  x Durability Modifier x Work Ethic Modifier
+
+  Then the raw score (0-100) is converted to a 20-80 scouting scale.
+
+DATA INPUTS:
+  - Hitters: wOBA wtd (current performance), MAX WAA P (ceiling)
+  - Pitchers: WAA wtd (current performance), WAP (ceiling)
+  - Prone column: injury durability tier
+  - WE column: work ethic rating
+  - INT column: intelligence (flag only, does not affect the number)
+  - Full league population (all hitters or all pitchers, not just the draft pool)
+
+COMPONENT BREAKDOWN:
+
+  Age Percentile (35% of score):
+    Compares the player's current performance metric against ALL players in the
+    full league at the same integer age — not just the draft pool.
+
+    For hitters, the metric is wOBA wtd (weighted on-base average, which
+    measures pure hitting ability). For pitchers, it's WAA wtd (overall
+    pitcher value weighted by splits).
+
+    Using the full league population (~500 players per age bucket) gives
+    statistical stability, versus the draft pool alone (~30-130 players)
+    which would be noisy.
+
+    A player who ranks in the 90th percentile of his age group for wOBA
+    is clearly competing well and developing on track.
+
+  Ceiling Score (65% of score):
+    Measures the player's maximum potential, normalized to a 0-100 scale.
+
+    For hitters: MAX WAA P (potential WAA at best position)
+      Floor: -3.0 WAA -> score 0
+      Cap:    3.0 WAA -> score 100
+
+    For pitchers: WAP (potential WAA for pitchers)
+      Floor: -3.0 WAA -> score 0
+      Cap:    1.5 WAA -> score 100 (pitchers have lower WAA ceilings)
+
+    For mature players (age 25+) who have no potential ratings, the ceiling
+    falls back to their current best WAA. If a player is already producing
+    3.3 WAA at age 25, that IS their ceiling — and it's elite.
+
+  Durability Modifier:
+    Multiplies the entire score based on the Prone column:
+      Wrecked:   0.00 (undraftable — Draft FV forced to 20)
+      Fragile:   0.75 (25% penalty — will miss time, develop slower)
+      Normal:    0.95 (5% penalty — typical injury risk)
+      Durable:   1.00 (no penalty)
+      Iron Man:  1.00 (no penalty, no bonus)
+
+    Fragile players develop ~25% slower because injuries compound — more
+    time missed means less development, and injuries breed more injuries.
+
+  Work Ethic Modifier:
+    High work ethic (WE = "H") gives a 1.05x multiplier (+5% boost).
+    Normal and Low work ethic have no effect (1.0x).
+    Work ethic accelerates development — high WE players close their
+    development gap faster.
+
+  Intelligence (INT):
+    NOT factored into the number. Displayed as a flag column (Y/-).
+    High INT increases the chance of a positive TCR (talent change report),
+    making it a useful tiebreaker in middle and late rounds. A high INT
+    prospect who already competes at his age level has a chance to "pop off"
+    from a lucky development boost.
+
+20-80 SCALE CONVERSION:
+  Raw   0 -> Draft FV 20
+  Raw  15 -> Draft FV 30
+  Raw  30 -> Draft FV 35
+  Raw  40 -> Draft FV 40
+  Raw  50 -> Draft FV 45
+  Raw  60 -> Draft FV 50
+  Raw  70 -> Draft FV 55
+  Raw  78 -> Draft FV 60
+  Raw  85 -> Draft FV 65
+  Raw  92 -> Draft FV 70
+  Raw 100 -> Draft FV 80
+
+  The scale is deliberately compressed at the top — only the very best
+  prospects (elite age percentile + elite ceiling + durable + high WE)
+  can reach 70+.
+
+COLUMNS DISPLAYED:
+  Draft FV (20-80)  The scouting scale grade
+  Draft Raw         The 0-100 composite score before scale conversion
+  Age Pctl          Percentile rank within age group (0-100%)
+  Ceiling           Raw ceiling metric value (MAX WAA P or WAP)
+  Durability        Prone tier (Wrecked/Fragile/Normal/Durable/Iron Man)
+  INT               High intelligence flag (Y/-)
+
+KEY BEHAVIORS:
+  - A young player (e.g., age 18) with strong wOBA relative to other
+    18-year-olds AND high ceiling potential will score very well.
+  - A mature player (age 25+) with no potential data uses current WAA
+    as ceiling. If they're producing 3+ WAA, that maxes out the ceiling
+    score and they get rated appropriately.
+  - Wrecked players are instantly flagged as undraftable (FV 20).
+  - Fragile players take a significant 25% hit — a player who would be
+    a 60 Draft FV as Durable becomes roughly a 50 as Fragile.
+  - The 65/35 ceiling-to-current split means ceiling matters most, but
+    a player still needs to show they can compete NOW to get a high grade.
+
+
+================================================================================
+3. HOW THEY WORK TOGETHER
+================================================================================
+
+  FV (Future Value):
+    Best for: Trade decisions, roster construction, contract valuation
+    Answers: "How much total WAA will this player produce over their career?"
+    Favors: Established players in their productive years (25-30)
+    Penalizes: Youth (time discount), low current production
+
+  Draft FV:
+    Best for: Amateur draft decisions, prospect ranking
+    Answers: "How good is this player relative to his age, and how high can he go?"
+    Favors: Players who compete above their age group with high ceilings
+    Penalizes: Injury-prone players, low ceilings, poor age-relative performance
+
+  A player can have HIGH Draft FV but LOW FV:
+    An 18-year-old with 90th percentile wOBA for his age and a 2.5 WAA ceiling
+    would rank well on Draft FV, but the cumulative career projection (FV)
+    discounts him heavily because peak production is 7 years away.
+
+  A player can have LOW Draft FV but HIGH FV:
+    A 26-year-old producing 2.0 WAA will have poor Draft FV (not draft-eligible,
+    and age percentile competes against other 26-year-olds) but solid FV because
+    he's producing right now with years of value left.
+
+  Use both together to see the full picture:
+    - Draft Board: Sort by Draft FV for your pick order
+    - Team sheets: Look at FV/Future$ for trade and roster decisions
+    - Both are visible on the Hitters and Pitchers pages
+
+
+================================================================================
+4. DRAFT BOARD DATA PIPELINE
+================================================================================
+
+  The extract_data.py script handles the data:
+    1. Reads "The Sheet Hitters - Draft.xlsx" / "The Sheet Pitchers - Draft.xlsx"
+    2. From the "Player List" sheet: identifies players marked Manual='DRAFT'
+       with an actual name — these are the draft-eligible amateur pool
+    3. From the "Drafted" sheet: reads the StatsPlus CSV paste to get IDs
+       of players already picked
+    4. Filters the main "Hitters"/"Pitchers" sheet to only include players
+       whose ID is draft-eligible AND not yet drafted
+    5. Outputs the filtered data as hitters_draft.json / pitchers_draft.json
+
+  To update after new draft picks:
+    1. Paste the updated draft API data from StatsPlus into the "Drafted" tab
+    2. Run "Update Data.bat" (which calls python extract_data.py)
+    3. Refresh the browser — the draft board will exclude newly-drafted players
+
+
+================================================================================
+5. TUNABLE PARAMETERS
+================================================================================
+
+  FV parameters (in futureValue.js):
+    MATURITY_AGE: 25        Age when development stops
+    GAP_MAX: 0.95           Max fraction of potential gap reached
+    GAP_STEEPNESS: 0.6      S-curve steepness
+    RISK_FLOOR: 0.80        Minimum risk credit
+    RISK_CEILING: 0.95      Maximum risk credit
+    PEAK_END: 25            End of peak performance
+    DECLINE_RATE: 0.06      Annual decline after peak (6%)
+    CLIFF_AGE: 30           When decline accelerates
+    CLIFF_RATE: 0.12        Annual decline after cliff (12%)
+    DISCOUNT_RATE: 0.03     Annual time discount (3%)
+    MAX_CAREER_AGE: 34      Stop projecting beyond this age
+
+  Draft FV parameters (in draftFV.js):
+    CURRENT_WEIGHT: 0.35       Age percentile weight
+    CEILING_WEIGHT: 0.65       Ceiling score weight
+    HITTER_CEILING_FLOOR: -3.0 Hitter ceiling min (maps to 0)
+    HITTER_CEILING_CAP: 3.0    Hitter ceiling max (maps to 100)
+    PITCHER_CEILING_FLOOR: -3.0 Pitcher ceiling min
+    PITCHER_CEILING_CAP: 1.5    Pitcher ceiling max
+
+  All parameters can be adjusted in the source files. The Dev Analysis page
+  in the web app also allows tuning FV parameters interactively.

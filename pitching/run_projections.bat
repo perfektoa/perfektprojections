@@ -1,0 +1,4 @@
+@echo off
+REM Run pitching projections
+py pitchingprojections_longterm_traits_potentialwoba_FIXED_MIXED.py
+pause

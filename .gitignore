@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.venv/
+venv/
+
+# Node / Vite
+node_modules/
+dist/
+.vite/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Backups and temp
+*.bak
+*.bak-before-extend
+nul
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Local/private OOTP runtime files (not part of regressions or webapp)
+/The Sheets BLM/
+/The Sheets TGS/
+/perfekt filters and views/
+/Launch TGS.bat
+/Update Data.bat
+/OOTP Baseball 26.lnk
+
+# Claude workspace metadata
+.claude/

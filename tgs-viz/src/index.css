@@ -1,0 +1,151 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --color-primary: #2563eb;
+  --color-primary-dark: #1d4ed8;
+  --color-accent: #f59e0b;
+  --color-positive: #10b981;
+  --color-negative: #ef4444;
+  --color-surface: #0f172a;
+  --color-surface-2: #1e293b;
+  --color-surface-3: #334155;
+  --color-border: #475569;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #475569 #1e293b;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: #0f172a;
+  color: #e2e8f0;
+  margin: 0;
+}
+
+/* Custom table styles */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.data-table th {
+  position: sticky;
+  top: 0;
+  background: #1e293b;
+  padding: 6px 8px;
+  text-align: left;
+  font-weight: 600;
+  color: #94a3b8;
+  border-bottom: 2px solid #334155;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  z-index: 10;
+}
+
+.data-table th:hover {
+  color: #e2e8f0;
+  background: #334155;
+}
+
+.data-table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid #1e293b;
+  white-space: nowrap;
+}
+
+.data-table tr:hover td {
+  background: #1e293b;
+}
+
+.data-table tr.selected td {
+  background: #1e3a5f;
+}
+
+/* Rating color scale */
+.rating-20 { color: #ef4444; }
+.rating-30 { color: #f97316; }
+.rating-40 { color: #eab308; }
+.rating-50 { color: #a3e635; }
+.rating-60 { color: #22c55e; }
+.rating-70 { color: #06b6d4; }
+.rating-80 { color: #8b5cf6; }
+
+/* WAA color scale */
+.waa-elite { color: #8b5cf6; font-weight: 700; }
+.waa-great { color: #06b6d4; font-weight: 600; }
+.waa-good { color: #22c55e; }
+.waa-avg { color: #94a3b8; }
+.waa-bad { color: #f97316; }
+.waa-terrible { color: #ef4444; }
+
+/* Scrollable containers */
+.table-container {
+  overflow: auto;
+  max-height: calc(100vh - 220px);
+  border: 1px solid #334155;
+  border-radius: 8px;
+}
+
+/* Filter chips */
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid #475569;
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+.filter-chip:hover {
+  border-color: #2563eb;
+  color: #e2e8f0;
+}
+
+.filter-chip.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: white;
+}
+
+/* Tooltip */
+.tooltip {
+  position: absolute;
+  background: #1e293b;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  padding: 12px;
+  z-index: 50;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  pointer-events: none;
+  max-width: 360px;
+}
+
+/* Animated gradient bar */
+.gradient-bar {
+  height: 3px;
+  background: linear-gradient(90deg, #2563eb, #8b5cf6, #f59e0b, #ef4444);
+  background-size: 200% 100%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Number formatting */
+.num-positive { color: #22c55e; }
+.num-negative { color: #ef4444; }
+.num-neutral { color: #94a3b8; }

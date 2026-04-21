@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>OOTP Ticket Pricing Model</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root { --bg:#0f1419; --panel:#1a2028; --border:#2a3340; --text:#e4e6eb; --muted:#8b95a3; --accent:#4ea3ff; --good:#4ade80; --warn:#fbbf24; --bad:#f87171; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; font-size:14px; }
+  h1 { margin:0 0 4px 0; font-size:22px; }
+  .sub { color:var(--muted); margin-bottom:20px; font-size:13px; }
+  .layout { display:grid; grid-template-columns: 1fr 1fr; gap:20px; }
+  @media (max-width:1100px) { .layout { grid-template-columns:1fr; } }
+  .panel { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:16px; }
+  .panel h2 { margin:0 0 12px 0; font-size:14px; text-transform:uppercase; letter-spacing:0.05em; color:var(--muted); }
+  .field { margin-bottom:12px; }
+  .field label { display:block; font-size:12px; color:var(--muted); margin-bottom:4px; }
+  .field input, .field select, .field textarea { width:100%; padding:8px 10px; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:4px; font-size:13px; font-family:inherit; }
+  .field textarea { font-family:"JetBrains Mono",Consolas,monospace; font-size:12px; resize:vertical; }
+  .field input:focus, .field select:focus, .field textarea:focus { outline:none; border-color:var(--accent); }
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  button { background:var(--accent); color:#fff; border:none; padding:8px 14px; border-radius:4px; font-size:13px; font-weight:600; cursor:pointer; }
+  button:hover { filter:brightness(1.1); }
+  button.ghost { background:transparent; border:1px solid var(--border); color:var(--text); }
+  .btn-row { display:flex; gap:8px; margin-top:8px; }
+  .stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+  .stat { background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:10px 12px; }
+  .stat .label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; }
+  .stat .value { font-size:18px; font-weight:600; margin-top:2px; font-family:"JetBrains Mono",Consolas,monospace; }
+  .stat .sub { font-size:11px; color:var(--muted); margin-top:2px; }
+  .note { font-size:11px; color:var(--muted); margin-top:8px; line-height:1.5; }
+  table { width:100%; border-collapse:collapse; font-size:12px; margin-top:8px; }
+  th { text-align:left; color:var(--muted); font-weight:500; padding:4px 6px; border-bottom:1px solid var(--border); font-size:11px; text-transform:uppercase; }
+  td { padding:4px 6px; border-bottom:1px solid var(--border); font-family:"JetBrains Mono",Consolas,monospace; }
+  .coef-table td:last-child, .coef-table td:nth-last-child(2) { text-align:right; }
+  .err-box { background:rgba(248,113,113,0.08); border:1px solid rgba(248,113,113,0.3); color:var(--bad); padding:10px 12px; border-radius:6px; font-size:12px; margin-top:8px; }
+  .ok-box { background:rgba(74,222,128,0.08); border:1px solid rgba(74,222,128,0.3); color:var(--good); padding:10px 12px; border-radius:6px; font-size:12px; margin-top:8px; }
+  details summary { cursor:pointer; color:var(--muted); font-size:12px; padding:4px 0; }
+  details[open] summary { color:var(--accent); }
+</style>
+</head>
+<body>
+
+<h1>OOTP Ticket Pricing Model</h1>
+<div class="sub">Paste multi-season data → regression fits automatically → predicts optimal price for your team. Add more seasons as you play to improve accuracy.</div>
+
+<div class="layout">
+
+  <!-- LEFT: Data input -->
+  <div class="panel">
+    <h2>Training Data</h2>
+    <div class="field">
+      <label>Paste data (tab- or comma-separated). Columns: <code>Team, Market, Loyalty, FanInterest, Price, AvgAttPerGame</code>. One row per team-season. Headers optional.</label>
+      <textarea id="dataInput" rows="14" placeholder="CHC&#9;Very Big&#9;Great&#9;87&#9;37.00&#9;36789
+WAS&#9;Big&#9;Very Good&#9;88&#9;41.75&#9;40788
+..."></textarea>
+      <div class="btn-row">
+        <button id="fitBtn">Fit Regression</button>
+        <button class="ghost" id="loadSample">Load current season (32 MLB)</button>
+        <button class="ghost" id="clearBtn">Clear</button>
+      </div>
+      <div id="parseStatus" class="note"></div>
+    </div>
+
+    <details>
+      <summary>Accepted market/loyalty tiers</summary>
+      <div class="note">
+        <b>Market:</b> Above Avg=5, Big=6, Very Big=7, Huge=8, Astronomical=10<br>
+        <b>Loyalty:</b> Below Avg=2, Average=3, Above Avg=5, Good=6, Very Good=7, Great=8, Extreme=10<br>
+        You can also type the number directly instead of the tier name.
+      </div>
+    </details>
+
+    <h2 style="margin-top:20px;">Model Output</h2>
+    <div id="modelOutput">
+      <div class="note">Paste data and click Fit Regression to see coefficients.</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Prediction + chart -->
+  <div class="panel">
+    <h2>Predict Optimal Price</h2>
+    <div class="note" style="margin-bottom:10px;">Enter your team's attributes. The model predicts the revenue-maximizing price and expected attendance.</div>
+
+    <div class="row2">
+      <div class="field"><label>Team name (optional)</label><input type="text" id="myTeam" value="CHC" /></div>
+      <div class="field"><label>Fan Interest (0–100)</label><input type="number" id="myFi" value="87" min="0" max="100" /></div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Market size</label>
+        <select id="myMarket">
+          <option value="5">Above Avg</option><option value="6">Big</option><option value="7" selected>Very Big</option><option value="8">Huge</option><option value="10">Astronomical</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Fan loyalty</label>
+        <select id="myLoyalty">
+          <option value="2">Below Avg</option><option value="3">Average</option><option value="5">Above Avg</option><option value="6">Good</option><option value="7">Very Good</option><option value="8" selected>Great</option><option value="10">Extreme</option>
+        </select>
+      </div>
+    </div>
+    <div class="row3">
+      <div class="field"><label>Current price</label><input type="number" id="myPrice" value="37" step="0.25" /></div>
+      <div class="field"><label>Capacity</label><input type="number" id="myCap" value="45000" step="500" /></div>
+      <div class="field"><label>Home games</label><input type="number" id="myGames" value="81" step="1" /></div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="label">Optimal price (regression)</div>
+        <div class="value" id="optPrice">—</div>
+        <div class="sub" id="optPriceSub"></div>
+      </div>
+      <div class="stat">
+        <div class="label">Predicted revenue at optimal</div>
+        <div class="value" id="optRev">—</div>
+        <div class="sub" id="optRevSub"></div>
+      </div>
+      <div class="stat">
+        <div class="label">Predicted att at optimal</div>
+        <div class="value" id="optAtt">—</div>
+        <div class="sub" id="optAttSub"></div>
+      </div>
+      <div class="stat">
+        <div class="label">"Peer-normal" price</div>
+        <div class="value" id="peerPrice">—</div>
+        <div class="sub" id="peerPriceSub"></div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;">
+      <canvas id="chart" height="120"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==========================================================================
+// Tier string → numeric score
+// ==========================================================================
+const MARKET = { "above avg":5, "big":6, "very big":7, "huge":8, "astronomical":10 };
+const LOYALTY = { "below avg":2, "average":3, "above avg":5, "good":6, "very good":7, "great":8, "extreme":10 };
+
+function parseTier(s, map) {
+  const n = parseFloat(s);
+  if (!isNaN(n)) return n;
+  const k = String(s).trim().toLowerCase();
+  return map[k] ?? null;
+}
+
+// ==========================================================================
+// Linear regression: β = (XᵀX)⁻¹ Xᵀy  via Gauss-Jordan on the normal equations
+// ==========================================================================
+function solveNormalEquations(X, y) {
+  const n = X.length, p = X[0].length;
+  const XtX = Array.from({length:p}, () => new Array(p).fill(0));
+  const Xty = new Array(p).fill(0);
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < p; j++) {
+      Xty[j] += X[i][j] * y[i];
+      for (let k = 0; k < p; k++) XtX[j][k] += X[i][j] * X[i][k];
+    }
+  }
+  // Gauss-Jordan on augmented [XtX | Xty]
+  const aug = XtX.map((row, i) => [...row, Xty[i]]);
+  for (let i = 0; i < p; i++) {
+    // pivot
+    let mx = Math.abs(aug[i][i]), mxi = i;
+    for (let k = i+1; k < p; k++) if (Math.abs(aug[k][i]) > mx) { mx = Math.abs(aug[k][i]); mxi = k; }
+    if (mx < 1e-12) throw new Error("Matrix is singular — need more data variation or fewer features.");
+    if (mxi !== i) [aug[i], aug[mxi]] = [aug[mxi], aug[i]];
+    // normalize
+    const piv = aug[i][i];
+    for (let k = 0; k <= p; k++) aug[i][k] /= piv;
+    // eliminate
+    for (let r = 0; r < p; r++) if (r !== i) {
+      const f = aug[r][i];
+      for (let k = 0; k <= p; k++) aug[r][k] -= f * aug[i][k];
+    }
+  }
+  return aug.map(row => row[p]);
+}
+
+function rSquared(y, yhat) {
+  const ybar = y.reduce((a,b) => a+b, 0) / y.length;
+  let ssRes = 0, ssTot = 0;
+  for (let i = 0; i < y.length; i++) {
+    ssRes += (y[i] - yhat[i]) ** 2;
+    ssTot += (y[i] - ybar) ** 2;
+  }
+  return 1 - ssRes/ssTot;
+}
+
+// ==========================================================================
+// Parse pasted data
+// ==========================================================================
+function parseData(text) {
+  const lines = text.trim().split(/\r?\n/).filter(l => l.trim().length > 0);
+  const out = [];
+  const errors = [];
+  for (const line of lines) {
+    const parts = line.split(/\t|,(?! )/).map(s => s.trim()).filter(s => s.length > 0);
+    if (parts.length < 6) continue;
+    // Skip header rows
+    if (/^(team|rank|name)$/i.test(parts[0]) && isNaN(parseFloat(parts[3]))) continue;
+    // Try interpreting: sometimes data has Rank in col 0, so detect
+    let off = 0;
+    if (/^\d+$/.test(parts[0]) && parts.length >= 7) off = 1;  // skip rank column
+    const team = parts[off];
+    const market = parseTier(parts[off+1], MARKET);
+    const loyalty = parseTier(parts[off+2], LOYALTY);
+    const fi = parseFloat(parts[off+3]);
+    const price = parseFloat(parts[off+4]);
+    const att = parseFloat(parts[off+5]);
+    if (market == null || loyalty == null || isNaN(fi) || isNaN(price) || isNaN(att)) {
+      errors.push(`Couldn't parse: ${line.slice(0,60)}…`);
+      continue;
+    }
+    out.push({ team, market, loyalty, fi, price, att });
+  }
+  return { rows: out, errors };
+}
+
+// ==========================================================================
+// UI wiring
+// ==========================================================================
+const $ = (id) => document.getElementById(id);
+const fmtMoney = (n) => n >= 1e9 ? '$'+(n/1e9).toFixed(2)+'B' : n >= 1e6 ? '$'+(n/1e6).toFixed(1)+'M' : n >= 1e3 ? '$'+(n/1e3).toFixed(0)+'K' : '$'+n.toFixed(0);
+const fmtNum = (n) => Math.round(n).toLocaleString();
+
+let model = null;  // { revBeta, priceBeta, games (used when fit), stats }
+let chart = null;
+
+const SAMPLE = `OAK\tBig\tGreat\t100\t49.69\t32554
+NYM\tBig\tGood\t100\t33.00\t40975
+STL\tBig\tGood\t99\t42.00\t33057
+TEX\tBig\tVery Good\t93\t38.25\t40936
+NYY\tAstronomical\tGood\t91\t39.54\t35952
+MIN\tVery Big\tAbove Avg\t88\t32.50\t42770
+WAS\tBig\tVery Good\t88\t41.75\t40788
+CHC\tVery Big\tGreat\t87\t37.00\t36789
+HOU\tBig\tExtreme\t87\t55.00\t28508
+MON\tBig\tVery Good\t87\t42.50\t28302
+PIT\tBig\tGood\t85\t41.42\t29650
+ARI\tBig\tGood\t84\t37.11\t38195
+CLE\tBig\tVery Good\t81\t36.00\t34033
+ANA\tBig\tAbove Avg\t80\t41.00\t34238
+PHI\tHuge\tGood\t80\t41.00\t26876
+KCM\tVery Big\tVery Good\t79\t41.00\t34076
+LAD\tBig\tGreat\t79\t34.20\t38306
+BAL\tVery Big\tVery Good\t75\t35.55\t31760
+COL\tBig\tGood\t73\t40.00\t25654
+DET\tBig\tAbove Avg\t72\t37.00\t27101
+BOS\tBig\tGood\t69\t37.00\t25318
+TOR\tVery Big\tAbove Avg\t68\t38.50\t24894
+SF\tBig\tBelow Avg\t68\t29.36\t31321
+MIL\tBig\tGood\t68\t35.00\t28753
+CWS\tBig\tGood\t66\t36.36\t28524
+ATL\tAbove Avg\tAbove Avg\t61\t35.00\t27046
+SEA\tVery Big\tGood\t61\t30.13\t25119
+CIN\tVery Big\tAbove Avg\t59\t27.50\t27564
+SD\tBig\tAbove Avg\t58\t35.06\t24216
+KCR\tBig\tGood\t56\t32.50\t27089
+TB\tBig\tAbove Avg\t52\t30.00\t21840
+FLA\tBig\tAverage\t52\t30.00\t22218`;
+
+$('loadSample').onclick = () => { $('dataInput').value = SAMPLE; fit(); };
+$('clearBtn').onclick = () => { $('dataInput').value = ''; model = null; render(); $('parseStatus').textContent = ''; $('modelOutput').innerHTML = '<div class="note">Paste data and click Fit Regression to see coefficients.</div>'; };
+$('fitBtn').onclick = fit;
+['myFi','myMarket','myLoyalty','myPrice','myCap','myGames','myTeam'].forEach(id => $(id).addEventListener('input', render));
+
+function fit() {
+  const text = $('dataInput').value;
+  const { rows, errors } = parseData(text);
+  const status = $('parseStatus');
+  if (rows.length < 6) {
+    status.innerHTML = '<div class="err-box">Need at least 6 rows to fit. Got ' + rows.length + '.</div>';
+    model = null; render(); return;
+  }
+  const games = +$('myGames').value || 81;
+
+  // ---- Regression A: Revenue ~ price + price^2 + FI + market + loyalty
+  // y = price * att * games
+  const Xa = rows.map(r => [1, r.price, r.price*r.price, r.fi, r.market, r.loyalty]);
+  const ya = rows.map(r => r.price * r.att * games);
+  let revBeta, revR2, revErr = null;
+  try {
+    revBeta = solveNormalEquations(Xa, ya);
+    const yhat = Xa.map(x => x.reduce((s, v, i) => s + v * revBeta[i], 0));
+    revR2 = rSquared(ya, yhat);
+  } catch (e) { revErr = e.message; }
+
+  // ---- Regression B: Price ~ FI + market + loyalty (peer-normal)
+  const Xb = rows.map(r => [1, r.fi, r.market, r.loyalty]);
+  const yb = rows.map(r => r.price);
+  const priceBeta = solveNormalEquations(Xb, yb);
+  const priceYhat = Xb.map(x => x.reduce((s, v, i) => s + v * priceBeta[i], 0));
+  const priceR2 = rSquared(yb, priceYhat);
+
+  // ---- Regression C: Attendance ~ FI + market + loyalty + price
+  const Xc = rows.map(r => [1, r.fi, r.market, r.loyalty, r.price]);
+  const yc = rows.map(r => r.att);
+  const attBeta = solveNormalEquations(Xc, yc);
+  const attYhat = Xc.map(x => x.reduce((s, v, i) => s + v * attBeta[i], 0));
+  const attR2 = rSquared(yc, attYhat);
+
+  model = { revBeta, revR2, revErr, priceBeta, priceR2, attBeta, attR2, rows, games };
+
+  let msg = `<div class="ok-box">Fit ${rows.length} rows.`;
+  if (errors.length) msg += ` Skipped ${errors.length} bad rows.`;
+  msg += `</div>`;
+  status.innerHTML = msg;
+  renderModelOutput();
+  render();
+}
+
+function renderModelOutput() {
+  if (!model) return;
+  const { revBeta, revR2, priceBeta, priceR2, attBeta, attR2, rows } = model;
+  const out = $('modelOutput');
+
+  const sig = (n, d=3) => Math.abs(n) < 1 ? n.toFixed(d+1) : n.toPrecision(d+1);
+
+  let html = '';
+
+  // Rev regression
+  html += `<div style="margin-bottom:14px;"><b>Revenue ~ price + price² + FI + market + loyalty</b> <span style="color:var(--muted); font-size:11px;">(R² = ${revR2.toFixed(3)}, n = ${rows.length})</span>`;
+  html += `<table class="coef-table">
+    <tr><th>Term</th><th>Coefficient</th><th>Interp.</th></tr>
+    <tr><td>intercept</td><td>${sig(revBeta[0])}</td><td>—</td></tr>
+    <tr><td>price</td><td>${sig(revBeta[1])}</td><td>${revBeta[1] > 0 ? '↑ rev' : '↓ rev'} per $1</td></tr>
+    <tr><td>price²</td><td>${sig(revBeta[2])}</td><td>${revBeta[2] < 0 ? 'bends down → interior max exists' : 'no interior max'}</td></tr>
+    <tr><td>Fan Interest</td><td>${sig(revBeta[3])}</td><td>+$${(revBeta[3]/1e6).toFixed(2)}M per +1 FI</td></tr>
+    <tr><td>market</td><td>${sig(revBeta[4])}</td><td>+$${(revBeta[4]/1e6).toFixed(2)}M per +1 tier</td></tr>
+    <tr><td>loyalty</td><td>${sig(revBeta[5])}</td><td>+$${(revBeta[5]/1e6).toFixed(2)}M per +1 tier</td></tr>
+  </table></div>`;
+
+  const optPrice = revBeta[2] < 0 ? -revBeta[1] / (2 * revBeta[2]) : null;
+  if (optPrice != null) {
+    html += `<div class="note">Revenue-maximizing price (derivative = 0): <b style="color:var(--accent); font-family:'JetBrains Mono',monospace;">$${optPrice.toFixed(2)}</b>. Same for every team — attribute coefficients shift the <i>level</i> of revenue, not the optimum.</div>`;
+  } else {
+    html += `<div class="note">Price² coefficient ≥ 0 — revenue still rising at observed prices. Need data points at higher prices to find the turnover.</div>`;
+  }
+
+  // Price ~ attrs regression (for peer-normal)
+  html += `<div style="margin-top:14px;"><b>Price ~ FI + market + loyalty</b> <span style="color:var(--muted); font-size:11px;">(R² = ${priceR2.toFixed(3)})</span>`;
+  html += `<table class="coef-table">
+    <tr><th>Term</th><th>Coefficient</th></tr>
+    <tr><td>intercept</td><td>${sig(priceBeta[0])}</td></tr>
+    <tr><td>FI</td><td>${sig(priceBeta[1])}</td></tr>
+    <tr><td>market</td><td>${sig(priceBeta[2])}</td></tr>
+    <tr><td>loyalty</td><td>${sig(priceBeta[3])}</td></tr>
+  </table></div>`;
+
+  // Attendance regression (for att prediction at arbitrary price)
+  html += `<div style="margin-top:14px;"><b>Attendance ~ FI + market + loyalty + price</b> <span style="color:var(--muted); font-size:11px;">(R² = ${attR2.toFixed(3)})</span>`;
+  html += `<table class="coef-table">
+    <tr><th>Term</th><th>Coefficient</th></tr>
+    <tr><td>intercept</td><td>${sig(attBeta[0])}</td></tr>
+    <tr><td>FI</td><td>${sig(attBeta[1])}</td></tr>
+    <tr><td>market</td><td>${sig(attBeta[2])}</td></tr>
+    <tr><td>loyalty</td><td>${sig(attBeta[3])}</td></tr>
+    <tr><td>price</td><td>${sig(attBeta[4])}</td></tr>
+  </table></div>`;
+
+  out.innerHTML = html;
+}
+
+function render() {
+  if (!model) { if (chart) { chart.destroy(); chart = null; } return; }
+  const { revBeta, priceBeta, attBeta, games } = model;
+  const fi = +$('myFi').value;
+  const m = +$('myMarket').value;
+  const l = +$('myLoyalty').value;
+  const P0 = +$('myPrice').value;
+  const cap = +$('myCap').value;
+  const gamesMe = +$('myGames').value;
+
+  // Revenue prediction as a function of price
+  const predictRev = (p) => revBeta[0] + revBeta[1]*p + revBeta[2]*p*p + revBeta[3]*fi + revBeta[4]*m + revBeta[5]*l;
+  const predictAtt = (p) => Math.max(0, Math.min(cap, attBeta[0] + attBeta[1]*fi + attBeta[2]*m + attBeta[3]*l + attBeta[4]*p));
+
+  // Optimal price from regression A
+  const optPrice = revBeta[2] < 0 ? -revBeta[1] / (2 * revBeta[2]) : null;
+  // Peer-normal price from regression B
+  const peerPrice = priceBeta[0] + priceBeta[1]*fi + priceBeta[2]*m + priceBeta[3]*l;
+
+  // Sweep
+  const prices = [], revs = [], atts = [];
+  for (let p = 5; p <= 100; p += 0.5) {
+    prices.push(p);
+    revs.push(predictRev(p));
+    atts.push(predictAtt(p));
+  }
+
+  // Display
+  if (optPrice != null) {
+    const rAtOpt = predictRev(optPrice);
+    const aAtOpt = predictAtt(optPrice);
+    const rAtCur = predictRev(P0);
+    $('optPrice').textContent = '$' + optPrice.toFixed(2);
+    $('optPriceSub').textContent = (optPrice > P0 ? '+' : '') + (optPrice - P0).toFixed(2) + ' vs current';
+    $('optRev').textContent = fmtMoney(rAtOpt);
+    $('optRevSub').textContent = ((rAtOpt - rAtCur) / rAtCur * 100).toFixed(1) + '% vs current';
+    $('optAtt').textContent = fmtNum(aAtOpt) + '/g';
+    $('optAttSub').textContent = (aAtOpt/cap*100).toFixed(0) + '% full';
+  } else {
+    $('optPrice').textContent = 'no peak';
+    $('optPriceSub').textContent = 'revenue still rising at max observed';
+    $('optRev').textContent = '—'; $('optAtt').textContent = '—';
+  }
+
+  $('peerPrice').textContent = '$' + peerPrice.toFixed(2);
+  $('peerPriceSub').textContent = (peerPrice > P0 ? '+' : '') + (peerPrice - P0).toFixed(2) + ' vs current';
+
+  // Chart
+  const ctx = $('chart').getContext('2d');
+  if (chart) chart.destroy();
+  const curRev = predictRev(P0);
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: prices,
+      datasets: [
+        { label:'Predicted revenue', data: revs.map(r=>r/1e6), borderColor:'#4ea3ff', backgroundColor:'rgba(78,163,255,0.08)', fill:true, tension:0.2, pointRadius:0, borderWidth:2 },
+        { label:'Current', data: prices.map(p => Math.abs(p-P0) < 0.26 ? curRev/1e6 : null), borderColor:'#fbbf24', backgroundColor:'#fbbf24', pointRadius:7, showLine:false },
+        ...(optPrice != null ? [{ label:'Optimal', data: prices.map(p => Math.abs(p-optPrice) < 0.26 ? predictRev(optPrice)/1e6 : null), borderColor:'#4ade80', backgroundColor:'#4ade80', pointRadius:7, showLine:false }] : []),
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color:'#e4e6eb', boxWidth:12 } },
+        tooltip: { callbacks: { title: items => 'Price: $'+(+items[0].label).toFixed(2), label: c => c.dataset.label + ': $'+c.parsed.y.toFixed(1)+'M' } },
+      },
+      scales: {
+        x: { title:{ display:true, text:'Ticket price ($)', color:'#8b95a3' }, ticks:{ color:'#8b95a3', callback:(v,i) => prices[i] % 10 === 0 ? '$'+prices[i] : '' }, grid:{ color:'#2a3340' } },
+        y: { title:{ display:true, text:'Predicted revenue ($M)', color:'#4ea3ff' }, ticks:{ color:'#4ea3ff' }, grid:{ color:'#2a3340' } },
+      },
+    },
+  });
+}
+</script>
+</body>
+</html>
