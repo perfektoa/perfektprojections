@@ -15,9 +15,12 @@ import sys
 from datetime import datetime
 from openpyxl import load_workbook
 
-# Parent directory containing all "The Sheets *" folders
-PARENT_DIR = r"C:\Users\perfe\Desktop\TGS Projections"
-OUTPUT_BASE = os.path.join(PARENT_DIR, "tgs-viz", "public", "data")
+# Parent directory containing all "The Sheets *" folders.
+# Resolves to the folder that contains tgs-viz/ — i.e. the repo root —
+# regardless of where this script is run from or where the repo lives on disk.
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PARENT_DIR = os.path.dirname(SCRIPT_DIR)
+OUTPUT_BASE = os.path.join(SCRIPT_DIR, "public", "data")
 
 # The 4 Excel files we look for in each league folder.
 # Keys = dataset name, values = (possible filenames, output json name, sheet hint)

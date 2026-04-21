@@ -66,29 +66,7 @@ npm install
 
 Wait for it to finish (~1-2 minutes first time).
 
-### 3. Point the scripts at your folder
-
-Three files have my folder path hardcoded. You need to change them to yours.
-
-**File 1 — `tgs-viz/extract_data.py`** (line 19):
-```python
-PARENT_DIR = r"C:\Users\perfe\Desktop\TGS Projections"
-```
-Change to your clone location, e.g.:
-```python
-PARENT_DIR = r"C:\Users\YOUR_NAME\Documents\perfektprojections"
-```
-
-**File 2 — `Launch TGS.bat`** (line 3):
-```
-cd /d "C:\Users\perfe\Desktop\TGS Projections\tgs-viz"
-```
-Change the path to wherever you cloned the repo, keeping `\tgs-viz` at the end.
-
-**File 3 — `Update Data.bat`** (line 3):
-Same as above — update the path.
-
-### 4. Set up your league data
+### 3. Set up your league data
 
 Decide what you want to call your league (e.g. `MYLEAGUE`). Create a folder next to `tgs-viz/` named:
 
@@ -114,7 +92,7 @@ Each file needs a sheet named `Hitters` or `Pitchers` with the standard column l
 
 See my `The Sheets TGS/` folder in the repo for a working example.
 
-### 5. Run the data extractor
+### 4. Run the data extractor
 
 Double-click **`Update Data.bat`**. It will:
 - Find all `The Sheets *` folders
@@ -124,7 +102,7 @@ Double-click **`Update Data.bat`**. It will:
 
 You'll see a window showing progress. Takes 10-60 seconds depending on league size.
 
-### 6. Launch the webapp
+### 5. Launch the webapp
 
 Double-click **`Launch TGS.bat`**. It will:
 - Start the Vite dev server on port 3000
@@ -200,7 +178,7 @@ You didn't check "Add Python to PATH" during install. Reinstall Python and check
 Node.js isn't installed, or you need to restart your Command Prompt after installing it.
 
 **"No 'The Sheets *' folders found!"**
-Your league folder isn't named correctly — it has to start with `The Sheets ` (with a space). Also check that `PARENT_DIR` in `extract_data.py` points to the folder containing your `The Sheets <LEAGUE>` folder.
+Your league folder isn't named correctly — it has to start with `The Sheets ` (with a space), and it needs to be in the repo root (next to the `tgs-viz` folder).
 
 **Webapp opens but shows no data / says "Failed to load"**
 You haven't run `Update Data.bat` yet, or it errored out. Check the `leagues.json` file in `tgs-viz/public/data/` — it should list your league.

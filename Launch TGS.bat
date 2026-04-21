@@ -1,6 +1,6 @@
 @echo off
 title TGS Projections
-cd /d "C:\Users\perfe\Desktop\TGS Projections\tgs-viz"
+cd /d "%~dp0tgs-viz"
 
 echo ========================================
 echo   TGS Projections - Starting...
