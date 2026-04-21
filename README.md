@@ -224,5 +224,4 @@ perfektprojections/
 
 ## Credit
 
-Built on top of OOTP 26's in-game rating system and the excellent "25 Regressions"
-community workflow for converting raw ratings to WAA projections.
+Built on top of OOTP 26's in-game rating system and the excellent excel work of YourKidnies.
