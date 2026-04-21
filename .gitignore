@@ -36,9 +36,8 @@ desktop.ini
 /batting/
 /pitching/
 
-# OOTP filter exports and local launchers (not part of regressions/webapp)
+# OOTP filter exports and shortcuts (not part of regressions/webapp)
 /perfekt filters and views/
-/Launch TGS.bat
 /OOTP Baseball 26.lnk
 
 # Claude workspace metadata
