@@ -1,0 +1,18 @@
+CREATE TABLE pulls(
+        pull_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        league TEXT NOT NULL,
+        real_date TEXT NOT NULL,
+        real_ts TEXT,
+        source TEXT NOT NULL,
+        source_files TEXT,
+        n_players INTEGER,
+        content_hash TEXT,
+        ingested_at TEXT,
+        UNIQUE(league, real_date));
+
+CREATE TABLE ratings(
+        pull_id INTEGER NOT NULL,
+        player_id TEXT NOT NULL,
+        name TEXT, age REAL, pos TEXT, org TEXT, lev TEXT,
+        "c_STU" NUMERIC, "c_HRR" NUMERIC, "c_PBABIP" NUMERIC, "c_CON" NUMERIC, "c_STU_vR" NUMERIC, "c_STU_vL" NUMERIC, "c_STU_P" NUMERIC, "c_HRR_vR" NUMERIC, "c_HRR_vL" NUMERIC, "c_HRR_P" NUMERIC, "c_PBABIP_vR" NUMERIC, "c_PBABIP_vL" NUMERIC, "c_PBABIP_P" NUMERIC, "c_CON_vR" NUMERIC, "c_CON_vL" NUMERIC, "c_CON_P" NUMERIC, "c_STM" NUMERIC, "c_HLD" NUMERIC, "c_FB" NUMERIC, "c_CH" NUMERIC, "c_CB" NUMERIC, "c_SL" NUMERIC, "c_SI" NUMERIC, "c_SP" NUMERIC, "c_CT" NUMERIC, "c_FO" NUMERIC, "c_CC" NUMERIC, "c_SC" NUMERIC, "c_KC" NUMERIC, "c_KN" NUMERIC, "c_KNP" NUMERIC, "c_FBP" NUMERIC, "c_CHP" NUMERIC, "c_CBP" NUMERIC, "c_SLP" NUMERIC, "c_SIP" NUMERIC, "c_SPP" NUMERIC, "c_CTP" NUMERIC, "c_FOP" NUMERIC, "c_CCP" NUMERIC, "c_SCP" NUMERIC, "c_KCP" NUMERIC, "c_BA_vR" NUMERIC, "c_BA_vL" NUMERIC, "c_GAP_vR" NUMERIC, "c_GAP_vL" NUMERIC, "c_POW_vR" NUMERIC, "c_POW_vL" NUMERIC, "c_EYE_vR" NUMERIC, "c_EYE_vL" NUMERIC, "c_K_vR" NUMERIC, "c_K_vL" NUMERIC, "c_HT_P" NUMERIC, "c_GAP_P" NUMERIC, "c_POW_P" NUMERIC, "c_EYE_P" NUMERIC, "c_K_P" NUMERIC, "c_SPE" NUMERIC, "c_SR" NUMERIC, "c_STE" NUMERIC, "c_RUN" NUMERIC, "c_IF_RNG" NUMERIC, "c_IF_ERR" NUMERIC, "c_IF_ARM" NUMERIC, "c_TDP" NUMERIC, "c_OF_RNG" NUMERIC, "c_OF_ERR" NUMERIC, "c_OF_ARM" NUMERIC, "c_C_ABI" NUMERIC, "c_C_FRM" NUMERIC, "c_C_ARM" NUMERIC, "c_Ovr" NUMERIC, "c_Pot" NUMERIC,
+        PRIMARY KEY(pull_id, player_id)) WITHOUT ROWID;

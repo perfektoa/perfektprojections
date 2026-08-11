@@ -168,6 +168,14 @@ def main():
                 rdb.append_pull(league, rows, source="live",
                                 files=[os.path.relpath(hist_path, REPO)])
                 print("  ratings-history DB: appended pull -> tgs-viz/backtest/ratings_history.db")
+                # The .db is gitignored (92 MB binary) and StatsPlus serves no
+                # rating history, so a lost pull is unrecoverable. Mirror each
+                # vintage to a small committed CSV as it arrives.
+                _vb = os.path.join(REPO, "tgs-viz", "backtest", "vintage_backup.py")
+                spec = importlib.util.spec_from_file_location("vintage_backup", _vb)
+                vb = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(vb)
+                vb.export()
             except Exception as e:
                 print(f"  WARNING: ratings-history DB append failed "
                       f"({type(e).__name__}: {e}) — refresh continues unaffected")
