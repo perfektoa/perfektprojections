@@ -1,0 +1,19 @@
+{
+  "BLM": {
+    "game": "27",
+    "master": "6",
+    "prefix": "0blm",
+    "start_year": 2016,
+    "target_year": 2026,
+    "workbook": "The Sheets BLM/25 Regressions.xlsx"
+  },
+  "TGS": {
+    "game": "26",
+    "master": "Baseline",
+    "prefix": "0tgs",
+    "start_year": 2016,
+    "target_year": 2026,
+    "workbook": "The Sheets TGS/25 Regressions.xlsx",
+    "note": "New pristine OOTP 26 baseline 'Baseline.lg' (old one renamed 1Baseline). If this baseline has DIFFERENT players than the existing TGS regressions, it is a fresh dataset - see ingester player-id check. When TGS moves to OOTP 27+: set game to the new version and master to a fresh pristine TGS baseline there."
+  }
+}

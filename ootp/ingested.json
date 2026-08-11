@@ -1,0 +1,140 @@
+{
+  "The Sheets BLM/25 Regressions.xlsx": {
+    "1": {
+      "marked_done": true,
+      "through_year": 2026,
+      "when": "2026-07-11T19:02:41"
+    },
+    "2": {
+      "marked_done": true,
+      "through_year": 2026,
+      "when": "2026-07-11T19:02:41"
+    },
+    "3": {
+      "marked_done": true,
+      "through_year": 2026,
+      "when": "2026-07-11T19:02:41"
+    },
+    "4": {
+      "marked_done": true,
+      "through_year": 2026,
+      "when": "2026-07-11T19:02:41"
+    },
+    "5": {
+      "marked_done": true,
+      "through_year": 2026,
+      "when": "2026-07-11T19:02:41"
+    },
+    "baseline02": {
+      "marked_done": true,
+      "through_year": 2026,
+      "when": "2026-07-11T19:02:41"
+    }
+  },
+  "The Sheets TGS/25 Regressions.xlsx": {
+    "0tgs01": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "0tgs02": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "0tgs03": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "0tgs04": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "0tgs05": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "0tgs06": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "0tgs07": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "0tgs08": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "0tgs09": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "0tgs10": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "0tgs11": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "0tgs12": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "0tgs13": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "0tgs14": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "0tgs15": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "tgs-run01": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "tgs-run02": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "tgs-run03": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "tgs-run06": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "tgs-run08": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "tgs-run09": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "tgs-run10": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "tgs-run11": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "tgs-run12": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "tgs-run13": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    },
+    "tgs-run14": {
+      "through_year": 2025,
+      "when": "2026-07-12T20:01:29"
+    }
+  }
+}

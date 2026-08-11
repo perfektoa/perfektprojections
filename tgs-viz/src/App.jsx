@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Routes, Route, NavLink, Navigate } from 'react-router-dom';
-import { usePlayerData, useLeagues, useMarketRate } from './hooks/usePlayerData';
+import { usePlayerData, useLeagues, useMarketRate, DEFAULT_FEATURES } from './hooks/usePlayerData';
 import HittersPage from './pages/HittersPage';
 import PitchersPage from './pages/PitchersPage';
 import DraftBoardPage from './pages/DraftBoardPage';
@@ -8,9 +8,11 @@ import RosterOptimizerPage from './pages/RosterOptimizerPage';
 import DevAnalysisPage from './pages/DevAnalysisPage';
 import MarketValuePage from './pages/MarketValuePage';
 import TeamStandingsPage from './pages/TeamStandingsPage';
-import { Users, Zap, Target, Trophy, Loader2, AlertCircle, BarChart3, TrendingUp, ChevronDown, DollarSign, TableProperties } from 'lucide-react';
+import OrganizationPage from './pages/OrganizationPage';
+import TrendsPage from './pages/TrendsPage';
+import { Users, Zap, Target, Trophy, Loader2, AlertCircle, BarChart3, TrendingUp, ChevronDown, DollarSign, TableProperties, Building2, Activity } from 'lucide-react';
 
-function Sidebar({ leagues, currentLeague, onLeagueChange }) {
+function Sidebar({ leagues, currentLeague, onLeagueChange, features }) {
   const linkClass = ({ isActive }) =>
     `flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
       isActive
@@ -53,23 +55,36 @@ function Sidebar({ leagues, currentLeague, onLeagueChange }) {
           <Zap size={16} /> Pitchers
         </NavLink>
 
-        <p className="text-[10px] text-slate-600 uppercase tracking-widest px-3 pt-4 pb-1">Draft</p>
-        <NavLink to="/hitters-draft" className={linkClass}>
-          <Users size={16} /> Hitters (Draft)
-        </NavLink>
-        <NavLink to="/pitchers-draft" className={linkClass}>
-          <Zap size={16} /> Pitchers (Draft)
-        </NavLink>
-        <NavLink to="/draft-board" className={linkClass}>
-          <BarChart3 size={16} /> Draft Board
-        </NavLink>
+        {features.draft && (
+          <>
+            <p className="text-[10px] text-slate-600 uppercase tracking-widest px-3 pt-4 pb-1">Draft</p>
+            <NavLink to="/hitters-draft" className={linkClass}>
+              <Users size={16} /> Hitters (Draft)
+            </NavLink>
+            <NavLink to="/pitchers-draft" className={linkClass}>
+              <Zap size={16} /> Pitchers (Draft)
+            </NavLink>
+            <NavLink to="/draft-board" className={linkClass}>
+              <BarChart3 size={16} /> Draft Board
+            </NavLink>
+          </>
+        )}
 
-        <p className="text-[10px] text-slate-600 uppercase tracking-widest px-3 pt-4 pb-1">Free Agency</p>
-        <NavLink to="/hitters-fa" className={linkClass}>
-          <Users size={16} /> Hitters (FA)
-        </NavLink>
-        <NavLink to="/pitchers-fa" className={linkClass}>
-          <Zap size={16} /> Pitchers (FA)
+        {features.fa && (
+          <>
+            <p className="text-[10px] text-slate-600 uppercase tracking-widest px-3 pt-4 pb-1">Free Agency</p>
+            <NavLink to="/hitters-fa" className={linkClass}>
+              <Users size={16} /> Hitters (FA)
+            </NavLink>
+            <NavLink to="/pitchers-fa" className={linkClass}>
+              <Zap size={16} /> Pitchers (FA)
+            </NavLink>
+          </>
+        )}
+
+        <p className="text-[10px] text-slate-600 uppercase tracking-widest px-3 pt-4 pb-1">Organization</p>
+        <NavLink to="/organization" className={linkClass}>
+          <Building2 size={16} /> Org Builder
         </NavLink>
 
         <p className="text-[10px] text-slate-600 uppercase tracking-widest px-3 pt-4 pb-1">Standings</p>
@@ -78,14 +93,19 @@ function Sidebar({ leagues, currentLeague, onLeagueChange }) {
         </NavLink>
 
         <p className="text-[10px] text-slate-600 uppercase tracking-widest px-3 pt-4 pb-1">Tools</p>
-        <NavLink to="/market-value" className={linkClass}>
-          <DollarSign size={16} /> Market Value
-        </NavLink>
+        {features.contracts && (
+          <NavLink to="/market-value" className={linkClass}>
+            <DollarSign size={16} /> Market Value
+          </NavLink>
+        )}
         <NavLink to="/optimizer" className={linkClass}>
           <Trophy size={16} /> Roster Optimizer
         </NavLink>
         <NavLink to="/dev-analysis" className={linkClass}>
           <TrendingUp size={16} /> Dev Analysis
+        </NavLink>
+        <NavLink to="/trends" className={linkClass}>
+          <Activity size={16} /> Rating Trends
         </NavLink>
       </div>
       <div className="p-3 border-t border-slate-800 text-[10px] text-slate-600">
@@ -147,8 +167,8 @@ function ErrorScreen({ error }) {
 }
 
 export default function App() {
-  // Load the leagues manifest
-  const { leagues, loading: leaguesLoading, error: leaguesError } = useLeagues();
+  // Load the leagues manifest (falls back to built-in TGS/BLM if missing)
+  const { leagues, loading: leaguesLoading } = useLeagues();
 
   // League selection — persisted in localStorage
   const [currentLeague, setCurrentLeague] = useState(() => {
@@ -179,9 +199,13 @@ export default function App() {
   // Compute league-wide $/WAA rate (must be before early returns — React hooks rule)
   const marketRate = useMarketRate(data.hitters, data.pitchers);
 
+  // Per-league feature flags from the manifest (unknown league -> everything on,
+  // pages already degrade gracefully on missing fields/datasets).
+  const activeLeague = leagues.find(lg => lg.id === currentLeague);
+  const features = { ...DEFAULT_FEATURES, ...(activeLeague?.features || {}) };
+
   // Show loading while leagues manifest loads
   if (leaguesLoading) return <LoadingScreen progress={{}} league="" />;
-  if (leaguesError) return <ErrorScreen error={leaguesError} />;
   if (leagues.length === 0) return <ErrorScreen error="No leagues found. Run python extract_data.py first." />;
 
   // Show loading while player data loads
@@ -200,6 +224,7 @@ export default function App() {
         leagues={leagues}
         currentLeague={currentLeague}
         onLeagueChange={handleLeagueChange}
+        features={features}
       />
       <main className="flex-1 overflow-hidden">
         <div className="gradient-bar" />
@@ -221,15 +246,19 @@ export default function App() {
               />
             } />
             <Route path="/standings" element={
-              <TeamStandingsPage hitters={data.hitters} pitchers={data.pitchers} />
+              <TeamStandingsPage hitters={data.hitters} pitchers={data.pitchers} league={currentLeague} />
+            } />
+            <Route path="/organization" element={
+              <OrganizationPage hitters={data.hitters} pitchers={data.pitchers} league={currentLeague} />
             } />
             <Route path="/market-value" element={
               <MarketValuePage hitters={data.hitters} pitchers={data.pitchers} />
             } />
             <Route path="/optimizer" element={
-              <RosterOptimizerPage hitters={data.hitters} pitchers={data.pitchers} />
+              <RosterOptimizerPage hitters={data.hitters} pitchers={data.pitchers} metadata={data.metadata} league={currentLeague} />
             } />
             <Route path="/dev-analysis" element={<DevAnalysisPage />} />
+            <Route path="/trends" element={<TrendsPage league={currentLeague} />} />
           </Routes>
         </div>
       </main>

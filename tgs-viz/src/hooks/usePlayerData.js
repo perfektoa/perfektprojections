@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { calculateFutureValue } from '../lib/futureValue';
 import { buildAgeGroups, calculateDraftFV } from '../lib/draftFV';
+import { replacementOffset } from '../lib/leagueCalib.js';
 import { buildDevPercentileData, calculateG5FV } from '../lib/g5FV';
 import { calculateHybridFV } from '../lib/hybridFV';
-import { getBestWAA, isBetterAsRP, calculatePlayerValue, calculatePitcherValue, getLeagueMarketRate } from '../lib/marketValue';
+import { getBestWAA, getPlayerWAR, calculatePlayerValue, calculatePitcherValue, fitFAMarket, resolveRate } from '../lib/marketValue';
 
 /**
  * Build data file paths for a given league.
@@ -23,32 +24,79 @@ function getDataFiles(league) {
 }
 
 /**
+ * Per-league feature flags. Anything not declared in the manifest defaults to
+ * true so legacy manifests keep today's behavior (everything shown).
+ */
+export const DEFAULT_FEATURES = { draft: true, fa: true, contracts: true };
+
+// Hardcoded fallback when /data/leagues.json is missing or unreadable —
+// the two leagues the app originally shipped with. Guarantees the app
+// always boots even if the manifest was never generated.
+const FALLBACK_LEAGUES = [
+  { id: 'TGS', name: 'TGS', features: { draft: true, fa: true, contracts: true } },
+  { id: 'BLM', name: 'BLM', features: { draft: true, fa: false, contracts: true } },
+];
+
+/**
+ * Accept both manifest schemas:
+ *   new:    { "leagues": [{ id, name, features: {draft, fa, contracts}, ... }] }
+ *   legacy: [{ id, name, folder, datasets }]
+ * Legacy entries derive features from their dataset list (contracts unknowable
+ * from the old schema, so assumed present — columns are null-safe anyway).
+ */
+function normalizeLeagues(raw) {
+  const list = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.leagues) ? raw.leagues : []);
+  return list
+    .filter(lg => lg && lg.id)
+    .map(lg => {
+      let features = lg.features;
+      if (!features && Array.isArray(lg.datasets)) {
+        features = {
+          draft: lg.datasets.some(d => String(d).endsWith('_draft')),
+          fa: lg.datasets.some(d => String(d).endsWith('_fa')),
+          contracts: true,
+        };
+      }
+      return {
+        ...lg,
+        name: lg.name || lg.id,
+        features: { ...DEFAULT_FEATURES, ...(features || {}) },
+      };
+    });
+}
+
+/**
  * Hook to load the leagues manifest (/data/leagues.json).
- * Returns { leagues, loading, error }.
+ * Returns { leagues, loading }. Never fails: if the manifest is missing,
+ * unreadable, or empty, it falls back to the built-in TGS/BLM list.
  */
 export function useLeagues() {
   const [leagues, setLeagues] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetch('/data/leagues.json')
       .then(res => {
-        if (!res.ok) throw new Error('leagues.json not found — run python extract_data.py');
+        // Non-JSON = dev-server SPA fallback for a missing file — same as 404.
+        const ctype = res.headers.get('content-type') || '';
+        if (!res.ok || !ctype.includes('json')) {
+          throw new Error(`leagues.json fetch failed (${res.status})`);
+        }
         return res.json();
       })
       .then(data => {
-        setLeagues(data);
+        const normalized = normalizeLeagues(data);
+        setLeagues(normalized.length ? normalized : FALLBACK_LEAGUES);
         setLoading(false);
       })
       .catch(e => {
-        console.warn('Failed to load leagues.json:', e);
-        setError(e.message);
+        console.warn('leagues.json unavailable — using built-in TGS/BLM fallback:', e);
+        setLeagues(FALLBACK_LEAGUES);
         setLoading(false);
       });
   }, []);
 
-  return { leagues, loading, error };
+  return { leagues, loading };
 }
 
 /**
@@ -64,6 +112,7 @@ export function usePlayerData(league) {
     pitchers_draft: [],
     hitters_fa: [],
     pitchers_fa: [],
+    metadata: null,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -76,7 +125,12 @@ export function usePlayerData(league) {
     setLoading(true);
     setError(null);
     setLoadProgress({});
-    setData({ hitters: [], pitchers: [], hitters_draft: [], pitchers_draft: [] });
+    setData({
+      hitters: [], pitchers: [],
+      hitters_draft: [], pitchers_draft: [],
+      hitters_fa: [], pitchers_fa: [],
+      metadata: null,
+    });
 
     const dataFiles = getDataFiles(league);
 
@@ -87,20 +141,37 @@ export function usePlayerData(league) {
         try {
           setLoadProgress(prev => ({ ...prev, [key]: 'loading' }));
           const res = await fetch(url);
-          if (!res.ok) {
+          // Dev server SPA-fallback returns index.html (200, text/html) for
+          // missing files — treat non-JSON responses as missing, same as a 404.
+          const ctype = res.headers.get('content-type') || '';
+          if (!res.ok || !ctype.includes('json')) {
             setLoadProgress(prev => ({ ...prev, [key]: 'missing' }));
             results[key] = [];
             continue;
           }
           const json = await res.json();
-          // Filter out blank/empty rows (no Name) that come from empty sheet rows
-          results[key] = json.filter(p => p.Name && String(p.Name).trim() !== '' && String(p.Name).trim() !== '-');
+          // Filter out blank/empty rows (no Name) that come from empty sheet rows.
+          // Stamp the app's league id (M5): the raw 'League' field is StatsPlus's
+          // NUMERIC OOTP id (e.g. 112), useless for keying leagueCalib — the
+          // per-league replacement offsets in futureValue/draftFV read _appLeague.
+          results[key] = json
+            .filter(p => p.Name && String(p.Name).trim() !== '' && String(p.Name).trim() !== '-')
+            .map(p => ({ ...p, _appLeague: league || 'TGS' }));
           setLoadProgress(prev => ({ ...prev, [key]: 'loaded' }));
         } catch (e) {
           console.warn(`Failed to load ${key}:`, e);
           setLoadProgress(prev => ({ ...prev, [key]: 'error' }));
           results[key] = [];
         }
+      }
+
+      // Per-league metadata (matchup shares etc.) — an object, not a player array.
+      try {
+        const mres = await fetch(`${league ? `/data/${league}` : '/data'}/metadata.json`);
+        const mtype = mres.headers.get('content-type') || '';
+        results.metadata = (mres.ok && mtype.includes('json')) ? await mres.json() : null;
+      } catch {
+        results.metadata = null;
       }
 
       if (!cancelled) {
@@ -264,16 +335,39 @@ export function usePlayersWithFV(players) {
   return useMemo(() => {
     return players.map(p => {
       const fv = calculateFutureValue(p);
+      // Value Gap = our projection-based FV minus OOTP's POT (what other GMs eyeball).
+      // Positive → we rate him higher than his potential shows → undervalued / a buy.
+      const pot = parseFloat(p.Pot);
+      // DISPLAY BASIS = WAA (vs average), per user preference: in a league this deep,
+      // "better than an average starter" is the decision-relevant question — replacement
+      // is only the right zero for PRICING. The FV engine computes internally on the WAR
+      // basis (its scale anchors are calibrated there, and $ math needs a replacement
+      // zero) and hands back a matching WAA track in fv.displayWAA.
+      // marketValue.js keeps its own WAR basis untouched.
+      //
+      // Do NOT go back to "subtract fv.offsetUsed" here. That offset belongs to the
+      // player's best CURRENT role; expectedPeak/potential are anchored on his best
+      // PEAK role, and for ~1/3 of pitchers those are different roles (RP now, SP at
+      // peak). Subtracting the RP offset from an SP-anchored peak inflated "Pot WAA"
+      // by ~2.2 wins and inverted the board against its own Ceiling column.
+      const d = fv.displayWAA || {};
+      const toWAA = (v) => (Number.isFinite(v) ? v : null);
       return {
         ...p,
         _futureValue: fv.futureValue,
         _fvScale: fv.fvScale,
-        _peakWAA: fv.peakProjectedWAA,
+        _fvGap: (Number.isFinite(fv.fvScale) && Number.isFinite(pot)) ? fv.fvScale - pot : null,
+        _peakWAA: toWAA(d.peakProjected),
         _pctToPeak: fv.pctToPeak,
         _yearsTilPeak: fv.yearsTilPeak,
         _projYears: fv.projectionYears,
-        _currentWAA: fv.currentWAA,
-        _potentialWAA: fv.potentialWAA,
+        _currentWAA: toWAA(d.current),
+        // "Proj Peak" = the REALISTIC age-adjusted peak (what we project he'll actually reach),
+        // i.e. the raw ceiling AFTER the gap-factor and risk haircut. So a 26+ player past
+        // development shows his current WAA — no credit for potential he'll never fill.
+        // The un-haircut scouting ceiling is the board's "Ceiling (WAA)" column.
+        _potentialWAA: toWAA(d.expectedPeak),
+        _rawPotentialWAA: toWAA(d.potential),
         _fvBreakdown: fv,
       };
     });
@@ -289,16 +383,21 @@ export function usePlayersWithFV(players) {
  * @param {'hitter'|'pitcher'} playerType
  */
 export function usePlayersWithDraftFV(draftPlayers, allPlayers, playerType) {
-  // Pitchers: best of SP or RP WAA for age comparison (same as what calculateDraftFV uses)
+  // Pitchers: best of SP or RP WAR for age comparison (audit M5 — same
+  // role-offset currency calculateDraftFV uses, so a swingman's percentile is
+  // taken on the same value that scores him; league read off the data itself).
   const metricKeyOrFn = useMemo(() => {
     if (playerType === 'hitter') return 'wOBA wtd';
+    const lg = (allPlayers && allPlayers[0] && allPlayers[0]._appLeague) || undefined;
+    const spOff = replacementOffset(lg, 'sp');
+    const rpOff = replacementOffset(lg, 'rp');
     return (player) => {
       const sp = parseFloat(player['WAA wtd']);
       const rp = parseFloat(player['WAA wtd RP']);
-      const best = Math.max(isNaN(sp) ? -Infinity : sp, isNaN(rp) ? -Infinity : rp);
+      const best = Math.max(isNaN(sp) ? -Infinity : sp + spOff, isNaN(rp) ? -Infinity : rp + rpOff);
       return isFinite(best) ? best : NaN;
     };
-  }, [playerType]);
+  }, [playerType, allPlayers]);
 
   const ageGroups = useMemo(() => {
     if (!allPlayers || allPlayers.length === 0) return {};
@@ -315,7 +414,9 @@ export function usePlayersWithDraftFV(draftPlayers, allPlayers, playerType) {
         _draftRawFV: dfv.draftRawFV,
         _agePercentile: dfv.agePercentile,
         _ceilingScore: dfv.ceilingScore,
-        _draftCeiling: dfv.draftCeiling,
+        _draftCeiling: dfv.draftCeiling,          // WAR — what Draft FV is scored on
+        _draftCeilingWAA: dfv.draftCeilingWAA,    // WAA — what the board displays
+        _ceilingRole: dfv.ceilingRole,
         _durability: dfv.proneValue,
         _toolPenalty: dfv.toolPenalty,
         _highINT: dfv.highINT,
@@ -384,76 +485,75 @@ export function usePlayersWithHybridFV(players) {
 }
 
 /**
- * Hook that computes the league-wide $/WAA rate.
- * Single rate for everyone: total MLB payroll / total positive WAA.
- * Call once in App and pass down to pages.
+ * Hook that fits the FA salary market for the loaded league (marketValue.js
+ * fitFAMarket: salary ~ slope * WAR + floor over fresh FA signings only).
+ * Re-fits automatically whenever the league data refreshes.
+ * Call once in App and pass down to pages. Name kept for App.jsx compat.
  */
 export function useMarketRate(hitters, pitchers) {
   return useMemo(() => {
-    if (!hitters.length && !pitchers.length) return { rate: 0, lowConfidence: true };
-    return getLeagueMarketRate(hitters, pitchers);
+    if (!hitters.length && !pitchers.length) return null;
+    return fitFAMarket(hitters, pitchers);
   }, [hitters, pitchers]);
+}
+
+/** Shared enrichment for both market-value hooks. */
+function withMarketValue(p, val, war) {
+  return {
+    ...p,
+    _bestWAA: getBestWAA(p),
+    _war: war,
+    _marketValue: val.adjustedValue,
+    _annualValue: val.annualValue,          // line value (replaceable tier)
+    _mktPrice: val.marketPrice,             // tier-local market price
+    _mktSurplus: val.marketSurplus,         // tier-local surplus
+    _mktTier: val.tier,                     // 'replaceable' | 'scarcity'
+    _offerFloor: val.offerFloor,
+    _offerMid: val.offerMid,
+    _offerCeiling: val.offerCeiling,
+    _surplus: val.surplus,
+    _ctrSurplus: val.contract ? val.contract.surplus : null,
+    _ctrYears: val.contract ? val.contract.yearsRemaining : null,
+    _futureAAV: val.futureAnnualValue,
+    _futureOfferLow: val.futureOfferFloor,
+    _futureOfferMid: val.futureOfferMid,
+    _futureOfferHigh: val.futureOfferCeiling,
+    _perWAA: p.Price > 0 && war > 0 ? Math.round(p.Price / war) : null,
+  };
 }
 
 /**
  * Hook that adds market value calculations to HITTER data.
- * Uses the single league $/WAA rate.
+ * v2: prices with the hitter's OWN fitted line (market-WAR basis — see
+ * marketValue.js resolveRate); offers are tier-local (LOESS over
+ * comparable-WAR signings).
  */
-export function useHittersWithMarketValue(players, marketInfo) {
-  const rate = marketInfo?.rate || 0;
+export function useHittersWithMarketValue(players, marketFit) {
   return useMemo(() => {
-    if (!players || players.length === 0 || !rate) return players;
+    if (!players || players.length === 0 || !marketFit || !marketFit.pooled) return players;
+    const rate = resolveRate(marketFit, 'hitter');
+    if (!(rate.slope > 0)) return players;
     return players.map(p => {
-      const waa = getBestWAA(p);
       const val = calculatePlayerValue(p, rate);
-      return {
-        ...p,
-        _bestWAA: waa,
-        _marketValue: val.adjustedValue,
-        _annualValue: val.annualValue,
-        _offerFloor: val.offerFloor,
-        _offerMid: val.offerMid,
-        _offerCeiling: val.offerCeiling,
-        _surplus: val.surplus,
-        _futureAAV: val.futureAnnualValue,
-        _futureOfferLow: val.futureOfferFloor,
-        _futureOfferMid: val.futureOfferMid,
-        _futureOfferHigh: val.futureOfferCeiling,
-        _perWAA: p.Price > 0 && waa > 0 ? Math.round(p.Price / waa) : null,
-      };
+      return withMarketValue(p, val, getPlayerWAR(p) ?? 0);
     });
-  }, [players, rate]);
+  }, [players, marketFit]);
 }
 
 /**
  * Hook that adds market value calculations to PITCHER data.
- * Uses the single league $/WAA rate. Shows SP/RP role for reference.
+ * Same fitted line resolution; shows SP/RP role for reference.
  */
-export function usePitchersWithMarketValue(players, marketInfo) {
-  const rate = marketInfo?.rate || 0;
+export function usePitchersWithMarketValue(players, marketFit) {
   return useMemo(() => {
-    if (!players || players.length === 0 || !rate) return players;
+    if (!players || players.length === 0 || !marketFit || !marketFit.pooled) return players;
+    const rate = resolveRate(marketFit, 'pitcher');
+    if (!(rate.slope > 0)) return players;
     return players.map(p => {
-      const waa = getBestWAA(p);
       const val = calculatePitcherValue(p, rate);
-      return {
-        ...p,
-        _bestWAA: waa,
-        _marketValue: val.adjustedValue,
-        _annualValue: val.annualValue,
-        _offerFloor: val.offerFloor,
-        _offerMid: val.offerMid,
-        _offerCeiling: val.offerCeiling,
-        _surplus: val.surplus,
-        _futureAAV: val.futureAnnualValue,
-        _futureOfferLow: val.futureOfferFloor,
-        _futureOfferMid: val.futureOfferMid,
-        _futureOfferHigh: val.futureOfferCeiling,
-        _perWAA: p.Price > 0 && waa > 0 ? Math.round(p.Price / waa) : null,
-        _marketRole: val.role,
-      };
+      return { ...withMarketValue(p, val, getPlayerWAR(p) ?? 0), _marketRole: val.role };
     });
-  }, [players, rate]);
+  }, [players, marketFit]);
 }
 
 /**

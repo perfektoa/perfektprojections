@@ -1,0 +1,486 @@
+{
+ "league": "TGS",
+ "fitted_at": "2026-08-05T18:24:48",
+ "wired": false,
+ "purpose": "Preview layer: residual value of scout OVR beyond component ratings. NOT consumed by the engine or app.",
+ "method": {
+  "primary_frame": "calib/TGS archive (260 pooled clone-seasons, all-age-27 lab; ratings snapshot vs career-pooled split-1 outcomes; frames identical to calibrate.py, block re-fit validated byte-exact vs constants-260seasons.json on 23/24 blocks - lGAP differs only by the documented B10 filter fix)",
+  "secondary_frame": "banked live 2044 season (backtest/actuals/TGS/2044 + snapshot 2044-10-08 statsplus Ovr), single season",
+  "partialling": "Frisch-Waugh: outcome and OVR both residualized on component set; 'nl' variants control components + squares + hinge-at-50 (guards against OVR proxying curve nonlinearity). HC1 robust SEs. Weights: career PA (hitters) / BF (pitchers).",
+  "runs_metric_hitters": "offensive runs per 650 PA from linear weights fitted on the archive's own 320 clone-pooled team-season cells (R2=0.978)",
+  "runs_metric_pitchers": "RA9-derived runs per role-average season; WAA slopes from the sim's own war (FIP-like) and ra9war columns; WAR slope == WAA slope (constant replacement offset)",
+  "shrinkage": "per-position slopes shrunk by DerSimonian-Laird empirical Bayes (random-effects tau fitted from the cell estimates)"
+ },
+ "linear_weights": {
+  "coef": {
+   "bbhp": 0.4401734644713788,
+   "x1b": 0.5128709245197369,
+   "x2b": 0.7626773633133317,
+   "x3b": 1.3977807015153116,
+   "hr": 1.438054702417979,
+   "k": -0.03281302563731538,
+   "sb": 0.22816453514754867,
+   "cs": -0.5418783936280462
+  },
+  "se": {
+   "bbhp": 0.009698870623344454,
+   "x1b": 0.014613797099131808,
+   "x2b": 0.024091497807130605,
+   "x3b": 0.0923731409177606,
+   "hr": 0.020597544225602504,
+   "k": 0.005522875094437035,
+   "sb": 0.01263771964981934,
+   "cs": 0.07138891858925589
+  },
+  "r2": 0.9778279739638306,
+  "n_cells": 320
+ },
+ "component_derivability": {
+  "hitters_ovr_r2_linear": 0.8585636466764197,
+  "hitters_ovr_r2_nonlinear": 0.9121313012060324,
+  "pitchers_sp_ovr_r2_nonlinear": 0.8962440334192157,
+  "pitchers_rp_ovr_r2_nonlinear": 0.8670467681917383,
+  "live2044_hitters_ovr_r2_linear": 0.7875106145163826,
+  "finding": "OVR is NOT component-derivable even in the lab (nonlinear R2 ~0.87-0.91); its residual predicts outcomes in the archive, so lab OVR encodes real information beyond the displayed component set (e.g. hidden/undisplayed ratings). Live OVR shows the same partial signal at compatible magnitude."
+ },
+ "hitters": {
+  "n": 409,
+  "runs_per_650PA_per_OVR_point": {
+   "raw": {
+    "n": 409,
+    "raw": 1.3454256148617003,
+    "raw_se": 0.043725569257762484,
+    "partial": 0.6173749176559489,
+    "partial_se": 0.06275658086808325,
+    "raw_ci95": [
+     1.2597234991164858,
+     1.4311277306069148
+    ],
+    "partial_ci95": [
+     0.4943720191545057,
+     0.7403778161573921
+    ]
+   },
+   "partial_nonlinear_controls": {
+    "partial": 0.6640117575048343,
+    "partial_se": 0.057271864933879466,
+    "partial_ci95": [
+     0.5517589022344306,
+     0.7762646127752381
+    ]
+   }
+  },
+  "WAA_per_10_OVR_points": {
+   "raw": [
+    1.6729505534757139,
+    0.07613517328317107
+   ],
+   "partial_linear": [
+    1.1892728487385782,
+    0.17917791192352123
+   ],
+   "partial_nonlinear": [
+    1.008109394108546,
+    0.21807321152314177
+   ],
+   "partial_nl_plus_prone": [
+    1.02357296471344,
+    0.22448514894770422
+   ]
+  },
+  "usage": {
+   "pa_per_season_partial": [
+    -2.90302538362576,
+    2.0315247059992583
+   ],
+   "note": "hitter OVR partial value is rate quality, not playing time"
+  },
+  "per_position": {
+   "runs650": {
+    "C": {
+     "n": 54,
+     "raw": 1.093693182596532,
+     "raw_se": 0.05970517490022273,
+     "partial": 0.16463023664443374,
+     "partial_se": 0.10048327256310169,
+     "raw_eb": 1.1219361100302523,
+     "partial_eb": 0.21464815442145882
+    },
+    "1B": {
+     "n": 52,
+     "raw": 1.571867914306715,
+     "raw_se": 0.08455578636656295,
+     "partial": 0.9583599380777159,
+     "partial_se": 0.17657859058154773,
+     "raw_eb": 1.5487705991922773,
+     "partial_eb": 0.8943709319441427
+    },
+    "2B": {
+     "n": 48,
+     "raw": 1.4084199503685373,
+     "raw_se": 0.1793074224631972,
+     "partial": 0.5588890149433318,
+     "partial_se": 0.11238291060292423,
+     "raw_eb": 1.4160538592760685,
+     "partial_eb": 0.5745971928334275
+    },
+    "3B": {
+     "n": 47,
+     "raw": 1.3784216073488706,
+     "raw_se": 0.095416544385693,
+     "partial": 1.0125135531754286,
+     "partial_se": 0.1948344626364861,
+     "raw_eb": 1.387400100278828,
+     "partial_eb": 0.9232930947114301
+    },
+    "SS": {
+     "n": 47,
+     "raw": 1.5612560111769243,
+     "raw_se": 0.08670656248340838,
+     "partial": 0.9321825630483995,
+     "partial_se": 0.22926210887779744,
+     "raw_eb": 1.538906541529459,
+     "partial_eb": 0.848931462076362
+    },
+    "LF": {
+     "n": 54,
+     "raw": 1.4845171710609175,
+     "raw_se": 0.056152045619395796,
+     "partial": 0.9999415924282522,
+     "partial_se": 0.17839266522009958,
+     "raw_eb": 1.4799974297242586,
+     "partial_eb": 0.9246869276021108
+    },
+    "CF": {
+     "n": 58,
+     "raw": 1.2450660368028328,
+     "raw_se": 0.1463705218378996,
+     "partial": 0.5488727246080978,
+     "partial_se": 0.17641427421674621,
+     "raw_eb": 1.3096956847580286,
+     "partial_eb": 0.5844268457691058
+    },
+    "RF": {
+     "n": 49,
+     "raw": 1.6564904351009204,
+     "raw_se": 0.11332155793571459,
+     "partial": 0.5575584780370877,
+     "partial_se": 0.19786367015373305,
+     "raw_eb": 1.5983631240545058,
+     "partial_eb": 0.5971498417147166
+    }
+   },
+   "war": {
+    "C": {
+     "n": 54,
+     "raw": 0.07901147819310421,
+     "raw_se": 0.02064737619359471,
+     "partial": -0.06479618014756798,
+     "partial_se": 0.040367589724041794,
+     "raw_eb": 0.10893182153130294,
+     "partial_eb": -0.02616301665422909
+    },
+    "1B": {
+     "n": 52,
+     "raw": 0.17965423355840882,
+     "raw_se": 0.007483929225345314,
+     "partial": 0.18002866736452378,
+     "partial_se": 0.034453178708734676,
+     "raw_eb": 0.17889593000443355,
+     "partial_eb": 0.17562241796678976
+    },
+    "2B": {
+     "n": 48,
+     "raw": 0.19224924014629338,
+     "raw_se": 0.019771672905910188,
+     "partial": 0.1974012430609364,
+     "partial_se": 0.036692054514852586,
+     "raw_eb": 0.1843876345551323,
+     "partial_eb": 0.18980845167447455
+    },
+    "3B": {
+     "n": 47,
+     "raw": 0.16427863029869097,
+     "raw_se": 0.015478262974281232,
+     "partial": 0.1921826014717284,
+     "partial_se": 0.05102477997593975,
+     "raw_eb": 0.16501464710367716,
+     "partial_eb": 0.18071615775730424
+    },
+    "SS": {
+     "n": 47,
+     "raw": 0.1617887796392485,
+     "raw_se": 0.01684149249881623,
+     "partial": 0.21712473585769074,
+     "partial_se": 0.05387266607534292,
+     "raw_eb": 0.16325679278572305,
+     "partial_eb": 0.1976602091893428
+    },
+    "LF": {
+     "n": 54,
+     "raw": 0.1935143028133651,
+     "raw_se": 0.018777262803571698,
+     "partial": 0.1338897555097662,
+     "partial_se": 0.045282920931604284,
+     "raw_eb": 0.18581947808386035,
+     "partial_eb": 0.1370312239893617
+    },
+    "CF": {
+     "n": 58,
+     "raw": 0.14909034710807628,
+     "raw_se": 0.025247841328943248,
+     "partial": 0.19524727619346155,
+     "partial_se": 0.048385008943442824,
+     "raw_eb": 0.15709210163358933,
+     "partial_eb": 0.18391799036965203
+    },
+    "RF": {
+     "n": 49,
+     "raw": 0.22238280224801563,
+     "raw_se": 0.026599803112884506,
+     "partial": 0.14769323191463662,
+     "partial_se": 0.05033777023322931,
+     "raw_eb": 0.19725711091492704,
+     "partial_eb": 0.14785003578351352
+    }
+   },
+   "eb_meta_runs650": {
+    "pooled": 0.6952630563840942,
+    "pooled_se": 0.12573015189528963,
+    "tau": 0.3114795817763976,
+    "k": 8
+   },
+   "eb_meta_war": {
+    "pooled": 0.1483054337595262,
+    "pooled_se": 0.034271247935439716,
+    "tau": 0.0857849564530779,
+    "k": 8
+   }
+  }
+ },
+ "pitchers": {
+  "n": 384,
+  "SP": {
+   "ip_per_season_wtd": 175.50685407102688,
+   "ra9_per_OVR_point": {
+    "raw": {
+     "n": 160,
+     "raw": -0.06166947442306172,
+     "raw_se": 0.004598892031829835,
+     "partial": -0.01722908230563068,
+     "partial_se": 0.0094546207892608,
+     "raw_ci95": [
+      -0.0706833028054482,
+      -0.05265564604067524
+     ],
+     "partial_ci95": [
+      -0.03576013905258185,
+      0.001301974441320488
+     ]
+    },
+    "partial_nl_plus_prone": [
+     -0.007148107022201035,
+     0.007040145763050198
+    ]
+   },
+   "runs_saved_per_season_per_OVR_point": {
+    "raw": 1.2026017164672465,
+    "partial": [
+     0.13939353066994664,
+     0.1372882038971566
+    ]
+   },
+   "WAA_per_10_OVR_points": {
+    "war_fip_raw": [
+     1.262278449610703,
+     0.045632558436268636
+    ],
+    "war_fip_partial_nl": [
+     0.6739652355700315,
+     0.06488283287586398
+    ],
+    "ra9war_partial_nl": [
+     0.3831399656035701,
+     0.12289561897182644
+    ]
+   },
+   "ip_per_season_partial": [
+    0.21516589662982746,
+    0.06299146074542929
+   ],
+   "rate_channels_partial_nl": {
+    "kp": {
+     "partial": 0.0005616646652871001,
+     "se": 0.00014086730332319033
+    },
+    "ubb": {
+     "partial": -0.0002334857425525784,
+     "se": 7.932082719174238e-05
+    },
+    "hrp": {
+     "partial": -0.0003495739220035126,
+     "se": 5.7031807387055375e-05
+    },
+    "babip": {
+     "partial": 0.0005454245269728858,
+     "se": 0.0002391786138390793
+    }
+   }
+  },
+  "RP": {
+   "ip_per_season_wtd": 80.65441568378132,
+   "ra9_per_OVR_point": {
+    "raw": {
+     "n": 224,
+     "raw": -0.06626156957342891,
+     "raw_se": 0.0038958675824130496,
+     "partial": -0.03577721710645625,
+     "partial_se": 0.006419785597536063,
+     "raw_ci95": [
+      -0.07389747003495849,
+      -0.05862566911189933
+     ],
+     "partial_ci95": [
+      -0.04835999687762693,
+      -0.02319443733528556
+     ]
+    },
+    "partial_nl_plus_prone": [
+     -0.015185057590264901,
+     0.004990126672453151
+    ]
+   },
+   "runs_saved_per_season_per_OVR_point": {
+    "raw": 0.5938097973594592,
+    "partial": [
+     0.1360824385630427,
+     0.044719527883862326
+    ]
+   },
+   "WAA_per_10_OVR_points": {
+    "war_fip_raw": [
+     0.7147845527308372,
+     0.03607253392169944
+    ],
+    "war_fip_partial_nl": [
+     0.22342874308838517,
+     0.032956592904755354
+    ],
+    "ra9war_partial_nl": [
+     0.1452195459084072,
+     0.052193213176187844
+    ]
+   },
+   "ip_per_season_partial": [
+    0.41965343275510014,
+    0.15234781944086698
+   ],
+   "rate_channels_partial_nl": {
+    "kp": {
+     "partial": 0.0004697944119393771,
+     "se": 0.00012695920303773254
+    },
+    "ubb": {
+     "partial": -0.00042503495636570654,
+     "se": 9.702310600189179e-05
+    },
+    "hrp": {
+     "partial": -0.0002643699098547501,
+     "se": 3.8874247402806406e-05
+    },
+    "babip": {
+     "partial": 3.358387131471701e-05,
+     "se": 0.00019850980230273145
+    }
+   },
+   "cells": {
+    "RP": {
+     "n": 192,
+     "raw": 0.06764774783274788,
+     "raw_se": 0.0037996391953620786,
+     "partial": 0.036328605269605393,
+     "partial_se": 0.0043944069756730025,
+     "raw_eb": 0.0681656145816459,
+     "partial_eb": 0.0364338758273845
+    },
+    "CL": {
+     "n": 32,
+     "raw": 0.0955260737643763,
+     "raw_se": 0.009119673085211734,
+     "partial": 0.04160556647005076,
+     "partial_se": 0.030800877017215483,
+     "raw_eb": 0.09254280865064221,
+     "partial_eb": 0.0364338758273845
+    }
+   }
+  }
+ },
+ "live_2044_agreement": {
+  "hitters": {
+   "n": 400,
+   "ovr_component_r2": 0.7875106145163826,
+   "ovr_resid_sd": 4.343169607498732,
+   "fits": {
+    "runs650": {
+     "n": 400,
+     "raw": 1.3220581321861349,
+     "raw_se": 0.07958314560169974,
+     "partial": 0.48253426165438096,
+     "partial_se": 0.1453581008797606
+    },
+    "war": {
+     "n": 400,
+     "raw": 0.13213064199863486,
+     "raw_se": 0.009331216231943945,
+     "partial": 0.1079512310652841,
+     "partial_se": 0.016251198771215506
+    }
+   }
+  },
+  "pitchers": {
+   "SP": {
+    "n": 190,
+    "war": {
+     "raw": 0.13634518514315072,
+     "raw_se": 0.008106263897906318,
+     "partial": 0.1338954846433607,
+     "partial_se": 0.01963650061400311
+    },
+    "ra9": {
+     "raw": -0.055242699402364245,
+     "raw_se": 0.007562964225258603,
+     "partial": -0.05762843290347526,
+     "partial_se": 0.01808167914866025
+    }
+   },
+   "RP": {
+    "n": 207,
+    "war": {
+     "raw": 0.05703800945751602,
+     "raw_se": 0.005066268360760542,
+     "partial": 0.05850902183389091,
+     "partial_se": 0.013083535021018038
+    },
+    "ra9": {
+     "raw": -0.0698441584833417,
+     "raw_se": 0.007318120900244317,
+     "partial": -0.046719718825369176,
+     "partial_se": 0.02157553028486355
+    }
+   }
+  }
+ },
+ "recommendation": {
+  "ship_ready": [
+   "hitters pooled: runs650 partial +0.66 +- 0.06 per OVR pt; WAA/10OVR partial ~ +1.0 to +1.2 (raw +1.67); live 2044 agrees (+1.08 +- 0.16 partial)",
+   "SP: WAA/10OVR (FIP-war) partial +0.67 +- 0.07; live 2044 partial +1.34 +- 0.20 raw-scale agrees in sign, live larger",
+   "RP: WAA/10OVR partial +0.22 +- 0.03; live +0.59 +- 0.13 (sign agrees)",
+   "hitter per-position EB-shrunk partial runs650 slopes (tau=0.31)"
+  ],
+  "blocked_on_sample": [
+   "SP/RP ra9-rate partial (consistent with ~0 after nl controls; runs-per-season via RA9 unresolved at n=160/224)",
+   "CL cell (n=32, partial SE ~0.03 war/pt)",
+   "catcher runs650/war partial (C cell sits 2-3 sigma below other positions; n=54 - use EB value)"
+  ]
+ }
+}

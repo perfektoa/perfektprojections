@@ -5,8 +5,10 @@
  *
  * Key design decisions (backed by data analysis + sabermetric research):
  * - Development S-curve (logistic) with maturity at age 25 (OOTP default)
- * - Peak plateau ages 25-28 (research: peak WAR at ~27)
- * - Smooth decline after 28: ~4%/yr to 33, then ~8%/yr after (cliff)
+ * - No plateau: INTERIM decline schedule from age 26 (~6%/yr, 9%/yr past 31) —
+ *   see FV_DEFAULTS; unmeasured until the aging harness runs (audit Phase C)
+ * - Valuation counts a FIXED number of controlled seasons from expected
+ *   arrival (D5 audit fix) — the window no longer shrinks for young prospects
  * - Risk factor 0.80-0.95 range (generous — sheets already discount via conservative potential ratings)
  * - 3% annual time discount (mild — we're rating talent, not contract surplus)
  * - NO positional scarcity bonus (WAA already includes defense)
@@ -29,6 +31,8 @@
 // MODEL PARAMETERS — all tunable from Dev Analysis page
 // ============================================================
 
+import { replacementOffset } from './leagueCalib.js';
+
 export const FV_DEFAULTS = {
   // Development curve (Gap Factor)
   MATURITY_AGE: 25,       // Age when development stops (OOTP default)
@@ -39,13 +43,19 @@ export const FV_DEFAULTS = {
   RISK_FLOOR: 0.80,       // Minimum risk credit (worst-case percentile)
   RISK_CEILING: 0.95,     // Maximum risk credit (best-case percentile)
 
-  // Aging curve — NO plateau. Decline starts at maturity (25).
-  // OOTP aging settings are normal — players fall off fast.
-  // You get ~3 good years out of a prospect, superstars might last into 30s.
-  PEAK_END: 25,           // Peak = maturity age. No plateau — decline starts immediately.
-  DECLINE_RATE: 0.06,     // Annual decline rate after peak (6% — aggressive)
-  CLIFF_AGE: 30,          // Age when decline accelerates
-  CLIFF_RATE: 0.12,       // Annual decline rate after cliff (12% — steep)
+  // Aging curve — INTERIM SCHEDULE (user directive, 2026-08-05) until the aging
+  // harness measures true curves (audit Phase C: real-league clone, dev ON,
+  // per-year ratings exports). No aging parameter here has ever been validated —
+  // the calibration league is all-age-27 with development frozen.
+  // Decline ONSET is ~age 26 (OOTP default aging), NOT the old cliff-at-30
+  // assumption: a modest 6%/yr from 26, with a soft late-career acceleration
+  // (9%/yr from 32) instead of the uncalibrated hard 12%/yr cliff at 30.
+  // Deliberately conservative: young players aren't punished, old players
+  // aren't flattered.
+  PEAK_END: 25,           // last flat year — decline starts at age 26 (OOTP default aging)
+  DECLINE_RATE: 0.06,     // annual decline 26+ (INTERIM — unmeasured)
+  CLIFF_AGE: 31,          // last 6%/yr year; acceleration from 32 (INTERIM; was a hard cliff at 30)
+  CLIFF_RATE: 0.09,       // annual decline past CLIFF_AGE (INTERIM; was 12%)
 
   // Time value
   DISCOUNT_RATE: 0.03,    // Annual discount rate (3%)
@@ -99,11 +109,12 @@ export function getGapFactor(age, params = {}) {
 
 /**
  * Compute the aging factor at a given age.
- * Returns 1.0 during peak years, declining after PEAK_END.
+ * Returns 1.0 through PEAK_END, declining after.
  *
- * 25-28: 1.0 (plateau)
- * 29-33: gradual decline at DECLINE_RATE per year
- * 33+: steeper decline at CLIFF_RATE per year
+ * INTERIM schedule (see FV_DEFAULTS):
+ *   ≤25: 1.0
+ *   26 through CLIFF_AGE (31): decline at DECLINE_RATE (6%) per year
+ *   past CLIFF_AGE: decline at CLIFF_RATE (9%) per year
  *
  * @param {number} age - Player's age
  * @param {Object} [params] - Override default parameters
@@ -231,32 +242,72 @@ export function getPlayerRisk(age, gap, hasPotential, params = {}) {
 // ============================================================
 
 /**
- * Get the best current WAA and best potential WAA from player data.
+ * Get the best current and best potential VALUE from player data.
+ *
+ * audit M5: values are WAR-style — each candidate column carries its role's
+ * MEASURED replacement offset (leagueCalib.js: hitter/SP/RP, per league via
+ * player.League) before taking the max. WAA compared an average RP (0) to an
+ * average hitter (0) as equals; in WAR the hitter is ~+1 win over what an org
+ * can roster for free while the RP is ~+0.2 — so cross-type FV ordering now
+ * matches real scarcity. Raw FV 0 now genuinely means "replacement level"
+ * (which is what the FV-40 anchor always claimed).
  */
 function getPlayerWAAValues(player) {
-  const currentWAACols = ['Max WAA wtd', 'Max WAA vR', 'WAA wtd', 'WAA wtd RP'];
-  const potentialWAACols = ['MAX WAA P', 'WAP', 'WAP RP'];
+  // _appLeague is stamped by usePlayerData (the raw 'League' field is a numeric
+  // StatsPlus id); unknown/missing falls back to TGS inside leagueCalib.
+  const league = player._appLeague;
+  const hOff = replacementOffset(league, 'hitter');
+  const spOff = replacementOffset(league, 'sp');
+  const rpOff = replacementOffset(league, 'rp');
+  // Blended (wtd) columns ONLY — never a single platoon split. Including 'Max WAA vR'
+  // here handed every L/S batter his good-side split as "current" (a 3.5vR/0.1vL
+  // platoon bat was valued at 3.5), while R batters got the honest blend — an
+  // asymmetric handedness bias caught by the user on the FV board (Wisner case).
+  const currentWAACols = [['Max WAA wtd', hOff, 'hitter'],
+                          ['WAA wtd', spOff, 'sp'], ['WAA wtd RP', rpOff, 'rp']];
+  const potentialWAACols = [['MAX WAA P', hOff, 'hitter'],
+                            ['WAP', spOff, 'sp'], ['WAP RP', rpOff, 'rp']];
 
   let currentWAA = -Infinity;
-  for (const col of currentWAACols) {
+  let offsetUsed = hOff;   // the role offset behind currentWAA (UI subtracts it for WAA display)
+  let currentRole = 'hitter';
+  for (const [col, off, role] of currentWAACols) {
     const val = parseFloat(player[col]);
-    if (!isNaN(val) && val > currentWAA) currentWAA = val;
+    if (!isNaN(val) && val + off > currentWAA) { currentWAA = val + off; offsetUsed = off; currentRole = role; }
   }
   if (currentWAA === -Infinity) currentWAA = 0;
 
+  // The CURRENT argmax and the POTENTIAL argmax are taken independently, so they
+  // can land on DIFFERENT ROLES — and routinely do. The sheet grades a starter
+  // over ~800 BF and a reliever over ~300, so a teenage arm is -8.1 WAA as an SP
+  // but only -2.9 as an RP: RP wins "current" while his ceiling (WAP > WAP RP)
+  // makes SP win "potential". That is a coherent statement in WAR (both roles are
+  // priced against freely-available talent) and the scoring math is right to use
+  // it. But it means ONE offset cannot convert both ends back to WAA — which is
+  // exactly the bug this field fixes. potentialOffsetUsed is the role offset
+  // behind potentialWAA; when there is no potential data the two coincide.
   let potentialWAA = null;
-  for (const col of potentialWAACols) {
+  let potentialOffsetUsed = null;
+  let potentialRole = null;
+  for (const [col, off, role] of potentialWAACols) {
     const val = parseFloat(player[col]);
-    if (!isNaN(val) && (potentialWAA === null || val > potentialWAA)) {
-      potentialWAA = val;
+    if (!isNaN(val) && (potentialWAA === null || val + off > potentialWAA)) {
+      potentialWAA = val + off;
+      potentialOffsetUsed = off;
+      potentialRole = role;
     }
   }
 
   // If no potential data (age 24+), potential = current (no development upside)
   const hasPotential = potentialWAA !== null;
-  if (!hasPotential) potentialWAA = currentWAA;
+  if (!hasPotential) {
+    potentialWAA = currentWAA;
+    potentialOffsetUsed = offsetUsed;
+    potentialRole = currentRole;
+  }
 
-  return { currentWAA, potentialWAA, hasPotential };
+  return { currentWAA, potentialWAA, hasPotential,
+           offsetUsed, potentialOffsetUsed, currentRole, potentialRole };
 }
 
 // ============================================================
@@ -328,39 +379,91 @@ export function calculateFutureValue(player, yearsOfControl, params = {}) {
   const age = parseFloat(player.Age) || 25;
 
   // Extract WAA values
-  const { currentWAA, potentialWAA, hasPotential } = getPlayerWAAValues(player);
+  const waaVals = getPlayerWAAValues(player);
+  const { currentWAA, potentialWAA, hasPotential } = waaVals;
 
   // Per-player risk factor based on age + gap size
   const gap = potentialWAA - currentWAA;
   const riskFactor = getPlayerRisk(age, gap, hasPotential, p);
 
-  // Expected peak WAA (what we think they'll actually reach)
+  // Expected peak WAA (what we think they'll actually reach), two effects:
+  //  (1) Development credit TAPERS OUT as the player matures — OOTP growth stops ~25, so a player
+  //      26+ won't fill remaining potential (barring rare Talent Change Randomness / a Dev Lab).
+  //      Past 26 his projected peak is just his current WAA (trending down), NOT his stale ceiling.
+  //  (2) For developing players, anchor the peak on POTENTIAL with current FLOORED at 0, so a
+  //      teenager's rookie-ball negative WAA doesn't drag his ceiling.
+  const devCredit = Math.max(0, Math.min(1, (26 - age) / 2));   // 1.0 at ≤24, 0.5 at 25, 0 at ≥26
+  const baseForPeak = Math.max(currentWAA, 0);
+  const developedPeak = baseForPeak + (potentialWAA - baseForPeak) * p.GAP_MAX * riskFactor;
   const expectedPeakWAA = hasPotential && gap > 0
-    ? currentWAA + gap * p.GAP_MAX * riskFactor
+    ? currentWAA + (developedPeak - currentWAA) * devCredit
     : currentWAA;
 
-  // Projection window — always project through age 37 for year-by-year chart
-  const projToAge = Math.min(p.MAX_CAREER_AGE, Math.max(age + yoc, p.PEAK_END + 2));
-  const projectionYears = Math.max(1, projToAge - age);
+  // ---- PARALLEL WAA (vs average) TRACK — display only ----
+  // The boards display WAA by user directive while this engine computes in WAR
+  // (its FV anchors are calibrated there and the $ layer needs a replacement
+  // zero). Converting back used to be "subtract offsetUsed", which is only valid
+  // when the current and potential argmaxes land on the SAME role. They don't for
+  // ~1/3 of pitchers (RP wins current, SP wins potential — see getPlayerWAAValues),
+  // and subtracting the RP offset (0.31) from an SP-anchored peak left ~2.2 wins of
+  // starter replacement level inside a column labelled "WAA".
+  //
+  // Rather than reverse-engineer a blended offset, recompute the SAME formulas on
+  // WAA inputs. Every quantity below mirrors a WAR line above, so the two tracks
+  // cannot drift apart. Note the 0-WAR floor in baseForPeak is REPLACEMENT LEVEL
+  // for the role the peak is anchored on, which in WAA is -potentialOffsetUsed.
+  const oCur = Number.isFinite(waaVals.offsetUsed) ? waaVals.offsetUsed : 0;
+  const oPot = Number.isFinite(waaVals.potentialOffsetUsed) ? waaVals.potentialOffsetUsed : oCur;
+  const currentAsWAA = currentWAA - oCur;
+  const potentialAsWAA = potentialWAA - oPot;
+  const baseAsWAA = baseForPeak === currentWAA ? currentAsWAA : -oPot;
+  const developedPeakAsWAA = baseAsWAA + (potentialAsWAA - baseAsWAA) * p.GAP_MAX * riskFactor;
+  const expectedPeakAsWAA = hasPotential && gap > 0
+    ? currentAsWAA + (developedPeakAsWAA - currentAsWAA) * devCredit
+    : currentAsWAA;
+
+  // Projection window — D5 audit fix: value a FIXED number of controlled
+  // seasons (yoc) from EXPECTED ARRIVAL (maturity for prospects, today for
+  // established players) instead of the old fixed CALENDAR window
+  // (age+yoc, floored at PEAK_END+2). The old window silently shrank a young
+  // prospect's counted seasons — a 21-year-old kept only 2 post-arrival years
+  // vs 6 at age 24 — grading identical 5-WAA-peak talent FV 52 at 21 vs 64 at
+  // 24. Age now prices in ONLY through the time discount (deliberate) and the
+  // separately-priced risk factor, never through a vanishing window.
+  //
+  // MAX_CAREER_AGE=34 was revisited (per D5) and deliberately KEPT as the clip
+  // for established veterans: it encodes finite career length (a 32-year-old
+  // does not have 6 full seasons left), and removing it would flatter old
+  // players — the opposite of the interim-aging directive. It can never clip a
+  // prospect's window (arrival ≤ ~25, so arrival + 6 ≤ 31 < 34).
+  const isDevelopingProspect = hasPotential && gap > 0;
+  const startAge = isDevelopingProspect ? Math.max(age, p.MATURITY_AGE) : age;
+  const endAgeExcl = Math.min(startAge + yoc, p.MAX_CAREER_AGE);
+  const projectionYears = Math.max(1, endAgeExcl - age);
   let peakProjectedWAA = -Infinity;
+  let peakProjectedAsWAA = -Infinity;   // display track (see the parallel WAA block above)
   const yearByYear = [];
 
   // Build year-by-year projection (for the development curve chart)
   for (let y = 0; y < projectionYears; y++) {
     const futureAge = age + y;
-    let yearWAA;
+    let yearWAA, yearAsWAA;
 
     if (hasPotential && futureAge < p.MATURITY_AGE && gap > 0) {
       const gf = getGapFactor(futureAge, p);
-      yearWAA = currentWAA + gap * gf * riskFactor;
+      yearWAA = currentWAA + (expectedPeakWAA - currentWAA) * (gf / p.GAP_MAX);
+      yearAsWAA = currentAsWAA + (expectedPeakAsWAA - currentAsWAA) * (gf / p.GAP_MAX);
     } else if (futureAge <= p.PEAK_END) {
       yearWAA = expectedPeakWAA;
+      yearAsWAA = expectedPeakAsWAA;
     } else {
       yearWAA = applyAging(expectedPeakWAA, futureAge, p);
+      yearAsWAA = applyAging(expectedPeakAsWAA, futureAge, p);
     }
 
     const discountFactor = Math.pow(1 - p.DISCOUNT_RATE, y);
     peakProjectedWAA = Math.max(peakProjectedWAA, yearWAA);
+    peakProjectedAsWAA = Math.max(peakProjectedAsWAA, yearAsWAA);
 
     yearByYear.push({
       age: futureAge,
@@ -370,6 +473,7 @@ export function calculateFutureValue(player, yearsOfControl, params = {}) {
   }
 
   if (peakProjectedWAA === -Infinity) peakProjectedWAA = 0;
+  if (peakProjectedAsWAA === -Infinity) peakProjectedAsWAA = 0;
 
   // ---- FUTURE VALUE CALCULATION ----
   // Two different approaches:
@@ -387,11 +491,10 @@ export function calculateFutureValue(player, yearsOfControl, params = {}) {
 
   let totalProjectedWAA = 0;
 
-  if (hasPotential && gap > 0) {
-    // Prospect valuation: count from maturity age onward
-    const startAge = Math.max(age, p.MATURITY_AGE);
-    const yearsToStart = startAge - age;
-
+  if (isDevelopingProspect) {
+    // Prospect valuation: count a FIXED yoc seasons from arrival (startAge,
+    // computed above with the projection window) — the window no longer
+    // shrinks with youth (D5).
     for (let y = 0; y < projectionYears; y++) {
       const futureAge = age + y;
       if (futureAge < startAge) continue; // skip development years
@@ -447,6 +550,21 @@ export function calculateFutureValue(player, yearsOfControl, params = {}) {
     projectionYears,
     totalProjectedWAA: Math.round(totalProjectedWAA * 100) / 100,
     yearByYear,
+    // Role replacement offsets baked into the WAR values above. offsetUsed belongs
+    // to currentWAA, potentialOffsetUsed to potentialWAA — they DIFFER whenever the
+    // best current role and the best peak role differ (common for young arms).
+    offsetUsed: waaVals.offsetUsed,
+    potentialOffsetUsed: waaVals.potentialOffsetUsed,
+    currentRole: waaVals.currentRole,
+    potentialRole: waaVals.potentialRole,
+    // DISPLAY BASIS = WAA (vs average). Boards must read these, never subtract an
+    // offset themselves — a single offset cannot convert a two-role player.
+    displayWAA: {
+      current: Math.round(currentAsWAA * 100) / 100,
+      potential: Math.round(potentialAsWAA * 100) / 100,
+      expectedPeak: Math.round(expectedPeakAsWAA * 100) / 100,
+      peakProjected: Math.round(peakProjectedAsWAA * 100) / 100,
+    },
   };
 }
 
@@ -506,13 +624,15 @@ export function computeImpact(age, potentialWAA, percentile, params = {}) {
     peakWAA = potentialWAA;
   }
 
-  const projToAge = Math.min(p.MAX_CAREER_AGE, Math.max(age + p.DEFAULT_YEARS_OF_CONTROL, p.PEAK_END + 2));
-  const projectionYears = Math.max(1, projToAge - age);
+  // D5 audit fix (same as calculateFutureValue): fixed number of controlled
+  // seasons from expected arrival, not a calendar window that shrinks with youth.
+  const startAge = isDeveloping ? Math.max(age, p.MATURITY_AGE) : age;
+  const endAgeExcl = Math.min(startAge + p.DEFAULT_YEARS_OF_CONTROL, p.MAX_CAREER_AGE);
+  const projectionYears = Math.max(1, endAgeExcl - age);
   let totalProjectedWAA = 0;
 
   if (isDeveloping) {
-    // Prospect: only count from maturity onward (skip development years)
-    const startAge = p.MATURITY_AGE;
+    // Prospect: only count from arrival onward (skip development years)
     for (let y = 0; y < projectionYears; y++) {
       const futureAge = age + y;
       if (futureAge < startAge) continue;

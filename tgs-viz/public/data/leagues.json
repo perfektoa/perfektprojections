@@ -1,26 +1,38 @@
-[
-  {
-    "id": "BLM",
-    "name": "BLM",
-    "folder": "The Sheets BLM",
-    "datasets": [
-      "hitters",
-      "pitchers",
-      "hitters_draft",
-      "pitchers_draft"
-    ]
-  },
-  {
-    "id": "TGS",
-    "name": "TGS",
-    "folder": "The Sheets TGS",
-    "datasets": [
-      "hitters",
-      "pitchers",
-      "hitters_draft",
-      "pitchers_draft",
-      "hitters_fa",
-      "pitchers_fa"
-    ]
-  }
-]
+{
+  "leagues": [
+    {
+      "id": "BLM",
+      "name": "BLM",
+      "folder": "The Sheets BLM",
+      "datasets": [
+        "hitters",
+        "pitchers",
+        "hitters_draft",
+        "pitchers_draft"
+      ],
+      "features": {
+        "draft": true,
+        "fa": false,
+        "contracts": true
+      }
+    },
+    {
+      "id": "TGS",
+      "name": "TGS",
+      "folder": "The Sheets TGS",
+      "datasets": [
+        "hitters",
+        "pitchers",
+        "hitters_draft",
+        "pitchers_draft",
+        "hitters_fa",
+        "pitchers_fa"
+      ],
+      "features": {
+        "draft": true,
+        "fa": true,
+        "contracts": true
+      }
+    }
+  ]
+}

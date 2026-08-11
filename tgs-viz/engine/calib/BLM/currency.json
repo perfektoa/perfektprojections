@@ -1,0 +1,133 @@
+{
+ "league": "BLM",
+ "fitted_at": "2026-08-05T16:09:57",
+ "source": "engine/currency_fit.py over calib/BLM clone archive (7 clones x 2016-2026 seasons)",
+ "ra9_exponent": {
+  "SP": 2.183,
+  "RP": 2.232
+ },
+ "pitcher_cells": {
+  "H30": 10.036
+ },
+ "hitter_cells": {
+  "H30": 10.036
+ },
+ "rpw": 10.036,
+ "games": 154.0,
+ "luck_sd_wins": 6.37,
+ "sp_workload": 0.93,
+ "rp_workload": 0.99,
+ "rpw_specs": {
+  "A_W_on_RD": 10.4,
+  "B_RD_on_W": 9.686,
+  "GM": 10.036
+ },
+ "workload_detail": {
+  "sp_top5_ip": 869.5,
+  "rp_top8_ip": 555.6,
+  "model_ip": {
+   "sp": 935.1,
+   "rp": 561.0
+  },
+  "nclone": 7
+ },
+ "exponent_report": {
+  "SP": {
+   "exponent": 2.183,
+   "se": 0.011,
+   "n": 1780,
+   "min_bf": 200,
+   "octile_act_over_pred_fit": [
+    0.996,
+    0.994,
+    0.998,
+    0.993,
+    0.998,
+    0.992,
+    0.996,
+    0.995
+   ],
+   "octile_act_over_pred_e2": [
+    0.973,
+    0.98,
+    0.988,
+    0.988,
+    0.996,
+    0.996,
+    1.009,
+    1.03
+   ]
+  },
+  "RP": {
+   "exponent": 2.232,
+   "se": 0.016,
+   "n": 2444,
+   "min_bf": 80,
+   "octile_act_over_pred_fit": [
+    1.001,
+    0.997,
+    0.994,
+    0.995,
+    0.996,
+    0.992,
+    0.996,
+    0.998
+   ],
+   "octile_act_over_pred_e2": [
+    0.971,
+    0.979,
+    0.982,
+    0.989,
+    0.995,
+    0.996,
+    1.011,
+    1.04
+   ]
+  }
+ },
+ "run_values_report": {
+  "method": "team-clone-year OLS of (R - UBR) on [uBB+HBP, 1B, 2B, 3B, HR, SB, CS, outs]; n=352",
+  "fitted": {
+   "uBB": 0.3475,
+   "1B": 0.4863,
+   "2B": 0.7682,
+   "3B": 0.8689,
+   "HR": 1.3692,
+   "SB": 0.1582,
+   "CS": -0.184,
+   "out": -0.0951
+  },
+  "fitted_se": {
+   "uBB": 0.0105,
+   "1B": 0.0104,
+   "2B": 0.023,
+   "3B": 0.1404,
+   "HR": 0.0232,
+   "SB": 0.0187,
+   "CS": 0.1079,
+   "out": 0.0031
+  },
+  "gate_off_slope_asbuilt": {
+   "slope": 0.979,
+   "r2": 0.966
+  },
+  "gate_off_slope_fitted_substituted": {
+   "slope": 0.962,
+   "r2": 0.965
+  },
+  "decision": "NOT WIRED: as-built OFF already inside the 1.00+/-0.03 gate; substituting the fitted per-event values de-calibrates it (the wOBA construction's runs_minus=total/unpro is self-calibrating at team level). SB/CS additionally blocked-on-data (team level confounded, player level misses inning-death)."
+ },
+ "rp_shrink": {
+  "fitted_on": "TGS 2044 (snapshot 2044-10-08 re-projected with the CURRENT engine; actuals join)",
+  "note": "Applied to BOTH leagues: BLM has no banked actuals yet \u2014 refit when its first season lands (fetch_actuals + this tool's --rp-backtest).",
+  "n": 313,
+  "slope": 1.238,
+  "r": 0.46,
+  "proj_mean_ra9": 4.594,
+  "act_mean_ra9": 4.492,
+  "resid_sd_ra9": 1.233,
+  "sampling_sd_ra9": 0.802,
+  "talent_resid_sd_ra9": 0.937,
+  "mean_ip": 62.9
+ }
+}

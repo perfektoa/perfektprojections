@@ -20,7 +20,27 @@ yarn-error.log*
 # Backups and temp
 *.bak
 *.bak-before-extend
+*.bak-*
+*.pre-260calib
+*.broken-*
 nul
+/ootp/25
+
+# Local caches and calibration archives — regenerable, hundreds of MB
+tgs-viz/ingest/.cache/
+tgs-viz/engine/calib/*/*.csv
+tgs-viz/backtest/ratings_history.db
+tgs-viz/backtest/snapshots/
+
+# Engine intermediate output (rebuilt by refresh.py from the sheets)
+tgs-viz/public/data/**/*_engine.json
+
+# One-off analysis artifact, not loaded by the app (~34 MB each)
+tgs-viz/public/data/**/*_scurve_preview.json
+
+# Stray files from a mistyped command
+/The
+/Save
 
 # OS
 .DS_Store

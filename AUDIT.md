@@ -1,0 +1,129 @@
+# AUDIT.md — Projection System Audit (2026-08-05)
+
+Produced by a 15-agent audit workflow: 8 subsystem auditors vs the 260-season clone archives, 6 adversarial verifiers, 1 synthesizer. 73 raw findings. Verified numbers supersede auditor claims throughout.
+
+---
+
+# TGS/BLM Projection System — Definitive Audit Synthesis
+*Repo root: `C:/Users/perfe/Desktop/TGS Projections`. All numbers below are reproduced script output from the 260-season clone archives, live workbooks, live app data, or the real-league outcome backtest. Where an adversarial verifier overturned or corrected an auditor, the verifier's numbers are used and the disagreement is called out.*
+
+---
+
+## 1. EXECUTIVE SUMMARY — the five things most limiting valuation accuracy today
+
+1. **Pitcher rating→stat curves are wrong below 50 and above 70** (verified): sub-50 STU arms flattered up to **+1.28 WAA/season**, a STU-49 arm outranks a STU-51 arm by 0.20 WAA (outright rank inversion), BLM carries a genuine **+0.85 WAA/SP-slot level inflation**, and the real-league backtest independently shows K-talent under-spread by ~50% (calibration slope 1.49). ~60% of live starters sit in the corrupted zone; fringe-vs-good compression is **~1.2–1.4 wins/season per rotation slot**.
+2. **The hitter↔pitcher currency is skewed ~30%**: hitter run values overstate real run impact 17% (team-regression slope 0.855, r²=0.97, both leagues) while the pitcher wOBA→RA/9 exponent (2.0 vs true ~2.2) understates pitchers 12–15% — a sheet +3.0 WAA bat is really +2.57 wins while a sheet +2.7 WAA SP is really ~+3.07; **the sheet orders them backwards** in every trade/FA/draft cross-type decision.
+3. **The steals block double-counts the league attempt rate** (confirmed bug): +0.4 to +2.0 wSB runs per fast player, one-directional — **+21.9 WAA pooled across TGS MLB hitters, +17.8 BLM** — systematically overpaying every burner in rankings and the optimizer.
+4. **Future value structurally punishes youth and rests on unmeasured aging**: identical 5-WAA-peak talent grades FV 52 at age 21 vs 64 at age 24 purely from the projection-window artifact (~2–3 FV grades erased per prospect under 22), and no aging parameter has ever been validated — the calibration league is all-age-27 with development frozen.
+5. **There is no outcome feedback loop, and input volatility dwarfs model error**: zero real-league actuals on disk, no prospective backtest (the pitcher mis-spread went undetected for this reason), and ratings-snapshot churn moves projections **.0346 wOBA (17.5 runs/600 PA) — 3x the model's true-talent error** — with no provenance tracking or damping.
+
+Also on the absolute scale: every win projection runs **~4 wins hot** because the models assume 162 games in leagues that play ~154.
+
+---
+
+## 2. CONFIRMED BUGS (verified/proven), ranked by impact
+
+| # | Bug | Evidence (one line) | Fix | Effort | Risk |
+|---|-----|--------------------|-----|--------|------|
+| B1 | **Hitter SBA double-counts league rate** — raw-level fit (`calibrate.py:260`, `subtract_gt=False`) + C41 added again in `engine/hitters.py:194-196` and the sheet SBAT formulas | Adversarially CONFIRMED: projected SBA at STE 60/70/80 = .242/.361/.479 (TGS) vs archive empirical .144/.271/.374, 50–200 SEs; +221 runs (+21.9 WAA) pooled at TGS MLB level, +177 (+17.8) BLM; top burners +0.18–0.26 WAA each | Refit as deviation (b=−0.0839, m=+0.0119, GT=0.0855) **applied at the sheet's existing H8 anchor** (verifier: centering at the archive pivot mean leaves a +0.03 bias; the live league genuinely runs more than the clones); cap STE input at 80 (BLM has STE-85 players); the auditor's extra saturation cap is unnecessary on live refit constants. Apply in both sheets + `hitters.py` sbat (lines 194-196, 335) | M | Low — validated vs empirics; cosmetic: STE≤48 hitters will display 0 SB (wSB already clipped to 0 there) |
+| B2 | **2B/SS E% intercepts baseline on GT zr/ip instead of e/ip** — the sole surviving cause of the "SS docked 13 runs" claim | Verified: live ip-weighted mean RunsP is −4.63 SS / −2.33 2B (all other positions ±0.5); the entire residual is K15/K25 (0.0079/0.0153 vs ~1e-5 everywhere else). The claimed anchor/T-rate mechanism was **refuted** — anchors are live-league correct; both originally proposed fixes would invert and enlarge the bias | One-token change: `calibrate.py` fielding() lines 384/386, e_base_col `'zr'` → `'e'` (ideally also give SS E% its own-pivot x-baseline); re-emit + sheet sync; check BLM for same quirk | S | None adverse — uniform shift, within-position order unchanged; 2B/SS Max-WAA rises ~0.25/0.48 |
+| B3 | **Win models hardcode 162-game seasons; leagues play ~154** | Archive: mean W+L = 154.0 (TGS), ~153.5 (BLM); model sums to 2593 wins vs real total 2464 — every team ~4 wins hot, P(≥90) computed for a season nobody plays | Parameterize G from league metadata in `src/lib/rosterOptimizer.js` (lines 852, 890, 911, 1254): base=G/2, R0=lgRG·G, MC plays G, playoff thresholds as win% | S | None — relative rankings unchanged |
+| B4 | **Engine/extracted constants desynced from live workbooks (three vintages)** — and `extracted/BLM_pitchers_datapoints.json` still carries **TGS-copied constants** | Three independent verifiers hit this: TGS pitchers extract D7=0.0183 vs live workbook 0.01593; TGS hitters extract predates the 07-13 sync (caused the SBA auditor to overstate TGS overpays ~40%) | Re-run extraction for all four datapoints JSONs; add an automated drift check (extracted cells vs constants-latest vs workbook) to every refresh | S | None; prerequisite for everything else |
+| B5 | **E% slope fitted per-inning, applied per-play** — error skill compressed 2.7–3.9x at 2B/3B/SS (1B is correct) | Archive: SS 45-vs-85 ERR is truly ~10.4 runs; engine credits ~3.8 (multiplier 438 plays vs H33=1200 innings) | Either multiply by H33 like 1B, or (slightly better) refit y=e/pm and keep the plays multiplier; `hitters.py:224/229/233`. Do together with B2 and re-verify position means ≈ 0 | S | Low; widens spread on butcher-vs-glove IF comparisons ~3x, which is the correct spread |
+| B6 | **RP-block +5 STU starter bonus vanishes in the <50 branch** (`pitchers.py:120-126`, `stu_lo_adj=False`; SP-block mirror keeps its −5 in both branches, proving intent) | Starter at STU 40 loses 5·E18 = 2.73 K%; RP RA/9 4.737→4.529 when restored; 5,634 of 7,155 live TGS pitchers have a STU side ≤40 | Use adjusted STU in both branches (workbook RP/P-RP arrays + `stu_lo_adj=True`) | S | Low — relief floors of young starters rise ~0.15–0.2 RA/9, the correct direction |
+| B7 | **Dead lBABIP blocks** — lo constants are byte-copies of the hi fit (filter ≥20 = whole sample) in both leagues, both roles | True lo slope is ~flat (−0.00007 pooled) vs aliased −0.00086; PBABIP≤40 pitchers docked ~0.005–0.007 BABIP they don't deserve (~0.07–0.1 W/SP) | Fit the real lo block (x<50) in `calibrate.py` pitching(); pool SP+RP lo points for stability (SP lo pool is only 10 players) | S | Low |
+| B8 | **Catcher WAA adds 600-PA BSR to 500-PA batting** (`hitters.py:268-269, 344-345`) | Fast catcher (+8.01 BSR) overstated +0.132 WAA; slow catchers symmetric; pure arithmetic | BSR·H32/H31 in C WAA / C WAA P (engine + sheet) | S | None |
+| B9 | **UBR baseline subtracted with wrong sign** — fit subtracted GT, engine computes (cubic − C40) where C40 is negative | Two auditors independently decomposed it: net ~+0.5–1.0 phantom UBR runs/600 PA for everyone | Flip to (cubic + C40) semantics and refresh C40; re-check bucket table centers at the anchor | S | Low — but re-verify against the live-frame (see §6 caution on archive-frame level claims) |
+| B10 | **lGAP/lSPE filter columns swapped** — lGAP filters SPE<50, lSPE filters GAP<50 | Corrected lGAP fit (b +0.0119, m +0.0067) matches empirics; as-built low-GAP XBH error +1–2 runs lab-frame, +0.4–0.8 live | Swap the filter columns (workbook + `calibrate.py:~234-236`), re-emit | S | Low |
+| B11 | **Minor batch**: RP-vL park block uses vR filters C11/C8 (`pitchers.py:244-245`, +3.8% HR-vL in BLM); BLM archive pools a partial 2027 season (1.3% PA, ≤0.24% slope effect); draftFV treats unparseable current-perf as 0th percentile; live ratings above calibration support (47 BLM RUN>80) extrapolate unclamped | Each individually quantified <1 run / cosmetic | D8/D11 filters; drop incomplete max-year in pooling; default missing percentile to 50; clamp rating inputs at 80 | S | None |
+
+---
+
+## 3. DESIGN FLAWS WORTH FIXING, ranked
+
+**D1. Pitching lo-branch transport + spread compression + elite-K plateau (one rebuild, three verified evidence streams). Effort L, Risk medium.**
+- *What survives verification:* the mechanism is proven (clone pool centering ~53.5–55.9 vs live anchors 46.2–52.4; in-frame bias exactly 0, live-frame broken). But the headline "+0.59 WAA level inflation for every TGS pitcher" was **overturned in part**: TGS is nearly self-consistent in aggregate (+0.064 WAA/slot; ~40% of the archetype gap is a legitimate Jensen/concavity premium). The real TGS damage is **cross-sectional**: lo-vs-hi branch relative error ~0.30 WAA, discontinuity at rating 50 amplified ~5x (STU 49.9 projects +0.797 WAA vs 50.0 +0.465), 1–3 of each role's top-25 don't belong. **BLM's level inflation is genuine**: +0.85 WAA/SP-slot, +0.30/RP (~4.4 phantom wins/team pre-renormalization).
+- *Compression confirmed and worse than claimed:* 45-vs-50 STU K% gap 0.007 projected vs 0.025 clone truth vs **0.035 live-league truth** (out-of-sample test from 25 Metadata.xlsx SP Data); fringe archetype 40/40/40/45 flattered +1.28 WAA; STU 49-vs-51 rank inversion; BLM's engine gap is sign-inverted (−0.0025 vs truth +0.0162).
+- *Tail:* true STU 75→80 K% jump 3.9 pts vs 1.7 projected; ace premium 17% larger than modeled. The real-league backtest independently confirms under-spread (SP K slope 1.494, BB 1.188) and over-spread HR-suppression (0.574).
+- *Root cause dispute:* the backtest auditor blamed ratings drift over the 10 pooled sim years; the career-drift audit **directly refuted drift** (per-year slopes flat, development frozen). Side with career-drift: the under-spread comes from curve shape (plateau/jump) plus **partial live-vs-clone scale drift** (live STU 45 performs between clone-45 and clone-52).
+- *Fix (verifier-corrected — the original "force curve through the anchor" over-corrects by −0.36 to −0.45 WAA/slot):* `corrected(r) = K_league + [b_seg + m_seg·(r − X̄_clone)] − E_BF-wtd,live[b + m·(r − X̄_clone)]` — recenter at the clone pool mean **and** subtract the live BF-weighted population mean of the curve (computable in `metadata_calibrate.py`'s anchor step). Replace two-segment lines with monotone knots (20/35/50/65/80; tail buckets are 2–5 players → shrinkage mandatory), and calibrate the transport against the live-league K%-by-STU buckets already ingested each refresh. Apply to SP+RP, both leagues (BLM worse), and check the BLM **hitting** anchors (EYE 48.61/POW 48.77 sit on lo branches with material intercepts) — TGS hitting anchors are ≥50, low exposure.
+- *Gate:* live rotation K/BF and BB/BF reproduce league actuals (0.2032→0.2009-class test); 45-vs-50 gap ≈ live 0.035; monotone everywhere; backtest component slopes into [0.8, 1.25].
+
+**D2. Hitter↔pitcher currency: run values 17% hot, RA/9 exponent 12–15% flat. Effort M, Risk low.**
+Team-year regression: actual runs on sheet OFF slope 0.855 (TGS, r²=.972) / 0.859 (BLM); true wOBA→RA/9 exponent ~2.19 SP / 2.27 RP (vs 2.0). Combined ~30% relative bias in every cross-type decision. Also fold in the weight-mix refit (TTO profiles overrated up to ~6 runs/600; CS truly −0.52 vs −0.42, SB +0.17 vs +0.20). Fix: replace `metadata_calibrate.py` run_values with archive-fit per-league values (uBB .381, 1B .455, 2B .714, 3B .844, HR 1.308, SB .172, CS −.517, out −.079 for TGS), raise the exponent to ~2.2 (`pitchers.py:~160`). Gate: team-level calibration slope → 1.00, pitcher octile table flat.
+
+**D3. Fielding PM% is an S-curve; linear fits mis-price both tails AND the mid-band. Effort M, Risk medium.** CONFIRMED with corrections: within eligibility gates the worst errors are +22.3 runs (RF 60-vs-80: engine +22.6, sim +0.3), 2B 70-vs-80 +15.9 — and the verifier found the auditor missed simultaneous **mid-band underpays** (LF 55-vs-60 −11.2, CF 65-vs-75 −11.1), so the proposed clamp is the wrong fix. Mechanism identified: OOTP per-difficulty catch probabilities hit hard floors/ceilings. Fix: monotone piecewise (isotonic) fit on opportunity-weighted bucket means, per position per league (knots differ TGS vs BLM); preserve league-mean RunsP ≈ 0. RF (omitted originally) is the worst case; SS the least broken. Gate: eligibility-band engine-vs-sim error matrix within ±3 runs.
+
+**D4. Hitter tail shapes: SO% S-curve, 70–75 hump in POW/EYE/BA, BABIP floor, XBH tails. Effort M, Risk low.** K 65–80 under-projected (K-75 contact hitter +3.8 phantom runs vs K-55); POW-75 mis-ranked **above** POW-80 by ~4.5 runs; BA-20 BABIP floor +14 runs; XBH over-projected at GAP tails. Note the real-league backtest shows composite hitter calibration is excellent (SO slope 1.004), so this is strictly a tail/archetype issue — fix with per-bucket clamps or a 65-breakpoint (the SB%-cap precedent, `hitters.py:~184-193`), plus more 70–80-rated players in the next clone snapshot. Gate: bucket residual table flat at tails.
+
+**D5. futureValue projection window punishes youth. Effort S–M, Risk low.** Node-proven: identical 5-WAA-peak talent → FV 52 at 21, 64 at 24, 68 at 25; a declining 30-year-old vet (58) outranks a 21-year-old elite prospect (52). Risk is already priced separately, so this is a second unintended penalty (~2–3 FV grades). Fix `futureValue.js:351,398-414`: count a fixed number of controlled seasons from expected arrival; revisit MAX_CAREER_AGE=34 clipping. Gate: FV monotone-flat across age for identical expected-peak inputs.
+
+**D6. RP projections barely differentiate real outcomes (r=0.275, slope 0.82). Effort M.** Talent-level correlation only ~0.44 after noise removal (vs ~0.94 hitters). Immediate: shrink RP projected edges ~20% and widen RP uncertainty in the optimizer; structural: lean on the K/BB components (which validate) and per-year fits. Gate: next backtest slope → ~1.0.
+
+**D7. Catcher arm spread compressed ~5x; framing zero-point suspect. Effort M, Risk: methodology caveat.** The **slope** claims survive (model SBA slope −0.53/pt vs empirical −0.84; RTO 0.0025 vs 0.0036; deterrence unpriced — elite arms undervalued ~0.4–0.7 WAA). The **framing level** claim (−7.7 runs at every bucket) matches the exact archive-frame-evaluation pattern that produced two refuted findings and was not adversarially verified — re-test it live-frame (P3 is a live-catcher mean by the same design that was vindicated elsewhere) before changing anything. Fix arm: refit c_sba/c_rto slopes and price full run-game delta (deterred SB counts) in `hitters.py:251-256`.
+
+**D8. DP value undervalued 30–50% — and the SS 25-row quirk accidentally compensates.** Causal team regression: +20 TDP worth +5.69 runs (2B)/+4.36 (SS) vs engine +3.99/+2.25. **Warning:** fixing the 25-row quirk alone halves the SS slope and doubles the error. Replace the whole attribution chain with the bivariate team regression (`calibrate.py:348-366, 410-418`). Effort M.
+
+**D9. Wins-bookkeeping batch (each S):** Monte Carlo SD (7.2) below the sim's pure-luck floor (≥7.6 excl. covariance) → widen from archive; make PythagenPat the headline (RMSE 1.28 vs 1.51, ~4 wins better on tail teams); **one RPW per league** (currently 9.69 in the optimizer vs 10.08 in the sheet vs empirical ~10.1–10.7 — the two auditors' empirical estimates differ by regression spec; use the mid-range spec, and raise BLM H30 toward ~10.5 where both agree it's ~6% low); scale RP aggregate by 502/557≈0.90; faithful RS/RA decomposition + 'DH BatR' for the DH slot; test-then-set the DH 0.98 fudge (~0.2 WAA/slot, no calibration source); optional +4–6% multiplier on POW-hi/HRR-hi slopes (the one real career-pooling attenuation, both leagues independently).
+
+**Dropped (refuted):** "Anchor ≠ fit centroid inflates the whole league" (hitters +6.4–9.7 runs, SP +0.5 WAA; appeared in hitting-fits, engine-formulas, and partially fielding). The verifier proved on the **production population** (real 2025 league, ~200k PA) that the seasonal anchor/baseline recomputation is a deliberate, working environment transfer: live biases ≤1% (hitter uBB/SO/BABIP) and ≤4% (all pitcher blocks); the apparent HR inflation was the Cubs park view in Filters C3. The proposed re-anchoring would have *introduced* 5–16% biases, and its formula had a sign error. Also dropped: "stale C33–C41 baselines" (they are live-league rates by design, compared against the wrong reference) and the pitcher-side steals double-count mechanism (the pitching SBA fit subtracts GT; the engine-formulas empirical gap was likely stale-extract artifact — re-audit during B1's fix).
+
+---
+
+## 4. MISSING CAPABILITIES, ranked by wins gained
+
+1. **Outcome feedback loop (backtest harness + season actuals + snapshot store).** Nothing on disk can answer "did we predict real results" — the pitcher K/HR mis-spread (~1 win of roster misallocation) was invisible until this audit. The public StatsPlus API has no stats endpoints; actuals must come from the OOTP database CSV dump already used for calib archives. Timing is perfect: in-game date 2044-10-08, season just completed.
+2. **Ratings-input governance.** Snapshot-to-snapshot churn moves projections .0346 wOBA mean (p90 .0530) — 3x model error; valuations swing 1–2 WAA depending on which pull was ingested. Archive every pull with scout provenance + game date; average last 2–3 snapshots or flag movers >.015.
+3. **Aging/development measurement.** Every FV/draftFV parameter (decline 6%, cliff 30, dev-stop 26…) is untested and untestable from the single-age frozen-dev archive. A clone-of-the-real-league sim with development ON + per-year ratings exports (winsim tooling already automates this) turns whole-FV-grade uncertainty into fitted curves.
+4. **STM→workload model.** Every SP projected at 800 BF, every RP at 300, while live STM spans 20–80; ±0.6 wins/starter at realistic IP spreads. Also fix the statics' level: clone SPs actually threw 753.6 BF, RPs 342.6.
+5. **Replacement level (WAR columns).** Fringe-roster hitters sit at −0.7..−0.85 WAA (TGS); fixed-600-PA WAA ranking inverts real cut/keep calls worth ~0.5 wins each. RP replacement ≈ league average (RP WAA is genuinely free). Offsets: +0.8·(PA/600) hitters TGS (0.6 BLM), +0.4 SP, +0.05 RP — re-derive after D2.
+6. **Platoon/vL validation.** Both clone archives are 100% RHB/RHP (split 3 ≡ split 1); ~30% of the blended projection rides on unverifiable hand multipliers. Sim an LHP/LHB clone archive.
+7. **SR (steal aggressiveness) and G/F tendency.** SR≡STE in the snapshot (perfectly confounded; 18% of live hitters differ, up to 45 pts); G/F has zero variance in the snapshot and isn't even ingested live — potentially 0.2–0.4 RA/9 of invisible pitcher spread.
+8. **Scout OVR residual signal.** +0.00038 wOBA/OVR point (CI excludes 0) ≈ 0.2 WAA per 10 OVR points the component model misses — free, re-estimate yearly before hardcoding.
+9. **Bench/playing-time modeling.** ~12% of team PA (rest days) priced at zero; ~1 win of between-team spread invisible.
+
+---
+
+## 5. ROADMAP
+
+### Phase A — quick wins (this week)
+| Item | Files | Validation gate |
+|---|---|---|
+| **Snapshot now + dump 2044 actuals** (seeds first prospective test with 2045) | `tgs-viz/ingest/refresh.py` → `tgs-viz/backtest/snapshots/`, OOTP DB-CSV dump → `backtest/actuals/TGS/2044/` | Files exist; join rate vs snapshot >95% |
+| Re-extract all datapoints JSONs + drift check (B4) | `tgs-viz/engine/extracted/*`, extraction script | extracted == workbook == constants-latest cell-for-cell |
+| SBA double-count fix (B1) | `calibrate.py:260`, `engine/hitters.py:194-196,335`, both sheets' SBAT formulas | Projected league SB attempts within a few % of live actuals; wSB-by-STE-bucket vs archive empirics ±0.02 |
+| E% zr→e baseline (B2) + ×H33 multiplier (B5), together | `calibrate.py:384,386,398-409`, `hitters.py:224-233` | K15/K25 → ~1e-5; live ip-weighted mean RunsP ≈ 0 at all positions; SS 45-vs-85 ERR gap ≈ 10.4 runs |
+| RP +5 STU lo-branch (B6); catcher BSR basis (B8); UBR sign (B9); lGAP/lSPE swap (B10); minor batch (B11) | `pitchers.py:120-126,244-245`, `hitters.py:201,268-269`, workbook cells | No cliff at STU 40; C WAA delta = BSR·(1−500/600); UBR buckets center at anchor |
+| Season length G=154 (B3) | `rosterOptimizer.js:852,890,911,1254` | League win sum = 154·teams/2; playoff threshold as win% |
+| Rating-support clamps (STE/RUN ≤80) | `hitters.py` (mirror SB% cap) | No extrapolation beyond snapshot max |
+
+### Phase B — structural (recalibration-level)
+| Item | Files | Gate |
+|---|---|---|
+| **Pitching transport/knots rebuild (D1)** — verifier's renormalization formula, monotone knots, live-bucket transport calibration; SP+RP, both leagues; check BLM hitting anchors | `calibrate.py` pitching() ~270-306, `pitchers.py` statline(), `metadata_calibrate.py` anchor step, both workbooks | Live rotation K/BF & BB/BF match league; 45-vs-50 gap ≈ live truth; monotone; no 49-vs-51 inversion; backtest component slopes ∈ [0.8,1.25] |
+| **Currency recalibration (D2)**: empirical run values + exponent ~2.2 + SB/CS weights | `metadata_calibrate.py` run_values, `pitchers.py:~160`, `hitters.py:~271` | Team OFF slope → 1.00 ± 0.03; pitcher octile calibration flat |
+| Hitter tail clamps/knots (D4) | `hitters.py`, `calibrate.py` | Bucket residuals flat at 20–35 and 65–80; POW-80 > POW-75 restored |
+| PM% monotone piecewise (D3) | `calibrate.py` fielding(), `hitters.py:218-256` | Eligibility-band error matrix ±3 runs; league mean RunsP ≈ 0 preserved |
+| DP causal regression (D8 — never fix the 25-row quirk in isolation) | `calibrate.py:348-366,410-418` | Slopes ≈ 3.16e-4/2.42e-4; position-average TDP → 0 |
+| futureValue window (D5); RP shrinkage (D6); catcher arm refit + live-frame framing re-test (D7) | `futureValue.js`, `rosterOptimizer.js`, `hitters.py:251-256` | FV age-flat test; backtest RP slope; live-frame catcher means |
+| Pos-adj: refresh the stale Adj Pivot (13 missing IDs, documented 13% DH error); then **validate** live-vs-archive values rather than swapping wholesale — the live-league recomputation design was vindicated elsewhere; the 6–15-run archive gaps are plausibly population difference, but DH −10.2 deserves scrutiny | `metadata_calibrate.py` pos_adj_calc, workbook pivot | Multi-season live smoothing; year-over-year sd < 3 runs |
+| Wins bookkeeping (D9): one RPW/league, MC variance from archive, pyth headline, RP 0.90 scale, faithful RS/RA, DH-fudge measurement | `rosterOptimizer.js` | Zero-sum holds under page options; MC SD ≥ archive luck floor |
+
+### Phase C — new capabilities
+1. **backtest/score.py + skill_history.csv + recalibration triggers** (|slope−1|>0.15 CI-excl., |bias|>.004, component slope ∉ [0.8,1.25] — pitcher K/HR trip today). Gate: first 2045 prospective scoring run.
+2. **Aging harness** (real-league clone, dev ON, per-year ratings) → fit decline/dev-closure; wire into futureValue/draftFV. Gate: fitted curves replace all hardcoded aging constants.
+3. **Targeted clone archives**: STM-varied (workload), SR≠STE grid, G/F-varied, LHP/LHB (platoon), 70–80-heavy ratings (tails). Gate: each new dimension fitted with per-bucket SEs.
+4. WAR columns (M5), OVR residual term (M8), bench/vrShare modeling (M9), snapshot-vintage scoring (M2).
+
+---
+
+## 6. WHAT'S ACTUALLY FINE — checked and cleared, don't churn
+
+- **The anchor/environment-transfer design.** Seasonal recomputation of anchors (H2..H10, P/Q cells) and league baselines (C33..C41) from the live league is deliberate and works: production biases ≤1% (hitter uBB/SO/BABIP) and ≤4% (pitcher blocks). Do **not** re-anchor to archive fit centroids — that de-calibrates by 5–16%. Fielding anchors/T-rates contribute ~zero live bias.
+- **Hitter projections vs real outcomes**: r=0.737, calibration slope 1.039 (CI 0.933–1.139), bias +0.0012, disattenuated r ≈ 0.94. **No shrinkage needed**; blend rule: 600 PA of observed stats deserves only ~17% weight vs the projection — don't chase breakouts the ratings don't confirm.
+- **Pooled 10-year career fitting**: unbiased (<0.2 runs/600 PA) because the harness is single-age, closed, development-frozen; per-year slopes trendless. (Only exception: the 4–6% POW/HRR Y1 attenuation, D9.)
+- **Defense currency**: zone identity proves 0.75/0.9 runs-per-play is correct; OOTP's zr under-credits ~25–35% — never recalibrate spread to zr. Within-position RunsP ranking is sound (r 0.84–0.93 vs sim).
+- **Steals SB% cap (2026-08-05 fix)**: exactly right for TGS (.880); BLM's empirical .888 → make it league-specific, minor.
+- **Method checks clean**: PA/bf-weighting unbiased; SP/RP pools role-pure (0 overlap, 0 contamination); lEye≤45 filter a no-op (all ratings multiples of 5); top-N fielding selection immaterial (slopes ±2–9%); RF-window pos-adj quirk numerically zero.
+- **Win-model mechanics**: zero-sum offset internally consistent (2593 vs 2592); SP workload matches the sim to 0.2% (929 vs 931 IP); PythagenPat(0.287) essentially perfectly calibrated (bias −0.08, RMSE 1.28); **leverage-weighting relievers is validatedly unnecessary here** — the OOTP AI gives its best relievers no extra leverage (corr(RA9, LI/G) = +0.21), so don't add a closer multiplier.
+- **Caution class for future audits**: archive-frame *level* evaluations of live constants produced this audit's two refuted headline claims. Slope/spread claims from the archive survive; level claims must be re-tested on the live population (this applies to the still-open framing zero-point and any future "average player isn't zero" finding).

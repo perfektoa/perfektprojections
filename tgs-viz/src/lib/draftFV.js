@@ -26,18 +26,17 @@
 // TUNABLE DEFAULTS
 // ============================================================
 
+import { replacementOffset } from './leagueCalib.js';
+
 export const DRAFT_FV_DEFAULTS = {
   // Weighting between current competitiveness and ceiling
-  CURRENT_WEIGHT: 0.25,
-  CEILING_WEIGHT: 0.75,
+  CURRENT_WEIGHT: 0.30,
+  CEILING_WEIGHT: 0.70,
 
-  // Ceiling normalization — separate scales because MAX WAA P (hitters) and WAP
-  // (pitchers) have different natural distributions. Calibrated to each type's
-  // full-league p5 → p99 so equivalent talent percentiles score equivalently.
-  HITTER_CEILING_FLOOR:  -3.0,
-  HITTER_CEILING_CAP:     5.0,
-  PITCHER_CEILING_FLOOR: -1.0,
-  PITCHER_CEILING_CAP:    2.5,
+  // Ceiling normalization — unified scale: WAA is WAA. More WAA = better player,
+  // no clamping at the top so elite outliers keep getting credit.
+  CEILING_FLOOR:   -3.0,   // anchors the bottom of the scale (floor for below-replacement)
+  CEILING_ANCHOR:   5.0,   // anchors raw WAA of 5.0 = score 100 (linear above)
 };
 
 // ============================================================
@@ -214,19 +213,20 @@ export function getAgePercentile(value, age, ageGroups) {
 // ============================================================
 
 /**
- * Normalize a ceiling metric to 0-100 scale.
- * Uses the same floor/cap for hitters and pitchers since WAA already
- * accounts for positional value.
+ * Normalize a ceiling metric to a comparable 0-100+ scale.
+ * Linear map: floor → 0, anchor → 100. Above the anchor scores >100 so elite
+ * outliers (e.g., WAP 4.2 vs 5.0) keep getting differentiated credit. Below
+ * floor is clamped to 0 (you can't be MORE useless than the floor).
  *
- * @param {number} value - Raw ceiling value (MAX WAA P or WAP)
- * @param {number} floor - Value that maps to 0
- * @param {number} cap - Value that maps to 100
- * @returns {number} Normalized score 0-100
+ * @param {number} value - Raw ceiling (MAX WAA P or WAP)
+ * @param {number} floor - Raw value that maps to 0
+ * @param {number} anchor - Raw value that maps to 100 (NOT clamped above)
+ * @returns {number} Score (0 at floor, 100 at anchor, can exceed 100)
  */
-function normalizeCeiling(value, floor, cap) {
+function normalizeCeiling(value, floor, anchor) {
   if (isNaN(value)) return 0;
-  const clamped = Math.max(floor, Math.min(cap, value));
-  return ((clamped - floor) / (cap - floor)) * 100;
+  const clampedLow = Math.max(floor, value);
+  return ((clampedLow - floor) / (anchor - floor)) * 100;
 }
 
 // ============================================================
@@ -297,6 +297,9 @@ export function calculateDraftFV(player, ageGroups, playerType, params = {}) {
       agePercentile: 0,
       ceilingScore: 0,
       draftCeiling: 0,
+      draftCeilingWAA: 0,
+      ceilingOffset: 0,
+      ceilingRole: null,
       durabilityMod: 0,
       toolPenalty: 1.0,
       proneValue: 'Wrecked',
@@ -307,7 +310,23 @@ export function calculateDraftFV(player, ageGroups, playerType, params = {}) {
   }
 
   // ---- Extract metrics based on player type ----
+  // audit M5: WAA -> WAR. Every value below carries its role's MEASURED
+  // replacement offset (leagueCalib.js, per league via player.League), so the
+  // shared CEILING_FLOOR/CEILING_ANCHOR normalization compares hitters and
+  // pitchers (and SP-vs-RP swingmen) in the same freely-available-talent
+  // currency — an average RP ceiling no longer normalizes like an average
+  // hitter ceiling.
+  const _lg = player._appLeague;   // stamped by usePlayerData (raw 'League' is a numeric id)
+  const _hOff = replacementOffset(_lg, 'hitter');
+  const _spOff = replacementOffset(_lg, 'sp');
+  const _rpOff = replacementOffset(_lg, 'rp');
   let currentPerf, ceiling;
+  // ceilingOffset = the role offset baked into `ceiling`. Scoring stays on WAR
+  // (shared normalization across roles — audit M5), but the BOARD displays WAA per
+  // user directive, so we hand back ceiling - ceilingOffset as well. Subtracting it
+  // recovers the sheet's own raw ceiling column exactly (MAX WAA P / WAP / WAP RP).
+  let ceilingOffset = 0;
+  let ceilingRole = null;
 
   if (playerType === 'hitter') {
     currentPerf = parseFloat(player['wOBA wtd']);
@@ -316,26 +335,42 @@ export function calculateDraftFV(player, ageGroups, playerType, params = {}) {
     if (isNaN(ceiling)) {
       ceiling = parseFloat(player['Max WAA wtd']);
     }
+    if (!isNaN(ceiling)) { ceiling += _hOff; ceilingOffset = _hOff; ceilingRole = 'hitter'; }
   } else {
-    // Pitchers: use best of SP or RP for both current and ceiling
+    // Pitchers: best of SP or RP for both current and ceiling, in WAR
     const spCurrent = parseFloat(player['WAA wtd']);
     const rpCurrent = parseFloat(player['WAA wtd RP']);
-    currentPerf = Math.max(isNaN(spCurrent) ? -Infinity : spCurrent, isNaN(rpCurrent) ? -Infinity : rpCurrent);
+    currentPerf = Math.max(isNaN(spCurrent) ? -Infinity : spCurrent + _spOff,
+                           isNaN(rpCurrent) ? -Infinity : rpCurrent + _rpOff);
     if (!isFinite(currentPerf)) currentPerf = NaN;
 
     const spCeiling = parseFloat(player['WAP']);
     const rpCeiling = parseFloat(player['WAP RP']);
-    ceiling = Math.max(isNaN(spCeiling) ? -Infinity : spCeiling, isNaN(rpCeiling) ? -Infinity : rpCeiling);
-    if (!isFinite(ceiling)) {
-      // Fallback: best current WAA as ceiling
+    const spCeilWAR = isNaN(spCeiling) ? -Infinity : spCeiling + _spOff;
+    const rpCeilWAR = isNaN(rpCeiling) ? -Infinity : rpCeiling + _rpOff;
+    ceiling = Math.max(spCeilWAR, rpCeilWAR);
+    if (isFinite(ceiling)) {
+      ceilingOffset = spCeilWAR >= rpCeilWAR ? _spOff : _rpOff;
+      ceilingRole = spCeilWAR >= rpCeilWAR ? 'sp' : 'rp';
+    } else {
+      // Fallback: best current WAR as ceiling — same role that won currentPerf
       ceiling = currentPerf;
+      const spCurWAR = isNaN(spCurrent) ? -Infinity : spCurrent + _spOff;
+      const rpCurWAR = isNaN(rpCurrent) ? -Infinity : rpCurrent + _rpOff;
+      ceilingOffset = spCurWAR >= rpCurWAR ? _spOff : _rpOff;
+      ceilingRole = spCurWAR >= rpCurWAR ? 'sp' : 'rp';
     }
   }
 
   // ---- Age-relative percentile ----
+  // B11 (audit): an UNPARSEABLE/MISSING current-performance value (or age) is
+  // "no information", not "worst in class" — default to the 50th percentile,
+  // matching getAgePercentile's own no-comparison fallback. The old 0th-
+  // percentile default cratered every prospect whose current-perf column was
+  // blank, purely on data plumbing.
   let agePercentile = (!isNaN(currentPerf) && !isNaN(age) && age > 0)
     ? getAgePercentile(currentPerf, age, ageGroups)
-    : 0;
+    : 50;
 
   // ---- Tool rating penalties (applied to age percentile) ----
   let toolPenalty;
@@ -348,10 +383,8 @@ export function calculateDraftFV(player, ageGroups, playerType, params = {}) {
   }
   agePercentile *= toolPenalty;
 
-  // ---- Ceiling score (normalized 0-100, per-type scale) ----
-  const ceilingFloor = playerType === 'hitter' ? p.HITTER_CEILING_FLOOR : p.PITCHER_CEILING_FLOOR;
-  const ceilingCap = playerType === 'hitter' ? p.HITTER_CEILING_CAP : p.PITCHER_CEILING_CAP;
-  const ceilingScore = normalizeCeiling(ceiling, ceilingFloor, ceilingCap);
+  // ---- Ceiling score (unified WAA scale, no upper clamp) ----
+  const ceilingScore = normalizeCeiling(ceiling, p.CEILING_FLOOR, p.CEILING_ANCHOR);
 
   // ---- Modifiers ----
   const durabilityMod = getDurabilityModifier(proneValue);
@@ -368,7 +401,13 @@ export function calculateDraftFV(player, ageGroups, playerType, params = {}) {
     draftRawFV: Math.round(rawScore * 100) / 100,
     agePercentile: Math.round(agePercentile * 10) / 10,
     ceilingScore: Math.round(ceilingScore * 10) / 10,
+    // draftCeiling is WAR (what ceilingScore/draftFV are actually scored on, and what
+    // the board's membership filter + above/below-zero sort tier key off — unchanged).
     draftCeiling: isNaN(ceiling) ? null : Math.round(ceiling * 100) / 100,
+    // draftCeilingWAA is the SAME ceiling in the board's display currency.
+    draftCeilingWAA: isNaN(ceiling) ? null : Math.round((ceiling - ceilingOffset) * 100) / 100,
+    ceilingOffset,
+    ceilingRole,
     durabilityMod,
     toolPenalty,
     proneValue: proneValue || 'Normal',

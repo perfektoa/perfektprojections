@@ -34,7 +34,10 @@ export const HITTER_COLUMN_GROUPS = {
   },
   value: {
     label: 'Value',
-    columns: ['Rank', 'Max WAA wtd', 'Max WAA vR', 'Max WAA vL', 'MAX WAA P', '_fvScale', '_futureValue'],
+    // 'Pot WAA' (_potentialWAA) is the REALISTIC age-adjusted peak, not the raw 'MAX WAA P'
+    // ceiling — so a past-prime hitter doesn't show phantom growth. Raw ceiling lives in the
+    // 'Position WAA (Potential)' group for anyone who wants it.
+    columns: ['Rank', 'Max WAA wtd', 'Max WAA vR', 'Max WAA vL', '_potentialWAA', '_fvScale', '_fvGap', 'Ovr', 'Pot', '_futureValue'],
   },
   ratingsVR: {
     label: 'Ratings vs R',
@@ -86,7 +89,11 @@ export const HITTER_COLUMN_GROUPS = {
   },
   contract: {
     label: 'Contract',
-    columns: ['Price', 'MLY', 'Eligible', 'ON40', 'WAIV', 'R5'],
+    columns: ['Price', 'ContractYr', 'ContractYrs', 'SalarySchedule', 'NoTrade', 'MLBSvcYrs', 'MLBSvcDays', 'MLBSvcDaysTY'],
+  },
+  health: {
+    label: 'Health',
+    columns: ['Prone', 'OnDL', 'DLDays'],
   },
   futureValue: {
     label: 'Future Value',
@@ -94,7 +101,7 @@ export const HITTER_COLUMN_GROUPS = {
   },
   personality: {
     label: 'Personality',
-    columns: ['LEA', 'LOY', 'AD', 'WE', 'INT'],
+    columns: ['Int', 'WrkEthic', 'Greed', 'Loy', 'Lead'],
   },
   draftValue: {
     label: 'Draft FV',
@@ -110,7 +117,7 @@ export const HITTER_COLUMN_GROUPS = {
   },
   marketCurrent: {
     label: '$ Current',
-    columns: ['Price', '_perWAA', '_annualValue', '_offerFloor', '_offerMid', '_offerCeiling', '_surplus'],
+    columns: ['Price', '_perWAA', '_annualValue', '_surplus', '_mktPrice', '_mktSurplus', '_mktTier', '_offerFloor', '_offerMid', '_offerCeiling', '_ctrYears', '_ctrSurplus'],
   },
   marketFuture: {
     label: '$ Future',
@@ -125,7 +132,7 @@ export const PITCHER_COLUMN_GROUPS = {
   },
   value: {
     label: 'Value (SP)',
-    columns: ['Rank', 'WAA wtd', 'WAA vR', 'WAA vL', 'WAR wtd', '_fvScale', '_futureValue'],
+    columns: ['Rank', 'WAA wtd', 'WAA vR', 'WAA vL', 'WAR wtd', '_fvScale', '_fvGap', 'Ovr', 'Pot', '_futureValue'],
   },
   valueRP: {
     label: 'Value (RP)',
@@ -161,7 +168,15 @@ export const PITCHER_COLUMN_GROUPS = {
   },
   contract: {
     label: 'Contract',
-    columns: ['Price', 'Type', 'Eligible', 'ON40', 'WAIV', 'R5'],
+    columns: ['Price', 'ContractYr', 'ContractYrs', 'SalarySchedule', 'NoTrade', 'MLBSvcYrs', 'MLBSvcDays', 'MLBSvcDaysTY'],
+  },
+  health: {
+    label: 'Health',
+    columns: ['Prone', 'OnDL', 'DLDays'],
+  },
+  personality: {
+    label: 'Personality',
+    columns: ['Int', 'WrkEthic', 'Greed', 'Loy', 'Lead'],
   },
   futureValue: {
     label: 'Future Value',
@@ -181,7 +196,7 @@ export const PITCHER_COLUMN_GROUPS = {
   },
   marketCurrent: {
     label: '$ Current',
-    columns: ['Price', '_perWAA', '_marketRole', '_annualValue', '_offerFloor', '_offerMid', '_offerCeiling', '_surplus'],
+    columns: ['Price', '_perWAA', '_marketRole', '_annualValue', '_surplus', '_mktPrice', '_mktSurplus', '_mktTier', '_offerFloor', '_offerMid', '_offerCeiling', '_ctrYears', '_ctrSurplus'],
   },
   marketFuture: {
     label: '$ Future',
@@ -193,11 +208,21 @@ export const PITCHER_COLUMN_GROUPS = {
 export function formatCellValue(value, columnName) {
   if (value === null || value === undefined || value === '') return '-';
 
+  // Boolean flags (contract / roster status) — render Yes / - (React won't print raw booleans)
+  const boolCols = ['NoTrade', 'OnDL', 'OnDL60', 'DFA', 'OnWaivers', 'IsMajorDeal'];
+  if (boolCols.includes(columnName)) return value === true ? 'Yes' : '-';
+
+  // Per-year salary schedule (array) — "$26.0M / $26.0M / ..."
+  if (columnName === 'SalarySchedule') {
+    return Array.isArray(value) && value.length ? value.map(formatMoney).join(' / ') : '-';
+  }
+
   const num = parseFloat(value);
 
-  const intCols = ['Age', 'Rank', 'Rank vR', 'Rank vL', 'Rank P', 'Rank RP',
+  const intCols = ['Age', 'Rank', 'Rank vR', 'Rank vL', 'Rank P', 'Rank RP', 'Ovr', 'Pot',
     '_fvScale', '_draftFV', '_g5FV', '_hybridFV', '_pctToPeak', '_yearsTilPeak',
     '_hybridWFV', '_hybridWG5', '_hybridWDraft',
+    'ContractYr', 'ContractYrs', 'MLBSvcYrs', 'MLBSvcDays', 'MLBSvcDaysTY', 'DLDays', '_ctrYears',
     'SPE', 'STE', 'RUN', 'STM', 'HLD',
     'BA vL', 'GAP vL', 'POW vL', 'EYE vL', 'K vL',
     'BA vR', 'GAP vR', 'POW vR', 'EYE vR', 'K vR',
@@ -212,6 +237,11 @@ export function formatCellValue(value, columnName) {
     return Math.round(num);
   }
 
+  // Value Gap = our FV minus OOTP's POT. Signed so undervalued (+) pops.
+  if (columnName === '_fvGap' && !isNaN(num)) {
+    return (num > 0 ? '+' : '') + Math.round(num);
+  }
+
   // WAA/WAR/Runs columns - 1 decimal
   const isWaaCols = columnName.includes('WAA') || columnName.includes('WAR') || columnName.includes('WAP') ||
     columnName.includes('BatR') || columnName.includes('BSR') || columnName.includes('UBR') ||
@@ -220,7 +250,8 @@ export function formatCellValue(value, columnName) {
     columnName.includes('FRMAA') || columnName.includes('ArmR') ||
     columnName === '_futureValue' || columnName === '_peakWAA' ||
     columnName === '_currentWAA' || columnName === '_potentialWAA' ||
-    columnName === '_draftRawFV' || columnName === '_draftCeiling' || columnName === '_ceilingScore' ||
+    columnName === '_draftRawFV' || columnName === '_draftCeiling' ||
+    columnName === '_draftCeilingWAA' || columnName === '_ceilingScore' ||
     columnName === '_g5Raw' || columnName === '_hybridRaw';
 
   if (isWaaCols && !isNaN(num)) {
@@ -275,7 +306,8 @@ export function formatCellValue(value, columnName) {
 
   // Money columns — format as $12.5M / $750K
   const moneyCols = ['Price', '_perWAA', '_marketValue', '_offerFloor', '_offerMid', '_offerCeiling', '_annualValue', '_surplus',
-    '_futureAAV', '_futureOfferLow', '_futureOfferMid', '_futureOfferHigh'];
+    '_mktPrice', '_mktSurplus',
+    '_ctrSurplus', '_futureAAV', '_futureOfferLow', '_futureOfferMid', '_futureOfferHigh'];
   if (moneyCols.includes(columnName) && !isNaN(num)) {
     return formatMoney(num);
   }
@@ -283,6 +315,11 @@ export function formatCellValue(value, columnName) {
   // Role column
   if (columnName === '_marketRole') {
     return value || '-';
+  }
+
+  // Market tier — 'scarcity' (local price departs the line) vs 'replaceable'
+  if (columnName === '_mktTier') {
+    return value === 'scarcity' ? 'Scarcity' : value === 'replaceable' ? 'Line' : '-';
   }
 
   return value;
@@ -306,9 +343,42 @@ export function getCellColorClass(value, columnName) {
   if (columnName === '_wrecked') {
     return value === true ? 'text-red-400 font-bold' : '';
   }
+  // Injury proneness (raw OOTP rating) — same palette as _durability
+  if (columnName === 'Prone') {
+    const proneMap = {
+      'Wrecked': 'text-red-400 font-bold',
+      'Fragile': 'text-orange-400',
+      'Normal': 'text-gray-300',
+      'Durable': 'text-green-400',
+      'Iron Man': 'text-cyan-400 font-semibold',
+    };
+    return proneMap[value] || '';
+  }
+  // Current injury / roster flags — red when flagged
+  if (['OnDL', 'OnDL60', 'DFA', 'OnWaivers'].includes(columnName)) {
+    return value === true ? 'text-red-400 font-semibold' : 'text-slate-600';
+  }
+  if (columnName === 'NoTrade') {
+    return value === true ? 'text-amber-400' : 'text-slate-600';
+  }
+  // Market tier badge — scarcity tier = local price departs the fitted line
+  if (columnName === '_mktTier') {
+    return value === 'scarcity' ? 'text-amber-400 font-semibold' : 'text-slate-400';
+  }
 
   const num = parseFloat(value);
   if (isNaN(num)) return '';
+
+  // Value Gap: + = our projection (FV) rates him above his OOTP POT → undervalued, a buy
+  // target; − = the market's POT is higher than our projection → overvalued.
+  if (columnName === '_fvGap') {
+    if (num >= 8) return 'text-purple-400 font-bold';
+    if (num >= 4) return 'text-cyan-400 font-semibold';
+    if (num >= 1) return 'text-green-400';
+    if (num > -1) return 'text-gray-300';
+    if (num >= -4) return 'text-orange-400';
+    return 'text-red-400';
+  }
 
   const ratingLikeCols = [
     'BA vL', 'GAP vL', 'POW vL', 'EYE vL', 'K vL',
@@ -317,7 +387,7 @@ export function getCellColorClass(value, columnName) {
     'STU P', 'HRR P', 'PBABIP P', 'CON P',
     'STU vR', 'HRR vR', 'PBABIP vR', 'CON vR',
     'STU vL', 'HRR vL', 'PBABIP vL', 'CON vL',
-    '_fvScale', '_draftFV', '_g5FV', '_hybridFV',
+    '_fvScale', '_draftFV', '_g5FV', '_hybridFV', 'Ovr', 'Pot',
     'C ABI', 'C FRM', 'C ARM', 'IF RNG', 'IF ERR', 'IF ARM', 'TDP', 'OF RNG', 'OF ERR', 'OF ARM',
     'SPE', 'STE', 'STM', 'HLD',
   ];
@@ -334,7 +404,7 @@ export function getCellColorClass(value, columnName) {
   const isValueCol = columnName.includes('WAA') || columnName.includes('WAR') ||
     columnName.includes('WAP') || columnName === '_futureValue' || columnName === '_peakWAA' ||
     columnName === '_currentWAA' || columnName === '_potentialWAA' ||
-    columnName === '_draftCeiling' || columnName === '_g5Raw';
+    columnName === '_draftCeiling' || columnName === '_draftCeilingWAA' || columnName === '_g5Raw';
 
   if (isValueCol) {
     if (num >= 5) return 'text-purple-400 font-bold';
@@ -364,7 +434,7 @@ export function getCellColorClass(value, columnName) {
   }
 
   // Surplus: green = underpaid/good deal, red = overpaid
-  if (columnName === '_surplus') {
+  if (columnName === '_surplus' || columnName === '_ctrSurplus' || columnName === '_mktSurplus') {
     if (num > 10_000_000) return 'text-green-400 font-bold';
     if (num > 0) return 'text-green-400';
     if (num > -5_000_000) return 'text-orange-400';
@@ -372,7 +442,7 @@ export function getCellColorClass(value, columnName) {
   }
 
   // Money columns — just use green for positive values
-  const moneyColorCols = ['_marketValue', '_offerFloor', '_offerMid', '_offerCeiling', '_annualValue', '_perWAA',
+  const moneyColorCols = ['_marketValue', '_offerFloor', '_offerMid', '_offerCeiling', '_annualValue', '_mktPrice', '_perWAA',
     '_futureAAV', '_futureOfferLow', '_futureOfferMid', '_futureOfferHigh'];
   if (moneyColorCols.includes(columnName)) {
     if (num > 0) return 'text-green-400';
@@ -399,9 +469,12 @@ export function getCellColorClass(value, columnName) {
 
 export const COLUMN_LABELS = {
   '_fvScale': 'FV',
+  '_fvGap': 'Value Gap',
+  'Ovr': 'OVR',
+  'Pot': 'POT',
   '_futureValue': 'Future$',
   '_currentWAA': 'Curr WAA',
-  '_potentialWAA': 'Pot WAA',
+  '_potentialWAA': 'Proj Peak',
   '_peakWAA': 'Peak WAA',
   '_pctToPeak': '% to Peak',
   '_yearsTilPeak': 'Yrs to Peak',
@@ -416,7 +489,8 @@ export const COLUMN_LABELS = {
   '_draftFV': 'Draft FV',
   '_draftRawFV': 'Draft Raw',
   '_agePercentile': 'Age Pctl',
-  '_draftCeiling': 'Ceiling',
+  '_draftCeiling': 'Ceiling (WAR)',
+  '_draftCeilingWAA': 'Ceiling',
   '_ceilingScore': 'Ceil Score',
   '_durability': 'Durability',
   '_highINT': 'High INT',
@@ -440,18 +514,47 @@ export const COLUMN_LABELS = {
   'LF Eligible': 'LF',
   'CF Eligible': 'CF',
   'RF Eligible': 'RF',
-  // Market value labels
-  '_perWAA': '$/WAA',
+  // Market value labels — two economies (marketValue.js v2):
+  // "Line Value" = fitted line (replaceable tier); "Mkt Price" = tier-local
+  // price from comparable-WAR signings (scarcity tier).
+  '_perWAA': '$/WAR',
   '_marketValue': 'Career $',
   '_offerFloor': 'Offer Low',
-  '_offerMid': 'Fair Value',
+  '_offerMid': 'Fair AAV',
   '_offerCeiling': 'Offer High',
-  '_annualValue': 'Curr AAV',
-  '_surplus': 'Surplus',
+  '_annualValue': 'Line Value',
+  '_surplus': 'Line Surplus',
+  '_mktPrice': 'Mkt Price',
+  '_mktSurplus': 'Mkt Surplus',
+  '_mktTier': 'Tier',
+  '_ctrYears': 'Ctr Yrs',
+  '_ctrSurplus': 'Ctr Surplus',
   '_futureAAV': 'Peak AAV',
   '_futureOfferLow': 'Fut Low',
   '_futureOfferMid': 'Fut Mid',
   '_futureOfferHigh': 'Fut High',
   '_marketRole': 'Role $',
   '_bestWAA': 'Best WAA',
+  // Contract / service
+  'Price': 'Salary',
+  'ContractYr': 'Yr #',
+  'ContractYrs': 'Yrs',
+  'SalarySchedule': 'By year',
+  'NoTrade': 'No-Trade',
+  'MLBSvcYrs': 'MLB Svc',
+  // Day-resolution service time (172 days = 1 service year, MEASURED — see
+  // ingest/statsplus.py). Service AT SIGNING = MLBSvcDays - MLBSvcDaysTY, which
+  // is what marketValue.js uses to keep extensions out of the FA market fit.
+  'MLBSvcDays': 'Svc Days',
+  'MLBSvcDaysTY': 'Svc Days (yr)',
+  // Health
+  'Prone': 'Injury Prone',
+  'OnDL': 'On DL',
+  'DLDays': 'DL Days',
+  // Personality (OOTP makeup ratings)
+  'Int': 'Intelligence',
+  'WrkEthic': 'Work Ethic',
+  'Greed': 'Greed',
+  'Loy': 'Loyalty',
+  'Lead': 'Leadership',
 };

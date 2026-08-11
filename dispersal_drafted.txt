@@ -1,0 +1,4 @@
+# Dispersal draft — players picked so far.
+# One player per line: exact name (as shown in the app) or StatsPlus ID.
+# Lines starting with # are ignored.
+# After adding picks, run "Update Dispersal Board.bat" and reload the app.

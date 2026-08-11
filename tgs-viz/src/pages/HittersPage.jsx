@@ -23,9 +23,9 @@ export default function HittersPage({ players, isDraft = false, isFA = false, al
   // Compute Hybrid FV (combines FV + G5 + Draft FV)
   const playersWithHybrid = usePlayersWithHybridFV(playersWithG5);
 
-  // Compute market value ($/WAA, offer range, surplus)
+  // Compute market value (fitted FA line, offer range, surplus)
   const finalPlayers = useHittersWithMarketValue(playersWithHybrid, marketRate);
-  const rate = marketRate?.rate || 0;
+  const fit = marketRate?.pooled;
   const lowConfidence = marketRate?.lowConfidence;
 
   const defaultGroups = isFA
@@ -44,11 +44,14 @@ export default function HittersPage({ players, isDraft = false, isFA = false, al
               {players.length} players | Toggle column groups to explore data | Click a player for details
             </p>
           </div>
-          {rate > 0 && (
+          {fit && fit.slope > 0 && (
             <div className="text-right">
-              <p className="text-xs text-slate-500">$/WAA {lowConfidence && '⚠️'}</p>
-              <p className={`text-sm font-semibold ${lowConfidence ? 'text-orange-400' : 'text-green-400'}`}>{formatMoney(rate)}</p>
-              {lowConfidence && <p className="text-[10px] text-orange-400">Low data — WAA not populated for most players</p>}
+              <p className="text-xs text-slate-500">FA market fit {lowConfidence && '⚠️'}</p>
+              <p className={`text-sm font-semibold ${lowConfidence ? 'text-orange-400' : 'text-green-400'}`}>
+                {formatMoney(fit.slope)}/WAR + {formatMoney(fit.floor)}
+              </p>
+              <p className="text-[10px] text-slate-500">n={fit.n} FA signings, r²={fit.r2.toFixed(2)}</p>
+              {lowConfidence && <p className="text-[10px] text-orange-400">Low data — few FA signings in sample</p>}
             </div>
           )}
         </div>

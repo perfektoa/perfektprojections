@@ -1,51 +1,89 @@
 import React, { useMemo, useState } from 'react';
-import { optimizeRoster } from '../lib/rosterOptimizer';
+import { optimizeRoster, leagueGames } from '../lib/rosterOptimizer';
 import { Download, ArrowUpDown, Loader2 } from 'lucide-react';
 
-// ─── League assignments (TGS OOTP 26) ───────────────────────────
-const AL_TEAMS = new Set([
-  'New York Yankees', 'Boston Red Sox', 'Baltimore Orioles',
-  'Kansas City Royals', 'Chicago White Sox', 'Minnesota Twins',
-  'Detroit Tigers', 'Oakland Athletics', 'Texas Rangers',
-  'Tampa Bay Devil Rays', 'Toronto Blue Jays', 'Cleveland Guardians',
-  'Anaheim Angels', 'Seattle Mariners', 'Milwaukee Brewers',
-  'Houston Astros',
-]);
+// ─── League assignments, per league ──────────────────────────────
+// OOTP's export carries no AL/NL field, and team names differ between leagues
+// (e.g. BLM disambiguates same-city clubs as "Chicago (N) Cubs"). The two
+// leagues also disagree on some clubs — Milwaukee is AL in TGS but NL in BLM —
+// so the mapping MUST be keyed by league rather than shared.
+// TODO(contraction): TGS is contracting to 28 clubs; the dispersal lands when
+// the league file updates. Do NOT pre-edit these sets or any zero-sum org
+// counts — refresh them from the updated league file when it arrives.
+export const LEAGUE_TEAMS = {
+  TGS: {
+    AL: new Set([
+      'New York Yankees', 'Boston Red Sox', 'Baltimore Orioles',
+      'Kansas City Royals', 'Chicago White Sox', 'Minnesota Twins',
+      'Detroit Tigers', 'Oakland Athletics', 'Texas Rangers',
+      'Tampa Bay Devil Rays', 'Toronto Blue Jays', 'Cleveland Guardians',
+      'Anaheim Angels', 'Seattle Mariners', 'Milwaukee Brewers',
+      'Houston Astros',
+    ]),
+    NL: new Set([
+      'Atlanta Hammers', 'Cincinnati Reds', 'Chicago Cubs',
+      'Arizona Diamondbacks', 'Kansas City Monarchs', 'Philadelphia Phillies',
+      'Florida Marlins', 'New York Mets', 'Colorado Rockies',
+      'Los Angeles Dodgers', 'Pittsburgh Pirates', 'San Diego Padres',
+      'San Francisco Giants', 'Washington Nationals', 'St. Louis Cardinals',
+      'Montreal Expos',
+    ]),
+  },
+  BLM: {
+    AL: new Set([
+      'Baltimore Orioles', 'Boston Red Sox', 'Chicago (A) White Sox',
+      'Cleveland Guardians', 'Detroit Tigers', 'Houston Astros',
+      'Kansas City Royals', 'Los Angeles (A) Angels', 'Minnesota Twins',
+      'New York (A) Yankees', 'Oakland Athletics', 'Seattle Mariners',
+      'Tampa Bay Rays', 'Texas Rangers', 'Toronto Blue Jays',
+    ]),
+    NL: new Set([
+      'Arizona Diamondbacks', 'Atlanta Braves', 'Chicago (N) Cubs',
+      'Cincinnati Reds', 'Colorado Rockies', 'Los Angeles (N) Dodgers',
+      'Miami Marlins', 'Milwaukee Brewers', 'New York (N) Mets',
+      'Philadelphia Phillies', 'Pittsburgh Pirates', 'San Diego Padres',
+      'San Francisco Giants', 'St. Louis Cardinals', 'Washington Nationals',
+    ]),
+  },
+};
 
-const NL_TEAMS = new Set([
-  'Atlanta Hammers', 'Cincinnati Reds', 'Chicago Cubs',
-  'Arizona Diamondbacks', 'Kansas City Monarchs', 'Philadelphia Phillies',
-  'Florida Marlins', 'New York Mets', 'Colorado Rockies',
-  'Los Angeles Dodgers', 'Pittsburgh Pirates', 'San Diego Padres',
-  'San Francisco Giants', 'Washington Nationals', 'St. Louis Cardinals',
-  'Montreal Expos',
-]);
-
-const ALL_KNOWN_TEAMS = new Set([...AL_TEAMS, ...NL_TEAMS]);
+// Fallback for an unmapped league: include any org with a real roster
+// (filters out cameo foreign clubs that have 1-3 players on loan).
+const FALLBACK_MIN_ROSTER = 20;
 
 // ─── Build team projections using the roster optimizer ───────────
 // Step 1: Run optimizer per team to get raw WAA
 // Step 2: Normalize so total league wins = total league losses
 //         (optimizer cherry-picks best 26, leaving negative-WAA guys
 //          off rosters, inflating the sum — normalization fixes this)
-function buildTeamProjections(hitters, pitchers) {
-  // Get unique orgs that are in AL or NL
-  const orgs = new Set();
-  for (const p of hitters) {
-    if (p.ORG && p.ORG !== '-' && ALL_KNOWN_TEAMS.has(p.ORG)) orgs.add(p.ORG);
-  }
-  for (const p of pitchers) {
-    if (p.ORG && p.ORG !== '-' && ALL_KNOWN_TEAMS.has(p.ORG)) orgs.add(p.ORG);
-  }
+function buildTeamProjections(hitters, pitchers, knownTeams, league = null) {
+  // B3 (audit, corrected): base wins are G/2 for the league's REAL season
+  // length — MEASURED at 162 for both real leagues (see LEAGUE_GAMES).
+  const G = leagueGames(league);
+  // Tally roster sizes per org. When we have a known team set for the league,
+  // include exactly those orgs; otherwise (unmapped league) fall back to any
+  // org with a real roster so nothing is silently dropped.
+  const orgCount = {};
+  const tally = (p) => {
+    if (!p.ORG || p.ORG === '-') return;
+    if (knownTeams && !knownTeams.has(p.ORG)) return;
+    orgCount[p.ORG] = (orgCount[p.ORG] || 0) + 1;
+  };
+  hitters.forEach(tally);
+  pitchers.forEach(tally);
+
+  let orgList = Object.keys(orgCount);
+  if (!knownTeams) orgList = orgList.filter(o => orgCount[o] >= FALLBACK_MIN_ROSTER);
+  const orgs = new Set(orgList);
 
   // ── Pass 1: raw optimizer results ──
   const raw = [];
   for (const org of orgs) {
-    const roster = optimizeRoster(hitters, pitchers, { teamOrg: org });
+    const roster = optimizeRoster(hitters, pitchers, { teamOrg: org, league });
     const t = roster.totals;
     raw.push({
       team: org,
-      rawWAAwtd: t.totalRosterWAA,
+      rawWAAwtd: t.weightedLineupWAA + t.totalPitcherWAA,  // win-relevant WAA: platoon lineups (PA-weighted) + pitching, NOT the 13-bat sum (which over-counts rest-day bench). Matches the Roster Optimizer basis.
       rawWAAvR: t.lineupWAA_vR,
       rawWAAvL: t.lineupWAA_vL,
       rawSPWAA: t.totalSPWAA,
@@ -58,7 +96,7 @@ function buildTeamProjections(hitters, pitchers) {
   if (numTeams === 0) return [];
 
   // ── Pass 2: normalize ──
-  // WAA should be zero-sum: total wins across league = numTeams × 81
+  // WAA should be zero-sum: total wins across league = numTeams × G/2
   // Raw sum is inflated → compute per-team offset to bring average WAA to 0
   const rawTotalWAA = raw.reduce((s, t) => s + t.rawWAAwtd, 0);
   const waaOffset = rawTotalWAA / numTeams; // subtract this from each team
@@ -69,19 +107,15 @@ function buildTeamProjections(hitters, pitchers) {
   const vROffset = rawTotalvR / numTeams;
   const vLOffset = rawTotalvL / numTeams;
 
-  // For SP/RP WAA: normalize proportionally based on their share of total WAA
-  // so that the component columns still add up correctly
+  // Center SP and RP each on its OWN league mean — zero-sum per component, exactly like
+  // offense vR/vL above. (Previously they took a proportional share of the TOTAL offset,
+  // which mis-centers once the total uses the platoon-weighted lineup basis: it pushed the
+  // SP/RP columns negative so most teams read below average. Own-mean centering fixes that
+  // and stays consistent: total = vr-weighted offense + SP + RP.)
   const rawTotalSP = raw.reduce((s, t) => s + t.rawSPWAA, 0);
   const rawTotalRP = raw.reduce((s, t) => s + t.rawRPWAA, 0);
-  const rawTotalHitter = raw.reduce((s, t) => s + t.rawHitterWAA, 0);
-  const rawComponentTotal = rawTotalSP + rawTotalRP + rawTotalHitter;
-
-  // Each component gets its proportional share of the offset
-  const spShare = rawComponentTotal !== 0 ? rawTotalSP / rawComponentTotal : 1 / 3;
-  const rpShare = rawComponentTotal !== 0 ? rawTotalRP / rawComponentTotal : 1 / 3;
-
-  const spOffset = waaOffset * spShare;
-  const rpOffset = waaOffset * rpShare;
+  const spOffset = rawTotalSP / numTeams;
+  const rpOffset = rawTotalRP / numTeams;
 
   return raw.map(t => {
     const adjWAA = t.rawWAAwtd - waaOffset;
@@ -89,12 +123,12 @@ function buildTeamProjections(hitters, pitchers) {
     const adjRP = t.rawRPWAA - rpOffset;
     const adjvR = t.rawWAAvR - vROffset;
     const adjvL = t.rawWAAvL - vLOffset;
-    const projW = Math.round(81 + adjWAA);
+    const projW = Math.round(G / 2 + adjWAA);
 
     return {
       team: t.team,
       projW,
-      projL: 162 - projW,
+      projL: G - projW,
       totalWAAvR: Math.round(adjvR * 100) / 100,
       totalWAAvL: Math.round(adjvL * 100) / 100,
       spWAA: Math.round(adjSP * 100) / 100,
@@ -128,19 +162,26 @@ function downloadCSV(filename, csvText) {
 }
 
 // ─── Column definitions ──────────────────────────────────────────
+// Every WAA column is re-centered to the league average (see buildTeamProjections):
+// the optimizer keeps each team's best 26 and drops the rest, which inflates raw
+// WAA above zero-sum, so we subtract the league mean to keep standings honest
+// (total W = total L). Net effect: each WAA column reads "vs the average team,"
+// NOT raw/above-replacement — a solid-but-below-average unit shows negative. The
+// tooltips say so, since the org page shows the raw values and the two would
+// otherwise look contradictory.
 const COLUMNS = [
-  { key: 'team',       label: 'Team',       accessor: r => r.team,         fmt: v => v,            align: 'left' },
-  { key: 'projW',      label: 'Proj W',     accessor: r => r.projW,        fmt: v => v,            align: 'right' },
-  { key: 'projL',      label: 'Proj L',     accessor: r => r.projL,        fmt: v => v,            align: 'right' },
-  { key: 'totalWAAvR', label: 'WAA vR',     accessor: r => r.totalWAAvR,   fmt: v => v.toFixed(1), align: 'right' },
-  { key: 'totalWAAvL', label: 'WAA vL',     accessor: r => r.totalWAAvL,   fmt: v => v.toFixed(1), align: 'right' },
-  { key: 'spWAA',      label: 'SP WAA',     accessor: r => r.spWAA,        fmt: v => v.toFixed(1), align: 'right' },
-  { key: 'rpWAA',      label: 'RP WAA',     accessor: r => r.rpWAA,        fmt: v => v.toFixed(1), align: 'right' },
-  { key: 'totalWAAwtd',label: 'wtd WAA',    accessor: r => r.totalWAAwtd,  fmt: v => v.toFixed(1), align: 'right' },
+  { key: 'team',       label: 'Team',       accessor: r => r.team,         fmt: v => v,            align: 'left',  tip: 'Organization' },
+  { key: 'projW',      label: 'Proj W',     accessor: r => r.projW,        fmt: v => v,            align: 'right', tip: 'Projected wins = G/2 + total WAA vs league average (G = league games/season, 162 here)' },
+  { key: 'projL',      label: 'Proj L',     accessor: r => r.projL,        fmt: v => v,            align: 'right', tip: 'Projected losses = G − Proj W' },
+  { key: 'totalWAAvR', label: 'Off WAA vR', accessor: r => r.totalWAAvR,   fmt: v => v.toFixed(1), align: 'right', tip: 'Lineup (offense) WAA vs right-handed pitching, as a team total relative to the league-average lineup. Not the platoon-weighted value — this is the vR split.' },
+  { key: 'totalWAAvL', label: 'Off WAA vL', accessor: r => r.totalWAAvL,   fmt: v => v.toFixed(1), align: 'right', tip: 'Lineup (offense) WAA vs left-handed pitching, as a team total relative to the league-average lineup. Not the platoon-weighted value — this is the vL split.' },
+  { key: 'spWAA',      label: 'SP WAA wtd', accessor: r => r.spWAA,        fmt: v => v.toFixed(1), align: 'right', tip: 'Rotation: sum of the 5 starters’ weighted WAA, as a team total vs the league-average rotation. Above average = positive. (The org page shows each pitcher’s raw WAA, which runs higher.)' },
+  { key: 'rpWAA',      label: 'RP WAA wtd', accessor: r => r.rpWAA,        fmt: v => v.toFixed(1), align: 'right', tip: 'Bullpen: sum of the 8 relievers’ weighted WAA, as a team total vs the league-average bullpen. Every team stacks its 8 best arms, so a pen of small-positive raw WAA can still land below average and read negative here.' },
+  { key: 'totalWAAwtd',label: 'Total WAA wtd', accessor: r => r.totalWAAwtd, fmt: v => v.toFixed(1), align: 'right', tip: 'Whole-team weighted WAA vs the league-average team. Proj W = G/2 + this. Equals offense + SP + RP.' },
 ];
 
 // ─── Sortable table component ────────────────────────────────────
-function StandingsTable({ title, rows, onExport }) {
+function StandingsTable({ title, rows, onExport, halfWins = 81 }) {
   const [sortKey, setSortKey] = useState('projW');
   const [sortDir, setSortDir] = useState('desc');
 
@@ -187,6 +228,7 @@ function StandingsTable({ title, rows, onExport }) {
                 <th
                   key={col.key}
                   onClick={() => handleSort(col.key)}
+                  title={col.tip}
                   className={`px-4 py-2.5 font-semibold text-slate-400 cursor-pointer hover:text-white transition-colors select-none whitespace-nowrap ${
                     col.align === 'left' ? 'text-left' : 'text-right'
                   }`}
@@ -215,8 +257,8 @@ function StandingsTable({ title, rows, onExport }) {
                   let colorClass = 'text-slate-300';
 
                   if (col.key === 'projW') {
-                    // Scale: 81 = neutral, 95+ = bright green, 67- = bright red
-                    const diff = raw - 81;
+                    // Scale: G/2 = neutral (81 at 162 games — B3), ±14 = bright
+                    const diff = raw - halfWins;
                     if (diff >= 14) colorClass = 'text-green-400 font-semibold';
                     else if (diff >= 9) colorClass = 'text-green-400';
                     else if (diff >= 4) colorClass = 'text-green-400/70';
@@ -228,7 +270,7 @@ function StandingsTable({ title, rows, onExport }) {
                     else colorClass = 'text-red-400 font-semibold';
                   } else if (col.key === 'projL') {
                     // Inverse: high losses = red, low losses = green
-                    const diff = raw - 81;
+                    const diff = raw - halfWins;
                     if (diff >= 14) colorClass = 'text-red-400 font-semibold';
                     else if (diff >= 9) colorClass = 'text-red-400';
                     else if (diff >= 4) colorClass = 'text-red-400/70';
@@ -264,14 +306,30 @@ function StandingsTable({ title, rows, onExport }) {
 }
 
 // ─── Main page ───────────────────────────────────────────────────
-export default function TeamStandingsPage({ hitters, pitchers }) {
-  const allTeams = useMemo(
-    () => buildTeamProjections(hitters, pitchers),
-    [hitters, pitchers]
+export default function TeamStandingsPage({ hitters, pitchers, league }) {
+  // Resolve the per-league AL/NL map. Unknown leagues fall back to a single
+  // combined table (no sub-league split) so teams are never silently dropped.
+  const map = LEAGUE_TEAMS[league] || null;
+  const halfWins = Math.round(leagueGames(league) / 2);   // neutral win total (B3: 81 at 162 games)
+
+  const knownTeams = useMemo(
+    () => map ? new Set([...map.AL, ...map.NL]) : null,
+    [map]
   );
 
-  const alTeams = useMemo(() => allTeams.filter(t => AL_TEAMS.has(t.team)), [allTeams]);
-  const nlTeams = useMemo(() => allTeams.filter(t => NL_TEAMS.has(t.team)), [allTeams]);
+  const allTeams = useMemo(
+    () => buildTeamProjections(hitters, pitchers, knownTeams, league),
+    [hitters, pitchers, knownTeams, league]
+  );
+
+  const alTeams = useMemo(
+    () => map ? allTeams.filter(t => map.AL.has(t.team)) : [],
+    [allTeams, map]
+  );
+  const nlTeams = useMemo(
+    () => map ? allTeams.filter(t => map.NL.has(t.team)) : [],
+    [allTeams, map]
+  );
 
   const exportLeague = (teams, filename) => {
     const csv = toCSV(teams, COLUMNS);
@@ -280,10 +338,11 @@ export default function TeamStandingsPage({ hitters, pitchers }) {
 
   const exportAll = () => {
     const allCols = [
-      { label: 'League', accessor: r => AL_TEAMS.has(r.team) ? 'AL' : 'NL' },
+      { label: 'League', accessor: r => map && map.AL.has(r.team) ? 'AL' : (map && map.NL.has(r.team) ? 'NL' : '-') },
       ...COLUMNS,
     ];
-    const csv = toCSV([...alTeams, ...nlTeams], allCols);
+    const rows = map ? [...alTeams, ...nlTeams] : allTeams;
+    const csv = toCSV(rows, allCols);
     downloadCSV('team_projections.csv', csv);
   };
 
@@ -305,7 +364,15 @@ export default function TeamStandingsPage({ hitters, pitchers }) {
           <div>
             <h1 className="text-2xl font-bold text-white">Team Projections</h1>
             <p className="text-sm text-slate-400 mt-1">
-              Optimized 26-man rosters | Normalized so league W = L (zero-sum WAA)
+              Optimized 26-man rosters. Every column is a{' '}
+              <span className="text-slate-200 font-medium">team total shown vs the league-average team</span>{' '}
+              (0 = average, + better, − worse) so the standings stay zero-sum (total W = total L).
+              The org page shows raw per-player WAA, which runs higher.
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              <span className="text-slate-400">wtd</span> = platoon-weighted WAA ·{' '}
+              <span className="text-slate-400">Off vR / vL</span> = lineup vs right / left-handed pitching ·{' '}
+              <span className="text-slate-400">Proj W</span> = {halfWins} + Total WAA wtd ({leagueGames(league)}-game season) · hover any header for detail
             </p>
           </div>
           <button
@@ -318,16 +385,29 @@ export default function TeamStandingsPage({ hitters, pitchers }) {
       </div>
 
       <div className="p-4 space-y-6">
-        <StandingsTable
-          title="American League"
-          rows={alTeams}
-          onExport={() => exportLeague(alTeams, 'al_projections.csv')}
-        />
-        <StandingsTable
-          title="National League"
-          rows={nlTeams}
-          onExport={() => exportLeague(nlTeams, 'nl_projections.csv')}
-        />
+        {map ? (
+          <>
+            <StandingsTable
+              title="American League"
+              rows={alTeams}
+              halfWins={halfWins}
+              onExport={() => exportLeague(alTeams, 'al_projections.csv')}
+            />
+            <StandingsTable
+              title="National League"
+              rows={nlTeams}
+              halfWins={halfWins}
+              onExport={() => exportLeague(nlTeams, 'nl_projections.csv')}
+            />
+          </>
+        ) : (
+          <StandingsTable
+            title="All Teams"
+            rows={allTeams}
+            halfWins={halfWins}
+            onExport={() => exportLeague(allTeams, 'team_projections.csv')}
+          />
+        )}
       </div>
     </div>
   );

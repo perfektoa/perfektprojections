@@ -114,7 +114,10 @@ export default function DraftBoardPage({ hitters, pitchers, allHitters, allPitch
       <div className="p-4">
         <h1 className="text-2xl font-bold text-white">Draft Board</h1>
         <p className="text-sm text-slate-400 mt-1">
-          Draft FV: age-relative performance (25%) + ceiling potential (75%) | Adjusted for durability & work ethic
+          Draft FV: age-relative performance (30%) + ceiling potential (70%), scored in WAR | Adjusted for durability
+          <span className="block text-xs text-slate-500 mt-0.5">
+            Value columns display WAA (vs average). <b>Ceiling</b> = best case, no haircut. <b>Proj Peak</b> = same ceiling after the gap-factor + risk haircut. Ceiling is the payoff, Age Pctl is the probability.
+          </span>
         </p>
       </div>
 
@@ -135,12 +138,13 @@ export default function DraftBoardPage({ hitters, pitchers, allHitters, allPitch
           className="py-1.5 px-2 bg-slate-800 border border-slate-600 rounded-lg text-sm text-slate-200">
           <option value="_draftFV">Sort by Draft FV (20-80)</option>
           <option value="_draftRawFV">Sort by Draft FV (Raw)</option>
-          <option value="_draftCeiling">Sort by Ceiling</option>
+          <option value="_draftCeilingWAA">Sort by Ceiling (WAA)</option>
           <option value="_agePercentile">Sort by Age Percentile</option>
           <option value="_futureValue">Sort by Future Value</option>
           <option value="_fvScale">Sort by FV (20-80)</option>
           <option value="_g5FV">Sort by G5 FV (Peak)</option>
           <option value="_hybridFV">Sort by Hybrid FV</option>
+          <option value="_potentialWAA">Sort by Proj Peak (WAA)</option>
           <option value="_peakWAA">Sort by Peak WAA</option>
         </select>
 
@@ -237,8 +241,8 @@ export default function DraftBoardPage({ hitters, pitchers, allHitters, allPitch
                 <th>Age</th>
                 <th>Draft FV</th>
                 <th>Raw</th>
-                <th>Age Pctl</th>
-                <th>Ceiling</th>
+                <th title="Percentile vs the whole league at this age, on current performance. The PROBABILITY half of Draft FV.">Age Pctl</th>
+                <th title="Best-case peak, WAA (vs average) — the sheet's own MAX WAA P / WAP. No risk haircut. The PAYOFF half of Draft FV. (Draft FV itself scores this in WAR so bats, SP and RP share one scale.)">Ceiling</th>
                 <th>Durability</th>
                 <th>INT</th>
                 <th className="border-l border-slate-700">FV</th>
@@ -247,7 +251,7 @@ export default function DraftBoardPage({ hitters, pitchers, allHitters, allPitch
                 <th>G5 Peak</th>
                 <th>Dev%</th>
                 <th className="border-l border-slate-700">Hybrid</th>
-                <th>Pot WAA</th>
+                <th title="Same Ceiling, WAA, AFTER the development gap-factor and risk haircut — what we actually expect him to reach. Always <= Ceiling; the difference IS the risk.">Proj Peak</th>
               </tr>
             </thead>
             <tbody>
@@ -280,8 +284,9 @@ export default function DraftBoardPage({ hitters, pitchers, allHitters, allPitch
                   <td className={getCellColorClass(player._agePercentile, '_agePercentile')}>
                     {formatCellValue(player._agePercentile, '_agePercentile')}
                   </td>
-                  <td className={getCellColorClass(player._draftCeiling, '_draftCeiling')}>
-                    {formatCellValue(player._draftCeiling, '_draftCeiling')}
+                  <td className={getCellColorClass(player._draftCeilingWAA, '_draftCeilingWAA')}
+                    title={`WAR basis (what Draft FV scores): ${formatCellValue(player._draftCeiling, '_draftCeiling')}`}>
+                    {formatCellValue(player._draftCeilingWAA, '_draftCeilingWAA')}
                   </td>
                   <td style={{ color: durColor(player._durability) }} className="text-xs">
                     {player._durability}

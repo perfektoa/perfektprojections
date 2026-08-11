@@ -1,8 +1,91 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { calculateFutureValue } from '../lib/futureValue';
 import { formatCellValue, getCellColorClass } from '../lib/columns';
+import { loadRatingTrends, playerHistory } from '../lib/ratingTrends';
 import { X } from 'lucide-react';
+
+/** Tiny inline sparkline for a rating series (nulls = missing pulls, skipped). */
+function Sparkline({ values, delta }) {
+  const pts = values
+    .map((v, i) => (v === null || v === undefined ? null : [i, v]))
+    .filter(Boolean);
+  if (pts.length < 2) return <span className="w-[72px] inline-block" />;
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  const W = 72, H = 18, PAD = 2;
+  const sx = x => PAD + (maxX === minX ? 0.5 : (x - minX) / (maxX - minX)) * (W - 2 * PAD);
+  const sy = y => H - PAD - (maxY === minY ? 0.5 : (y - minY) / (maxY - minY)) * (H - 2 * PAD);
+  const color = delta > 0 ? '#4ade80' : delta < 0 ? '#f87171' : '#64748b';
+  return (
+    <svg width={W} height={H} className="shrink-0">
+      <polyline
+        points={pts.map(([x, y]) => `${sx(x).toFixed(1)},${sy(y).toFixed(1)}`).join(' ')}
+        fill="none" stroke={color} strokeWidth="1.5"
+      />
+      {pts.map(([x, y], i) => (
+        <circle key={i} cx={sx(x)} cy={sy(y)} r="1.6" fill={color} />
+      ))}
+    </svg>
+  );
+}
+
+/**
+ * Compact per-rating scouting history (informational — from the ratings-history
+ * DB export; never feeds projections). Shows only ratings that CHANGED across
+ * the archived pulls in the window.
+ */
+function RatingHistory({ player }) {
+  const [trends, setTrends] = useState(undefined); // undefined=loading, null=unavailable
+  useEffect(() => {
+    let on = true;
+    loadRatingTrends(player._appLeague).then(t => { if (on) setTrends(t); });
+    return () => { on = false; };
+  }, [player._appLeague]);
+
+  if (trends === undefined) return null;           // still loading — stay quiet
+  if (trends === null) return null;                // no trends file — feature hidden
+  const hist = playerHistory(trends, player.ID);
+  if (!hist) return null;
+  const { dates, rows, vintages } = hist;
+  const shown = rows.slice(0, 12);
+  const range = dates.length ? `${dates[0]} → ${dates[dates.length - 1]}` : '';
+
+  return (
+    <div className="bg-slate-800/50 rounded-lg p-3">
+      <h3 className="text-xs font-semibold text-slate-400 uppercase mb-1">Rating History</h3>
+      <div className="text-[10px] text-slate-500 mb-2">
+        {range} · {vintages} archived pulls · informational only (projections use current ratings)
+      </div>
+      {rows.length === 0 ? (
+        <div className="text-xs text-slate-500">No scouting-rating changes across the last {dates.length} pulls.</div>
+      ) : (
+        <>
+          {shown.map(r => (
+            <div key={r.col} className="flex items-center justify-between gap-2 py-0.5">
+              <span className="text-slate-500 text-xs w-16 shrink-0">{r.col}</span>
+              <Sparkline values={r.values} delta={r.delta} />
+              <span className="text-xs font-mono text-slate-300 w-16 text-right">
+                {r.first} → {r.last}
+              </span>
+              <span className={`text-xs font-mono w-9 text-right ${
+                r.delta > 0 ? 'text-green-400' : r.delta < 0 ? 'text-red-400' : 'text-slate-500'
+              }`}>
+                {r.delta > 0 ? '+' : ''}{Math.round(r.delta * 10) / 10}
+              </span>
+            </div>
+          ))}
+          {rows.length > shown.length && (
+            <div className="text-[10px] text-slate-600 mt-1">
+              +{rows.length - shown.length} more changed ratings
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function PlayerDetail({ player, onClose, type = 'hitter' }) {
   if (!player) return null;
@@ -119,10 +202,29 @@ export default function PlayerDetail({ player, onClose, type = 'hitter' }) {
               <h3 className="text-xs font-semibold text-slate-400 uppercase mb-2">Future Value Breakdown</h3>
               {statLine('FV (20-80)', fv.fvScale, '_fvScale')}
               {statLine('Total Future$', fv.futureValue, '_futureValue')}
-              {statLine('Current WAA', fv.currentWAA, '_currentWAA')}
-              {statLine('Potential WAA', fv.potentialWAA, '_potentialWAA')}
-              {statLine('Expected Peak', fv.expectedPeakWAA, '_peakWAA')}
-              {statLine('Peak WAA', fv.peakProjectedWAA, '_peakWAA')}
+              {/* WAA (vs average) — same basis as the boards. fv.currentWAA /
+                  expectedPeakWAA / potentialWAA are the internal WAR values and must
+                  NOT be shown under a WAA label; fv.displayWAA is the converted track. */}
+              {statLine('Current WAA', fv.displayWAA?.current, '_currentWAA')}
+              {statLine('Proj Peak (WAA)', fv.displayWAA?.expectedPeak, '_potentialWAA')}
+              {statLine('Raw Ceiling (WAA)', fv.displayWAA?.potential, '_potentialWAA')}
+              {statLine('Peak WAA', fv.displayWAA?.peakProjected, '_peakWAA')}
+              {/* The internal WAR basis, shown raw so the WAA numbers above are auditable.
+                  Plain divs, not statLine — statLine runs values through formatCellValue,
+                  which parseFloat()s a composite string down to its first number. */}
+              <div className="flex justify-between items-center py-0.5 border-t border-slate-700/50 mt-1 pt-1">
+                <span className="text-slate-500 text-xs">Internal WAR (cur / peak)</span>
+                <span className="text-sm font-mono text-slate-400">{fv.currentWAA} / {fv.expectedPeakWAA}</span>
+              </div>
+              <div className="flex justify-between items-center py-0.5">
+                <span className="text-slate-500 text-xs">Role (cur / peak)</span>
+                <span className="text-sm font-mono text-slate-400">
+                  {fv.currentRole ?? '?'} / {fv.potentialRole ?? '?'}
+                  {fv.currentRole !== fv.potentialRole && (
+                    <span className="ml-1 text-amber-400" title="Current and peak roles differ — the two ends carry different replacement offsets.">*</span>
+                  )}
+                </span>
+              </div>
               {statLine('% to Peak', `${fv.pctToPeak}%`)}
               {statLine('ETA to Peak', fv.yearsTilPeak > 0 ? `${fv.yearsTilPeak} yrs` : 'At peak')}
             </div>
@@ -133,7 +235,9 @@ export default function PlayerDetail({ player, onClose, type = 'hitter' }) {
                 {statLine('Draft FV (20-80)', player._draftFV, '_draftFV')}
                 {statLine('Draft Raw Score', player._draftRawFV, '_draftRawFV')}
                 {statLine('Age Percentile', player._agePercentile, '_agePercentile')}
-                {statLine('Ceiling (WAA P)', player._draftCeiling, '_draftCeiling')}
+                {statLine('Ceiling (WAA)', player._draftCeilingWAA, '_draftCeilingWAA')}
+                {statLine('Ceiling (WAR, scored)', player._draftCeiling, '_draftCeiling')}
+                {player._ceilingRole && statLine('Ceiling role', player._ceilingRole)}
                 <div className="flex justify-between items-center py-0.5">
                   <span className="text-slate-500 text-xs">Durability</span>
                   <span className={`text-sm font-mono ${getCellColorClass(player._durability, '_durability')}`}>
@@ -248,6 +352,8 @@ export default function PlayerDetail({ player, onClose, type = 'hitter' }) {
                 </div>
               </div>
             )}
+
+            <RatingHistory player={player} />
           </div>
         </div>
       </div>

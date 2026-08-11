@@ -1,0 +1,759 @@
+// orgBuilder.js — Organization analysis (read-only on the projection JSON).
+//
+// Provides: per-level talent calibration, per-player level-fit assessment
+// (too-low / right / too-high + prospect-vs-filler + age-for-level), and
+// per-org affiliate rosters with roster-balance / org-need flags.
+//
+// "Value" = projected WAA: hitters use Max WAA wtd (current) / MAX WAA P
+// (potential); pitchers use the better of SP/RP (WAA wtd / WAA wtd RP) and
+// WAP / WAP RP. Nothing here touches the Excel sheets.
+
+export const LEVELS = ["INT", "WL", "R-", "R+", "A-", "A+", "AA", "AAA", "MLB"]; // low -> high (INT = international complex, WL = winter league — the bottom rungs)
+export const LEVEL_RANK = Object.fromEntries(LEVELS.map((l, i) => [l, i]));
+
+// Age caps per level: a player older than the cap is too old for that rung and is
+// pushed UP to the lowest level he's young enough for (AA and up have no cap). If
+// his ability can't hold that level he's org filler -> depth. Tunable.
+export const MAX_AGE_BY_LEVEL = { INT: 19, WL: 19, "R-": 21, "R+": 23, "A-": 25, "A+": 27, AA: Infinity, AAA: Infinity, MLB: Infinity };
+// Lowest level a player of this age is young enough for (his age floor, as a rank).
+function ageFloorRank(age) {
+  if (age == null) return 0;
+  for (let i = 0; i < LEVELS.length; i++) if (age <= (MAX_AGE_BY_LEVEL[LEVELS[i]] ?? Infinity)) return i;
+  return LEVELS.length - 1;
+}
+
+const num = (v) => {
+  if (v === null || v === undefined || v === "" || v === "-") return null;
+  const n = typeof v === "number" ? v : parseFloat(v);
+  return Number.isFinite(n) ? n : null;
+};
+
+export const isAffiliate = (lev) => LEVEL_RANK[lev] !== undefined;
+
+// ---- value extractors ----
+export function currentValue(p, isPitcher) {
+  if (isPitcher) {
+    const sp = num(p["WAA wtd"]);
+    const rp = num(p["WAA wtd RP"]);
+    const vals = [sp, rp].filter((x) => x !== null);
+    return vals.length ? Math.max(...vals) : null;
+  }
+  return num(p["Max WAA wtd"]);
+}
+export function potentialValue(p, isPitcher) {
+  if (isPitcher) {
+    const sp = num(p["WAP"]);
+    const rp = num(p["WAP RP"]);
+    const vals = [sp, rp].filter((x) => x !== null);
+    return vals.length ? Math.max(...vals) : null;
+  }
+  return num(p["MAX WAA P"]);
+}
+// best-case value used for level-fit: a prospect is judged on the higher of
+// current and potential (he'll develop), an established player on current.
+export function fitValue(p, isPitcher) {
+  const cur = currentValue(p, isPitcher);
+  const pot = potentialValue(p, isPitcher);
+  if (cur === null) return pot;
+  if (pot === null) return cur;
+  return Math.max(cur, pot);
+}
+
+export function pitcherRole(p, { developmental = false } = {}) {
+  // SP-eligible ONLY if the sheet's Starter rule passed (enough starter pitches +
+  // stamina). A non-qualifier is a reliever regardless of POS.
+  const starter = p["Starter"] === true || String(p["Starter"]).toUpperCase() === "TRUE";
+  if (!starter) return "RP";
+  // Developmental (minor-league) context: a starter-capable arm STARTS, to develop
+  // him. Prospects almost always grade out better in relief on paper — a developing
+  // arm gets unloaded on the 3rd time through the order, so current RP value tops
+  // current SP value for nearly every minor-leaguer. Judging role on that buries
+  // every starter prospect in the bullpen and leaves the minor rotations empty.
+  // We'd rather a possible starter actually start; his SP *potential* (WAP) is the
+  // real ceiling, and rotations fill best-potential-first downstream.
+  if (developmental) return "SP";
+  // Established (MLB) context: play him where he projects best right now. A guy who
+  // is genuinely better in short relief should be a reliever in the majors.
+  const sp = num(p["WAA wtd"]), rp = num(p["WAA wtd RP"]);
+  if (sp !== null && rp !== null) return sp >= rp ? "SP" : "RP";
+  return sp !== null ? "SP" : "RP";
+}
+
+// hitter position bucket for roster-balance (C / IF / OF / DH)
+export function hitterBucket(p) {
+  const pos = String(p["POS"] || "").toUpperCase();
+  if (pos === "C" || p["C Eligible"] === true) return "C";
+  if (["1B", "2B", "3B", "SS"].includes(pos)) return "IF";
+  if (["LF", "CF", "RF", "OF"].includes(pos)) return "OF";
+  if (p["SS Eligible"] === true || p["2B Eligible"] === true) return "IF";
+  if (p["CF Eligible"] === true) return "OF";
+  return "DH";
+}
+
+function quantile(sorted, q) {
+  if (!sorted.length) return null;
+  const pos = (sorted.length - 1) * q;
+  const lo = Math.floor(pos), hi = Math.ceil(pos);
+  if (lo === hi) return sorted[lo];
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
+}
+
+// ---- calibrate each level's talent + age band from league incumbents ----
+export function calibrateLevels(hitters, pitchers, { excludeOrgs = new Set() } = {}) {
+  const byLevel = {};
+  for (const l of LEVELS) byLevel[l] = { vals: [], ages: [] };
+  const add = (p, isP) => {
+    const lev = p["Lev"];
+    if (!isAffiliate(lev)) return;
+    if (excludeOrgs.has(p["ORG"])) return;
+    const v = currentValue(p, isP);
+    const a = num(p["Age"]);
+    if (v !== null) byLevel[lev].vals.push(v);
+    if (a !== null) byLevel[lev].ages.push(a);
+  };
+  hitters.forEach((p) => add(p, false));
+  pitchers.forEach((p) => add(p, true));
+  const calib = {};
+  for (const l of LEVELS) {
+    const v = byLevel[l].vals.slice().sort((a, b) => a - b);
+    const a = byLevel[l].ages.slice().sort((x, y) => x - y);
+    calib[l] = {
+      n: v.length,
+      p20: quantile(v, 0.2), p50: quantile(v, 0.5), p80: quantile(v, 0.8),
+      ageLo: quantile(a, 0.25), ageMed: quantile(a, 0.5), ageHi: quantile(a, 0.75),
+    };
+  }
+  return calib;
+}
+
+// highest level where the player's fit-value clears that level's ~25th pct floor
+function suggestLevel(value, calib) {
+  if (value === null) return null;
+  for (let i = LEVELS.length - 1; i >= 0; i--) {
+    const c = calib[LEVELS[i]];
+    if (c.n >= 10 && c.p20 !== null && value >= c.p20) return LEVELS[i];
+  }
+  return LEVELS[0];
+}
+
+// ---- per-player level-fit assessment ----
+export function assessPlayer(p, isPitcher, calib) {
+  const lev = p["Lev"];
+  const cur = currentValue(p, isPitcher);
+  const pot = potentialValue(p, isPitcher);
+  const fit = fitValue(p, isPitcher);
+  const age = num(p["Age"]);
+  const out = {
+    lev, cur, pot, age,
+    suggested: suggestLevel(fit, calib),
+    fitFlag: "ok",        // too_low | ok | too_high
+    track: "depth",       // prospect | depth | filler
+    ageFlag: "ok",        // young | ok | old
+  };
+  if (!isAffiliate(lev)) return out;
+  const c = calib[lev];
+  // ability fit at current level (use current value; overmatched if below p20).
+  // "too_low" (promote) only applies below MLB — an MLB star isn't a promote.
+  if (cur !== null && c.p20 !== null) {
+    if (cur > c.p80 && LEVEL_RANK[lev] < LEVEL_RANK["MLB"]) out.fitFlag = "too_low";
+    else if (cur < c.p20) out.fitFlag = "too_high";  // overmatched -> demote/bury risk
+  }
+  // age for level
+  if (age !== null && c.ageLo !== null) {
+    if (age > c.ageHi) out.ageFlag = "old";
+    else if (age < c.ageLo) out.ageFlag = "young";
+  }
+  // prospect vs filler: young + meaningful ceiling = prospect; old + low = filler
+  const ceiling = pot !== null ? pot : cur;
+  if (age !== null) {
+    if (age <= (c.ageMed ?? 99) && ceiling !== null && ceiling > (c.p50 ?? -99)) out.track = "prospect";
+    else if (age > (c.ageHi ?? 99) && (cur === null || cur < (c.p50 ?? -99))) out.track = "filler";
+  }
+  return out;
+}
+
+// ---- build one org's affiliate rosters + flags ----
+const ROSTER_TARGETS = { C: 2, IF: 6, OF: 5, DH: 1, SP: 5, RP: 7 };
+
+export function buildOrg(orgName, hitters, pitchers, calib) {
+  const orgHit = hitters.filter((p) => p["ORG"] === orgName);
+  const orgPit = pitchers.filter((p) => p["ORG"] === orgName);
+  const levels = {};
+  for (const l of LEVELS) levels[l] = { hitters: [], pitchers: [], flags: [] };
+  const other = { hitters: [], pitchers: [] }; // WL/INT/unsigned
+
+  for (const p of orgHit) {
+    const a = assessPlayer(p, false, calib);
+    const rec = { p, isPitcher: false, ...a, bucket: hitterBucket(p) };
+    (isAffiliate(p["Lev"]) ? levels[p["Lev"]].hitters : other.hitters).push(rec);
+  }
+  for (const p of orgPit) {
+    const a = assessPlayer(p, true, calib);
+    // developmental role: a starter-capable arm counts as an SP prospect (and
+    // fills SP in the per-level balance), matching how the rotations are built.
+    const rec = { p, isPitcher: true, ...a, role: pitcherRole(p, { developmental: true }) };
+    (isAffiliate(p["Lev"]) ? levels[p["Lev"]].pitchers : other.pitchers).push(rec);
+  }
+
+  // roster-balance flags per affiliate
+  for (const l of LEVELS) {
+    const lv = levels[l];
+    const counts = { C: 0, IF: 0, OF: 0, DH: 0 };
+    lv.hitters.forEach((r) => (counts[r.bucket] = (counts[r.bucket] || 0) + 1));
+    const sp = lv.pitchers.filter((r) => r.role === "SP").length;
+    const rp = lv.pitchers.filter((r) => r.role === "RP").length;
+    const lhp = lv.pitchers.filter((r) => r.p["T"] === "L").length;
+    lv.counts = { ...counts, SP: sp, RP: rp, LHP: lhp, hitters: lv.hitters.length, pitchers: lv.pitchers.length };
+    const f = lv.flags;
+    if (lv.hitters.length + lv.pitchers.length === 0) continue; // empty affiliate, skip noise
+    if (counts.C < 1) f.push({ sev: "error", msg: "No catcher" });
+    else if (counts.C < ROSTER_TARGETS.C) f.push({ sev: "warn", msg: "Only 1 catcher" });
+    if (sp < ROSTER_TARGETS.SP) f.push({ sev: sp < 3 ? "error" : "warn", msg: `Only ${sp} starters (want ${ROSTER_TARGETS.SP})` });
+    if (rp < 4) f.push({ sev: "warn", msg: `Thin bullpen (${rp} RP)` });
+    if (lhp === 0 && lv.pitchers.length > 0) f.push({ sev: "warn", msg: "No left-handed pitching" });
+    if (counts.IF < 4 && lv.hitters.length > 0) f.push({ sev: "warn", msg: `Light infield (${counts.IF})` });
+    if (counts.OF < 3 && lv.hitters.length > 0) f.push({ sev: "warn", msg: `Light outfield (${counts.OF})` });
+  }
+
+  // org-wide needs: promote candidates (too_low), buried (too_high), and
+  // pipeline holes (no prospect above replacement at a position group).
+  const promote = [], buried = [];
+  for (const l of LEVELS) {
+    for (const r of [...levels[l].hitters, ...levels[l].pitchers]) {
+      if (r.fitFlag === "too_low") promote.push(r);
+      if (r.fitFlag === "too_high") buried.push(r);
+    }
+  }
+  promote.sort((a, b) => (b.cur ?? -99) - (a.cur ?? -99));
+  buried.sort((a, b) => (a.cur ?? 99) - (b.cur ?? 99));
+
+  // prospect pipeline by bucket (any affiliate prospect with positive ceiling)
+  const pipeline = { C: 0, IF: 0, OF: 0, SP: 0, RP: 0 };
+  for (const l of LEVELS) {
+    levels[l].hitters.forEach((r) => { if (r.track === "prospect" && (r.pot ?? r.cur ?? -9) > 0) pipeline[r.bucket] = (pipeline[r.bucket] || 0) + 1; });
+    levels[l].pitchers.forEach((r) => { if (r.track === "prospect" && (r.pot ?? r.cur ?? -9) > 0) pipeline[r.role] = (pipeline[r.role] || 0) + 1; });
+  }
+  const needs = [];
+  for (const [grp, cnt] of Object.entries(pipeline)) {
+    if (cnt === 0) needs.push({ grp, msg: `No ${grp} prospect in the system` });
+  }
+
+  return { orgName, levels, other, promote: promote.slice(0, 12), buried: buried.slice(0, 12), pipeline, needs };
+}
+
+// ===================================================================
+// v2 — constraint-based roster construction
+//   * hitters are placed at the HIGHEST level where they can still HIT
+//     (offense floor), not just where their glove plays — a glove-only
+//     guy who can't hit won't develop there.
+//   * within a level, playing time goes to the BEST POTENTIAL.
+//   * position logjams (e.g. two elite C) cascade the extra down a level
+//     so both get to start ("split across teams").
+//   * empty positions are flagged as needing a filler.
+//   * pitchers: no hitting gate; placed by ability, prioritized by potential.
+// ===================================================================
+
+const POS9 = ["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "DH"];
+const posWAA = (p, pos) => num(p[`${pos} WAA wtd`]);
+const eligibleAt = (p, pos) => (pos === "DH" ? true : p[`${pos} Eligible`] === true);
+
+export function bestPosition(p) {
+  let bp = "DH", bv = -Infinity;
+  for (const pos of POS9) {
+    if (!eligibleAt(p, pos)) continue;
+    const v = posWAA(p, pos);
+    if (v !== null && v > bv) { bv = v; bp = pos; }
+  }
+  return bp;
+}
+
+// ---- placement philosophy (tunable) ------------------------------------------
+// Place a player EXACTLY at the level his ability fits — the highest level where he
+// still projects around average-or-better for that level (so he competes and performs
+// well), NOT a bottom-of-the-level "survive" bar. NO challenge reach: overplacing a
+// developing player gets him demolished and tanks his potential (OOTP 26 punishes
+// being overmatched — seen it a million times). Underplacing wastes reps against weak
+// competition. The bar is his ability; he develops by succeeding there and earning up.
+const FIT_PCT_HIT = 0.50;   // hitters: highest level where wOBA >= the level's median (was a 0.35 survive bar)
+const FIT_PCT_PIT = 0.50;   // pitchers: same, on developed-role value (was 0.40)
+
+// Pitchers are judged for LEVEL FIT in the role they'll actually be DEVELOPED in — a
+// future starter on his STARTER projection, not the relief line he won't pitch. (Fixes
+// placing a starter-prospect high on relief value while developing him as a starter.)
+const isStarterCapable = (p) => p["Starter"] === true || String(p["Starter"]).toUpperCase() === "TRUE";
+const devRoleValue = (p) => (isStarterCapable(p) ? num(p["WAA wtd"]) : num(p["WAA wtd RP"]));
+
+// Per-level talent floors from league incumbents (NPB-excludable).
+export function offenseFloors(hitters, { excludeOrgs = new Set(), pct = 0.35 } = {}) {
+  const by = {}; for (const l of LEVELS) by[l] = [];
+  for (const p of hitters) {
+    const lev = p["Lev"]; if (!isAffiliate(lev) || excludeOrgs.has(p["ORG"])) continue;
+    const w = num(p["wOBA wtd"]); if (w !== null) by[lev].push(w);
+  }
+  const out = {}; for (const l of LEVELS) out[l] = quantile(by[l].sort((a, b) => a - b), pct);
+  return out;
+}
+export function pitcherFloors(pitchers, { excludeOrgs = new Set(), pct = 0.40 } = {}) {
+  const by = {}; for (const l of LEVELS) by[l] = [];
+  for (const p of pitchers) {
+    const lev = p["Lev"]; if (!isAffiliate(lev) || excludeOrgs.has(p["ORG"])) continue;
+    const v = devRoleValue(p); if (v !== null) by[lev].push(v);   // role-clean: starters on their starter line
+  }
+  const out = {}; for (const l of LEVELS) out[l] = quantile(by[l].sort((a, b) => a - b), pct);
+  return out;
+}
+// Reliever talent bar — relief-only arms judged on their RELIEF line. Kept SEPARATE from
+// pitcherFloors on purpose: the mixed floor is dragged way down by starters' (grim) starting
+// grades, so a mediocre reliever clears it and floats up several levels (e.g. a WL arm landing
+// at A+). Measuring relievers against relievers keeps them at their real level and is stable
+// when the starter threshold changes (flipping starter flags doesn't move this bar much).
+export function relieverFloors(pitchers, { excludeOrgs = new Set(), pct = 0.40 } = {}) {
+  const by = {}; for (const l of LEVELS) by[l] = [];
+  for (const p of pitchers) {
+    const lev = p["Lev"]; if (!isAffiliate(lev) || excludeOrgs.has(p["ORG"])) continue;
+    if (isStarterCapable(p)) continue;                       // relievers vs relievers
+    const v = num(p["WAA wtd RP"]); if (v !== null) by[lev].push(v);
+  }
+  const out = {}; for (const l of LEVELS) out[l] = quantile(by[l].sort((a, b) => a - b), pct);
+  return out;
+}
+// Highest level whose talent floor the player clears, but never below `minLev`.
+// A player in the affiliate system bottoms out at R-; a winter-league player can
+// sit on the WL rung beneath it (so WL fills with the guys too raw even for R-).
+function highestClearing(val, floors, minLev = LEVELS[0]) {
+  if (val === null) return null;
+  const minRank = LEVEL_RANK[minLev] ?? 0;
+  for (let i = LEVELS.length - 1; i >= 0; i--) {
+    if (LEVEL_RANK[LEVELS[i]] < minRank) break;
+    const f = floors[LEVELS[i]];
+    if (f != null && val >= f) return LEVELS[i];
+  }
+  return minLev;
+}
+
+// Slots are filled hardest-position-first (C/SS/CF…) so scarce gloves win their
+// spot before flexible bats. MLB = your exact 13-man distribution.
+// MLB lineup: 9 starters (filled hardest-position-first for assignment quality),
+// then 4 bench (backup C + two utility + best remaining bat) — kept as a separate
+// group so the UI shows backups UNDER the starters, the same as the minor levels.
+const MLB_STARTER_SLOTS = [
+  ["C", ["C"]], ["SS", ["SS"]], ["CF", ["CF"]], ["2B", ["2B"]], ["3B", ["3B"]],
+  ["RF", ["RF"]], ["LF", ["LF"]], ["1B", ["1B"]], ["DH", ["DH", "1B"]],
+];
+const MLB_BENCH_SLOTS = [
+  ["BU C", ["C"]], ["UTIL IF", ["SS", "2B", "3B", "1B"]],
+  ["UTIL OF", ["CF", "LF", "RF"]], ["BEST", POS9],
+];
+const MINOR_SLOTS = [
+  ["C", ["C"]], ["SS", ["SS"]], ["CF", ["CF"]], ["2B", ["2B"]], ["3B", ["3B"]],
+  ["RF", ["RF"]], ["LF", ["LF"]], ["1B", ["1B"]], ["DH", ["DH", "1B"]],
+];
+const MINOR_BENCH = 4;   // backup C + 3 depth bats -> ~13 position players per affiliate
+const cnt = (sp, rp, h, bench = []) => ({ SP: sp.length, RP: rp.length,
+  hitters: h.length + bench.length, starters: h.length, bench: bench.length,
+  LHP: [...sp, ...rp].filter((x) => x.p["T"] === "L").length });
+
+function fillSlots(pool, slots, used, valueFn) {
+  const roster = [], gaps = [];
+  for (const [label, elig] of slots) {
+    let best = null, bestVal = -Infinity, bestPos = null;
+    for (const h of pool) {
+      if (used.has(h)) continue;
+      for (const pos of elig) {
+        if (!eligibleAt(h.p, pos)) continue;
+        const v = valueFn(h, pos);
+        if (v > bestVal) { bestVal = v; best = h; bestPos = pos; }
+      }
+    }
+    if (best) { used.add(best); best.slot = label; best.slotPos = bestPos; roster.push(best); }
+    else gaps.push(label);
+  }
+  return { roster, gaps };
+}
+
+// ---- minor-league playing-time philosophy -------------------------------------
+// Goal: win at every level AND develop. So the most play time (the starting jobs)
+// goes to the best blend of winning NOW (current ability) and GROWTH (potential),
+// with an emphasis on winning. The bench is depth that can win now but has less
+// ceiling than the guys who beat them out — genuine high-ceiling prospects who
+// get blocked cascade DOWN a level to keep starting (play time develops them).
+// Within a level, who gets the starting jobs (the most reps). Potential-weighted so
+// the best-FUTURE guys play no matter what, with current ability as a tiebreak so a
+// totally washed prospect doesn't start over a useful filler. (User: potential WAA is
+// the most important factor for prioritizing playing time.) Tunable — raise WIN_W to
+// favor win-now over ceiling.
+const WIN_W = 0.4, GROW_W = 0.6;
+const blendScore = (cur, pot) => WIN_W * (cur ?? pot ?? -99) + GROW_W * (pot ?? cur ?? -99);
+// Bench value: current production, penalized for unused upside so a prospect with
+// room to grow would rather cascade down and start than sit as a backup here.
+const benchScore = (rec) => (rec.cur ?? -99) - GROW_W * Math.max(0, (rec.pot ?? rec.cur ?? -99) - (rec.cur ?? -99));
+// A captain needs leadership + work ethic + loyalty together (not leadership alone,
+// which over-counts ~7x). All three high = a lock; leadership & work ethic high with
+// normal loyalty = a likely captain (the game also factors hidden values we can't see).
+const captainTier = (rec) => {
+  const U = (v) => String(v).toUpperCase();
+  const L = U(rec.p["Lead"]), W = U(rec.p["WrkEthic"]), Lo = U(rec.p["Loy"]);
+  if (L === "H" && W === "H" && Lo === "H") return 2;   // lock — all three high
+  if (L === "H" && W === "H" && Lo === "N") return 1;   // likely — loyalty only normal
+  return 0;
+};
+const isCaptain = (rec) => captainTier(rec) >= 1;
+
+// Per-level roster caps (TOTAL players). Pitchers + lineup are placed first; the bench
+// fills the remainder up to the cap. INT (complex) is left uncapped.
+const MINOR_ROSTER_CAP = { AAA: 32, AA: 32, "A+": 35, "A-": 35, "R+": 40, "R-": 40, WL: 40 };
+const BENCH_ELIG = { C: ["C"], IF: ["1B", "2B", "3B", "SS"], OF: ["LF", "CF", "RF"] };
+const benchEligAt = (p, grp) => BENCH_ELIG[grp].some((pos) => eligibleAt(p, pos));
+
+// Fill a minor bench position-FIRST: guarantee a backup C, two backup IF and two backup
+// OF (the user's minimum) before padding depth, then the best remaining bats up to the
+// roster-cap target. Coverage the level's own pool can't supply is returned as `need`
+// (and a slot is RESERVED for it) so the completeness pass can source it from depth
+// rather than the slot being burned on, say, a 5th first baseman.
+function fillMinorBench(pool, used, target) {
+  const bench = [];
+  const take = (h) => { used.add(h); bench.push(h); };
+  const avail = () => pool.filter((h) => !used.has(h)).sort((a, b) => benchScore(b) - benchScore(a));
+  const takeOne = (grp) => { const h = avail().find((x) => benchEligAt(x.p, grp)); if (h) { take(h); return true; } return false; };
+  const need = { C: 1, IF: 2, OF: 2 };
+  if (takeOne("C")) need.C--;
+  while (need.IF > 0 && takeOne("IF")) need.IF--;
+  while (need.OF > 0 && takeOne("OF")) need.OF--;
+  const reserve = need.C + need.IF + need.OF;             // hold slots open for the depth backfill
+  for (const h of avail()) { if (bench.length >= target - reserve) break; take(h); }
+  return { bench, need };
+}
+
+// Captains: give each affiliate a captain when a credible one is available. If
+// neither the lineup, the bench, nor the pitching staff already has one, swap the
+// best free captain in for the weakest bench bat — preferring a lock over a likely,
+// and only when the downgrade is small ("if possible," not at all costs). The
+// displaced bat is freed to cascade down.
+function addCaptainIfMissing(roster, bench, staff, pool, used) {
+  if ([...roster, ...bench, ...staff].some(isCaptain)) return;
+  const cand = pool.filter((h) => !used.has(h) && isCaptain(h))
+    .sort((a, b) => captainTier(b) - captainTier(a) || (b.cur ?? -99) - (a.cur ?? -99))[0];
+  if (!cand || bench.length === 0) return;
+  let wi = 0;
+  for (let i = 1; i < bench.length; i++) if ((bench[i].cur ?? -99) < (bench[wi].cur ?? -99)) wi = i;
+  // A lock captain (all three high) is a definite clubhouse leader — worth a roster
+  // spot even with a weak bat, since he only displaces the weakest bench player and
+  // the starters are untouched. A likely captain only bumps a bat if he's close.
+  const tol = captainTier(cand) >= 2 ? 4.0 : 1.0;
+  if ((cand.cur ?? -99) >= (bench[wi].cur ?? -99) - tol) {
+    used.delete(bench[wi]); used.add(cand); bench[wi] = cand;
+  }
+}
+
+export function buildRosters(org, hitters, pitchers, opts = {}) {
+  const oFloors = offenseFloors(hitters, { ...opts, pct: FIT_PCT_HIT });
+  const pFloors = pitcherFloors(pitchers, { ...opts, pct: FIT_PCT_PIT });
+  const rpFloors = relieverFloors(pitchers, { ...opts, pct: FIT_PCT_PIT });   // relievers vs relievers
+  // All owned players, including those currently in winter ball (Lev "WL") or
+  // international / all-star duty (Lev "INT"): they're treated as ordinary minor
+  // leaguers and placed at whatever level their ability fits, same as everyone
+  // else. (Their actual WL/INT status is surfaced as a badge in the UI.)
+  // WL is the league's lowest regular rung — the floor for everyone — with INT (the
+  // international complex) one rung below it, reachable only by international-signed
+  // players. floorRank = the higher of that holding floor and the player's AGE floor
+  // (he can't sit on a rung he's too old for), and it guards both initial placement
+  // AND the cascade. Promotion = a player whose ability places him above his current
+  // level (↑ tag).
+  const minLev = (p) => (p["Lev"] === "INT" ? "INT" : "WL");
+  const floorRankOf = (p, age) => Math.max(LEVEL_RANK[minLev(p)], ageFloorRank(age));
+  const H = hitters.filter((p) => p["ORG"] === org).map((p) => {
+    const cur = currentValue(p, false), pot = potentialValue(p, false), woba = num(p["wOBA wtd"]), age = num(p["Age"]);
+    // Placed where his CURRENT bat fits (median of the level), no reach: a hitter who
+    // can't hit the level gets buried; one too good for it wastes the rep.
+    return { p, isPitcher: false, cur, pot, woba, age,
+             priority: (pot != null ? pot : cur) ?? -99, play: blendScore(cur, pot),
+             ceiling: highestClearing(woba, oFloors, minLev(p)) || minLev(p), floorRank: floorRankOf(p, age), bestPos: bestPosition(p) };
+  });
+  const P = pitchers.filter((p) => p["ORG"] === org).map((p) => {
+    const cur = currentValue(p, true), pot = potentialValue(p, true), age = num(p["Age"]);
+    // Level fit is judged on the role he'll DEVELOP in (a future starter on his STARTER
+    // line, not the relief line he won't throw) and placed exactly at that ability — NO
+    // reach. Overplacing a starter-prospect gets him shelled and tanks his potential; he
+    // develops by succeeding where he belongs, then earning the next rung. role = MLB
+    // usage (best-projected); devRole = how he's developed (starter-capable arm starts).
+    return { p, isPitcher: true, cur, pot, age,
+             priority: (pot != null ? pot : cur) ?? -99, play: blendScore(cur, pot),
+             spPot: num(p["WAP"]),   // SP potential (WAP) — decides who STARTS in the minors: future starters first
+             ceiling: highestClearing(devRoleValue(p), pFloors, minLev(p)) || minLev(p), floorRank: floorRankOf(p, age),
+             role: pitcherRole(p), devRole: pitcherRole(p, { developmental: true }) };
+  });
+
+  const usedH = new Set(), usedP = new Set();
+  const levels = {};
+
+  // ---- MLB: the actual team — best available, NO hitting gate ----
+  {
+    const byCur = (a, b) => (b.cur ?? -99) - (a.cur ?? -99);
+    const sp = P.filter((x) => x.role === "SP").sort(byCur).slice(0, 5);
+    const rp = P.filter((x) => x.role === "RP").sort(byCur).slice(0, 8);
+    [...sp, ...rp].forEach((x) => usedP.add(x));
+    const used = new Set();
+    const vf = (h, pos) => posWAA(h.p, pos) ?? h.cur ?? -99;
+    const { roster, gaps } = fillSlots(H, MLB_STARTER_SLOTS, used, vf);
+    const { roster: bench } = fillSlots(H, MLB_BENCH_SLOTS, used, vf);
+    [...roster, ...bench].forEach((h) => usedH.add(h));
+    levels.MLB = { SP: sp, RP: rp, hitters: roster, bench, gaps, counts: cnt(sp, rp, roster, bench) };
+  }
+
+  // ---- Minors: remaining players, hit-gated + development-prioritized ----
+  const minors = LEVELS.filter((l) => l !== "MLB");           // R- .. AAA
+  const cap = (c) => (c === "MLB" ? "AAA" : (c || "INT"));     // not-on-MLB tops out at AAA; default floor is INT (lowest)
+  const hBy = {}; for (const l of minors) hBy[l] = [];
+  // Bucket at the ability ceiling, but NEVER below the player's floor. A too-weak-but-
+  // age-floored player (his bat fits a level he's too old for) lands at his floor as a
+  // filler rather than vanishing to depth — a 20-yo with a 60 glove belongs on the R-
+  // bench, not in a void. (cap() already holds non-MLB ceilings to AAA.)
+  const bucketOf = (rec) => LEVELS[Math.max(LEVEL_RANK[cap(rec.ceiling)], rec.floorRank)];
+  for (const h of H) if (!usedH.has(h)) { const b = bucketOf(h); if (b) hBy[b].push(h); }
+
+  // ===== PITCHERS — two passes. All SPs are RP-eligible; not all RPs can start. =====
+  // The RELIEF line for ANY arm (a leftover starter is judged as the reliever he'd be).
+  const rpCur = (x) => num(x.p["WAA wtd RP"]);
+  const rpPotV = (x) => num(x.p["WAP RP"]);
+  const rpPlay = (x) => blendScore(rpCur(x), rpPotV(x));                  // RP potential-weighted
+  const rpCeil = (x) => highestClearing(rpCur(x), rpFloors, minLev(x.p)) || minLev(x.p);
+
+  // Pass 1 — SP rotations: the best SP-potential arms start; a blocked starter cascades
+  // DOWN to keep starting at a level he fits, and only leaves the rotation track if he
+  // can't crack ANY rotation. Relief-only arms (can't start) sit this pass out.
+  const spBy = {}; for (const l of minors) spBy[l] = [];
+  for (const x of P) if (!usedP.has(x) && x.devRole === "SP") { const b = bucketOf(x); if (b) spBy[b].push(x); }
+  const SProt = {};
+  for (let li = minors.length - 1; li >= 0; li--) {
+    const L = minors[li], down = li > 0 ? minors[li - 1] : null, dr = down ? LEVEL_RANK[down] : -1;
+    // Rotation order = SP POTENTIAL (WAP) first: a future-positive starter must out-rank a
+    // future-negative one, so a weak current line can't bury a real prospect in the pen.
+    // Win+grow blend breaks ties among equal-ceiling arms.
+    const sp = spBy[L].sort((a, b) => (b.spPot ?? -99) - (a.spPot ?? -99) || b.play - a.play);
+    SProt[L] = sp.slice(0, 6); SProt[L].forEach((x) => usedP.add(x));
+    // Cascade overflow down ONE level only (mark it). A blocked starter gets a shot to start
+    // one rung lower; if he can't crack THAT rotation either he converts to relief at his own
+    // ability (Pass 2) instead of tumbling level after level to the bottom — that multi-level
+    // slide is what dumped A--ability arms into WL rotations.
+    if (down) for (const x of sp.slice(6)) if (dr >= x.floorRank && !x._spDropped) { x._spDropped = true; spBy[down].push(x); }
+  }
+
+  // Pass 2 — RP bullpens: everyone still unplaced. The lower-ceiling starters who never
+  // cracked a rotation CONVERT to relief (a future as a reliever instead of rotting in
+  // depth) and compete with the relief-only arms, ranked by RP potential, placed where
+  // their relief arm fits with overflow cascading down. Fills the pens from the surplus.
+  const rpBy = {}; for (const l of minors) rpBy[l] = [];
+  for (const x of P) if (!usedP.has(x)) { const cr = LEVEL_RANK[cap(rpCeil(x))]; if (cr >= x.floorRank) rpBy[LEVELS[cr]].push(x); }
+  const RPpen = {};
+  for (let li = minors.length - 1; li >= 0; li--) {
+    const L = minors[li], down = li > 0 ? minors[li - 1] : null, dr = down ? LEVEL_RANK[down] : -1;
+    const rp = rpBy[L].sort((a, b) => rpPlay(b) - rpPlay(a));
+    RPpen[L] = rp.slice(0, 9); RPpen[L].forEach((x) => usedP.add(x));
+    if (down) for (const x of rp.slice(9)) if (dr >= x.floorRank) rpBy[down].push(x);
+  }
+
+  // Pass 3 — completeness backfill. Prospects sit exactly at their ability (overplacing a
+  // real future tanks it). But a FILLER (old or low-ceiling, no future to protect) may
+  // stretch UP one rung to finish a roster — a no-future arm eating innings a level up
+  // costs nothing. Top-down, so a filler pulled up leaves a vacancy the level below fills
+  // next; the shortage lands at the bottom, absorbed by the young depth arms. SP slots
+  // only take startable arms (all SPs are RP-eligible, not vice-versa). Stretched arms get
+  // an `_stretch` flag so the UI can mark them as roster-fillers, not true level talent.
+  const SP_TARGET = 6, RP_TARGET = 9;
+  const isProspectArm = (x) => (x.age ?? 99) <= 24 && (x.pot ?? -99) > 1.0;   // young + real ceiling
+  const isFillerArm = (x) => !isProspectArm(x);
+  let unplaced = P.filter((x) => !usedP.has(x));
+  const borrowFiller = (staff) => {                         // weakest filler from a staff, for the chain
+    let wi = -1, wv = Infinity;
+    for (let i = 0; i < staff.length; i++) { if (!isFillerArm(staff[i])) continue; const v = staff[i].pot ?? staff[i].cur ?? -99; if (v < wv) { wv = v; wi = i; } }
+    return wi < 0 ? null : staff.splice(wi, 1)[0];
+  };
+  const fillStaff = (staff, belowStaff, target, lr, ceilOf, scoreOf, roleOk, L) => {
+    while (staff.length < target) {
+      let cand = null, ci = -1, cs = -Infinity;
+      for (let i = 0; i < unplaced.length; i++) {
+        const x = unplaced[i];
+        if (!isFillerArm(x) || !roleOk(x) || x.floorRank > lr) continue;
+        const r = LEVEL_RANK[ceilOf(x)];
+        if (r < lr - 1 || r > lr) continue;                 // at most a one-rung stretch up
+        const s = scoreOf(x); if (s > cs) { cs = s; cand = x; ci = i; }
+      }
+      if (cand) { unplaced.splice(ci, 1); usedP.add(cand); }
+      else if (belowStaff) cand = borrowFiller(belowStaff);   // chain: pull a filler up from the level below
+      if (!cand) break;
+      if (LEVEL_RANK[ceilOf(cand)] < lr) cand._stretch = L;    // flag the overplacement
+      staff.push(cand); usedP.add(cand);
+    }
+  };
+  for (let li = minors.length - 1; li >= 0; li--) {
+    const L = minors[li], lr = LEVEL_RANK[L], below = li > 0 ? minors[li - 1] : null;
+    fillStaff(SProt[L], below ? SProt[below] : null, SP_TARGET, lr, (x) => x.ceiling, (x) => x.cur ?? -99, (x) => x.devRole === "SP", L);
+    fillStaff(RPpen[L], below ? RPpen[below] : null, RP_TARGET, lr, (x) => cap(rpCeil(x)), (x) => rpPlay(x), () => true, L);
+  }
+
+  // ===== HITTERS per level (reads the SP/RP staffs built above) =====
+  for (let li = minors.length - 1; li >= 0; li--) {
+    const L = minors[li], down = li > 0 ? minors[li - 1] : null, dr = down ? LEVEL_RANK[down] : -1;
+    const SP = SProt[L], RP = RPpen[L];
+    const used = new Set();
+    const pool = hBy[L].slice().sort((a, b) => b.play - a.play);          // best win+grow blend first
+    // Starters get the most reps — chosen on the win+grow blend (emphasis win).
+    const { roster, gaps } = fillSlots(pool, MINOR_SLOTS, used, (h) => h.play);
+    // Bench fills position-coverage first (backup C / 2 IF / 2 OF) plus a few win-now bats —
+    // a MODEST size, not the whole cap. The leftover roster-cap room is handed to the
+    // development-depth pass to allocate by youth/ceiling (young arms vs. extra bats), so the
+    // bench doesn't hog every spot and bury the lottery-ticket arms in cuts.
+    const benchTarget = Math.max(5, Math.min(9, (MINOR_ROSTER_CAP[L] ?? 99) - SP.length - RP.length - MINOR_SLOTS.length));
+    const { bench, need } = fillMinorBench(pool, used, benchTarget);
+    addCaptainIfMissing(roster, bench, [...SP, ...RP], pool, used);
+    if (down) for (const h of pool) if (!used.has(h) && dr >= h.floorRank) hBy[down].push(h);   // logjam extras cascade down (split)
+    [...roster, ...bench].forEach((h) => usedH.add(h));   // sync placed minor hitters to the global set so the backfills don't re-grab them
+    levels[L] = { SP, RP, hitters: roster, bench, gaps, _benchNeed: need, counts: cnt(SP, RP, roster, bench) };
+  }
+
+  // Hitter completeness backfills (after the per-level loop). One shared unplaced pool —
+  // LINEUPS fill FIRST (starters are the priority), then benches get the remainder.
+  let unplacedH2 = H.filter((h) => !usedH.has(h));
+
+  // (1) Lineup completeness — fill any empty lineup slot the level's own pool couldn't
+  // cover from an age-relevant FILLER (never a prospect) who can play it, else chain from
+  // the level below's bench. One-rung stretch, flagged, cap-bounded.
+  const slotElig = Object.fromEntries(MINOR_SLOTS.map(([label, elig]) => [label, elig]));
+  for (let li = minors.length - 1; li >= 0; li--) {
+    const L = minors[li], lr = LEVEL_RANK[L], below = li > 0 ? minors[li - 1] : null;
+    const lv = levels[L]; if (!lv || !lv.gaps || !lv.gaps.length) continue;
+    const rosterCap = MINOR_ROSTER_CAP[L] ?? 99;
+    const total = () => lv.SP.length + lv.RP.length + lv.hitters.length + lv.bench.length;
+    const remaining = [];
+    for (const slot of lv.gaps) {
+      if (total() >= rosterCap) { remaining.push(slot); continue; }
+      const eg = slotElig[slot] || [slot];
+      let cand = null, ci = -1, cs = -Infinity;
+      for (let i = 0; i < unplacedH2.length; i++) {
+        const x = unplacedH2[i];
+        if (!isFillerArm(x) || x.floorRank > lr || !eg.some((pos) => eligibleAt(x.p, pos))) continue;
+        const r = LEVEL_RANK[x.ceiling]; if (r < lr - 1 || r > lr) continue;
+        const s = x.play ?? -99; if (s > cs) { cs = s; cand = x; ci = i; }
+      }
+      if (cand) { unplacedH2.splice(ci, 1); usedH.add(cand); }
+      else if (below) {                                  // chain: borrow weakest eligible filler from below's bench
+        const bb = levels[below].bench; let wi = -1, wv = Infinity;
+        for (let i = 0; i < bb.length; i++) { if (!isFillerArm(bb[i]) || !eg.some((pos) => eligibleAt(bb[i].p, pos))) continue; const v = benchScore(bb[i]); if (v < wv) { wv = v; wi = i; } }
+        if (wi >= 0) cand = bb.splice(wi, 1)[0];
+      }
+      if (!cand) { remaining.push(slot); continue; }
+      cand.slot = slot; cand.slotPos = eg.find((pos) => eligibleAt(cand.p, pos)) || slot;
+      if (LEVEL_RANK[cand.ceiling] < lr) cand._stretch = L;
+      lv.hitters.push(cand); usedH.add(cand);
+    }
+    lv.gaps = remaining;
+    lv.counts = cnt(lv.SP, lv.RP, lv.hitters, lv.bench);
+  }
+
+  // (2) Bench completeness — guarantee a backup C, two IF and two OF at every level (the
+  // user's minimum) from the REMAINING unplaced fillers (never prospects), else chain from
+  // the level below's bench. Bounded by the roster cap; stretched fillers flagged.
+  const benchNeedNow = (bench) => ({
+    C: Math.max(0, 1 - bench.filter((x) => benchEligAt(x.p, "C")).length),
+    IF: Math.max(0, 2 - bench.filter((x) => benchEligAt(x.p, "IF")).length),
+    OF: Math.max(0, 2 - bench.filter((x) => benchEligAt(x.p, "OF")).length),
+  });
+  for (let li = minors.length - 1; li >= 0; li--) {
+    const L = minors[li], lr = LEVEL_RANK[L], below = li > 0 ? minors[li - 1] : null;
+    const lv = levels[L]; if (!lv) continue;
+    const rosterCap = MINOR_ROSTER_CAP[L] ?? 99;
+    const total = () => lv.SP.length + lv.RP.length + lv.hitters.length + lv.bench.length;
+    for (const grp of ["C", "IF", "OF"]) {
+      while (benchNeedNow(lv.bench)[grp] > 0 && total() < rosterCap) {
+        let cand = null, ci = -1, cs = -Infinity;
+        for (let i = 0; i < unplacedH2.length; i++) {
+          const x = unplacedH2[i];
+          if (!isFillerArm(x) || x.floorRank > lr || !benchEligAt(x.p, grp)) continue;
+          const r = LEVEL_RANK[x.ceiling]; if (r < lr - 1 || r > lr) continue;   // at most a one-rung stretch
+          const s = benchScore(x); if (s > cs) { cs = s; cand = x; ci = i; }
+        }
+        if (cand) { unplacedH2.splice(ci, 1); usedH.add(cand); }
+        else if (below) {                                  // chain: borrow the weakest eligible filler from below
+          const bb = levels[below].bench; let wi = -1, wv = Infinity;
+          for (let i = 0; i < bb.length; i++) { if (!isFillerArm(bb[i]) || !benchEligAt(bb[i].p, grp)) continue; const v = benchScore(bb[i]); if (v < wv) { wv = v; wi = i; } }
+          if (wi >= 0) cand = bb.splice(wi, 1)[0];
+        }
+        if (!cand) break;
+        if (LEVEL_RANK[cand.ceiling] < lr) cand._stretch = L;
+        lv.bench.push(cand); usedH.add(cand);
+      }
+    }
+    lv.counts = cnt(lv.SP, lv.RP, lv.hitters, lv.bench);
+  }
+
+  // Fill each minor roster toward its cap (32/32/35/35/40/40/40) with AGE-APPROPRIATE
+  // players only — a player is placed between his age floor and his ability ceiling, NEVER
+  // below his floor (no 23-yo on the winter-league bench) and never above his ceiling. Best
+  // Fill remaining roster spots STRICTLY by youth-weighted keep-value, regardless of position.
+  // The core lineup/rotation/bullpen/bench are already set with their position minimums, so
+  // depth is just "keep the best remaining lottery tickets that fit." No position cap here:
+  // an earlier 18-arms-per-level soft cap was dropping a HIGHER-value young arm (Tavio Molina,
+  // 21) and letting the level finish on LOWER-value bats — exactly the bad cut the user flagged.
+  // youthBonus rewards TCR upside (a 20-yo's talent can still randomly jump); a level that runs
+  // out of age-appropriate players just stays under cap. What's left once maxed is the cut list.
+  const youthBonus = (age) => (age == null ? 0 : age <= 20 ? 2.5 : age <= 22 ? 1.5 : age <= 24 ? 0.6 : 0);
+  const keepValue = (x) => (x.pot ?? x.cur ?? -99) + youthBonus(x.age);
+  const totalAt = (L) => levels[L].SP.length + levels[L].RP.length + levels[L].hitters.length + (levels[L].bench ? levels[L].bench.length : 0);
+  {
+    const pool = [...H, ...P].filter((x) => !(x.isPitcher ? usedP.has(x) : usedH.has(x))).sort((a, b) => keepValue(b) - keepValue(a));
+    for (const x of pool) {
+      for (let r = Math.max(LEVEL_RANK[cap(x.ceiling)], x.floorRank); r >= x.floorRank; r--) {   // floorRank = age floor; never below it
+        const L = LEVELS[r];
+        if (!levels[L] || L === "MLB") continue;
+        if (totalAt(L) >= (MINOR_ROSTER_CAP[L] ?? 99)) continue;
+        if (x.isPitcher) { levels[L].RP.push(x); usedP.add(x); } else { levels[L].bench.push(x); usedH.add(x); }
+        x._devDepth = true;
+        break;
+      }
+    }
+  }
+  for (const L of minors) if (levels[L]) levels[L].counts = cnt(levels[L].SP, levels[L].RP, levels[L].hitters, levels[L].bench);
+
+  const placed = new Set();
+  const placedAt = {};
+  for (const l of LEVELS) for (const x of [...levels[l].SP, ...levels[l].RP, ...levels[l].hitters, ...(levels[l].bench || [])]) { placed.add(x.p["ID"]); placedAt[x.p["ID"]] = l; }
+  const depth = [...H, ...P].filter((x) => !placed.has(x.p["ID"]));
+
+  // Promote / overmatched lists derive from the SAME placement as the cards, so the
+  // summary panels can never contradict them: a player whose ability placed him ABOVE
+  // his current OOTP level is a promote (= the green ↑ chip); placed BELOW = he's
+  // overmatched where he sits now. One source of truth (role-clean, place-at-ability).
+  const promote = [], buried = [];
+  for (const r of [...H, ...P]) {
+    const pl = placedAt[r.p["ID"]];
+    if (!pl || !isAffiliate(r.p["Lev"])) continue;
+    const d = LEVEL_RANK[pl] - LEVEL_RANK[r.p["Lev"]];
+    if (d > 0) promote.push({ p: r.p, lev: r.p["Lev"], placed: pl, cur: r.cur });
+    else if (d < 0) buried.push({ p: r.p, lev: r.p["Lev"], placed: pl, cur: r.cur });
+  }
+  promote.sort((a, b) => (b.cur ?? -99) - (a.cur ?? -99));
+  buried.sort((a, b) => (a.cur ?? 99) - (b.cur ?? 99));
+
+  // Prospect pipeline by group: a placed, young player with positive-WAA upside, counted
+  // toward the role he's developed in (a future SP → SP) so it matches the rosters.
+  const pipeline = { C: 0, IF: 0, OF: 0, SP: 0, RP: 0 };
+  for (const r of [...H, ...P]) {
+    if (!placedAt[r.p["ID"]]) continue;
+    if (!(r.age != null && r.age <= 24 && r.pot != null && r.pot > 0)) continue;
+    const grp = r.isPitcher ? r.devRole : hitterBucket(r.p);
+    if (grp in pipeline) pipeline[grp]++;
+  }
+  const needs = [];
+  for (const [grp, c] of Object.entries(pipeline)) if (c === 0) needs.push({ grp, msg: `No ${grp} prospect in the system` });
+
+  return { org, levels, depth, promote: promote.slice(0, 12), buried: buried.slice(0, 12), pipeline, needs };
+}
+
+export function listOrgs(hitters, pitchers) {
+  const s = new Set();
+  for (const p of [...hitters, ...pitchers]) {
+    const o = p["ORG"];
+    if (o && o !== "-" && o !== "0") s.add(o);
+  }
+  return [...s].sort();
+}
