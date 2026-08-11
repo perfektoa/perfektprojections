@@ -179,6 +179,9 @@
  *    with agedWAR via futureValue's getAgingFactor schedule, anchored so that
  *    agedWAR_0 = today's WAR (the same basis the fit regressed on). 0.97 is
  *    futureValue's DISCOUNT_RATE (3%/yr time value).
+ *    The FAIR-OFFER horizon is the player's OWN remaining control
+ *    (serviceTime.controlWindow: service days vs the signed schedule), not the
+ *    flat six years this file used to assume for everybody.
  *
  * WHAT REMAINS HEURISTIC OR CONVENTION (clearly labeled, not fitted):
  * - The aging schedule itself (futureValue FV_DEFAULTS, INTERIM per the
@@ -221,6 +224,9 @@
 
 import { getAgingFactor, FV_DEFAULTS } from './futureValue.js';
 import { replacementOffset } from './leagueCalib.js';
+import {
+  SVC_YEAR_DAYS, FA_SERVICE_YEARS, ARB_SERVICE_YEARS, svcYearDays, controlWindow,
+} from './serviceTime.js';
 
 // ============================================================
 // WAR BASIS (audit M5 currency: WAA + measured replacement offsets)
@@ -283,16 +289,10 @@ export function isBetterAsRP(player) {
 // SERVICE TIME + CONTRACT BASIS (v3)
 // ============================================================
 
-/**
- * Days in one MLB service year. MEASURED, not assumed — see the header
- * (route A identity: mlb_service_years === floor(mlb_service_days / 172) for
- * every MLB-world player in both leagues, and for no other L in 120..210).
- * If a future world changes the setting this is the one place to re-measure.
- */
-export const SVC_YEAR_DAYS = 172;
-/** Service years to free agency / to arbitration (OOTP league rules). */
-export const FA_SERVICE_YEARS = 6;
-export const ARB_SERVICE_YEARS = 3;
+// The service constants and the day-length override now live in serviceTime.js
+// (the remaining-control module needs them and must not import this file back).
+// Re-exported here because this is where they have always been imported from.
+export { SVC_YEAR_DAYS, FA_SERVICE_YEARS, ARB_SERVICE_YEARS };
 
 /**
  * MLB service DAYS the player had when he signed his CURRENT deal, for a deal
@@ -304,17 +304,6 @@ export function serviceDaysAtSigning(p) {
   const d = toNum(p.MLBSvcDays);
   if (d === null) return null;
   return d - (toNum(p.MLBSvcDaysTY) ?? 0);
-}
-
-/**
- * The service-year length actually in force. SVC_YEAR_DAYS is the MEASURED
- * value and is what ships; the override exists so the sensitivity of the fit
- * to that measurement stays re-runnable from the shipped code
- * (scripts/market_sensitivity.mjs), not so anyone can tune it.
- */
-function svcYearDays(opts) {
-  const v = opts && toNum(opts.svcYearDays);
-  return v && v > 0 ? v : SVC_YEAR_DAYS;
 }
 
 /** Average annual value of the remaining deal — the price the market set. */
@@ -1181,13 +1170,20 @@ export function calculatePlayerValue(player, rate) {
   // --- Fair offer (v2: TIER-LOCAL) — the local market price at the mean aged
   // WAR over the proposed years, band = +/- 1 LOCAL residual SD (the fitted
   // dispersion of comparable-WAR signings, not the global one). Default
-  // horizon: futureValue's controlled-seasons window clipped by career end
-  // (MAX_CAREER_AGE).
+  // horizon: THIS player's remaining control (serviceTime.controlWindow),
+  // clipped by career end (MAX_CAREER_AGE). It used to be a flat 6 for
+  // everyone, which quoted a 5.1-service veteran a six-year AAV he can only be
+  // held one year for. Floored at 1: an offer is at least the season in front
+  // of you, which is also the horizon for a player already past free agency.
+  const control = controlWindow(player);
   const offerYears = Math.max(1, Math.min(
-    FV_DEFAULTS.DEFAULT_YEARS_OF_CONTROL,
+    control.controlYears,
     FV_DEFAULTS.MAX_CAREER_AGE - age,
   ));
-  const maxLen = Math.max(1, Math.min(8, FV_DEFAULTS.MAX_CAREER_AGE - age));
+  // The table runs to 8 years, but a long extension can control a young player
+  // for more than that; the horizon row has to exist or meanWAR(offerYears)
+  // would divide a shorter path by the longer horizon and understate it.
+  const maxLen = Math.max(1, Math.min(Math.max(8, offerYears), FV_DEFAULTS.MAX_CAREER_AGE - age));
   const offerPath = agedWARPath(player, maxLen);
   const meanWAR = (len) => offerPath.slice(0, len).reduce((s, w) => s + w, 0) / len;
 
@@ -1258,6 +1254,7 @@ export function calculatePlayerValue(player, rate) {
     totalValue, adjustedValue: totalValue, yearlyValues, productiveYears,
     // context
     currentPrice: price, warNow: r2dp(war), isProspect,
+    control,
     rateUsed: {
       slope, floor, curv, maxX, residSD,
       shape: rate ? rate.shape : 'line',

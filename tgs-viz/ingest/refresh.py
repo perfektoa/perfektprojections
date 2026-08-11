@@ -71,7 +71,9 @@ def drift_check(league):
         if want is None:
             continue
         checked += 1
-        if abs(got - float(want)) > 1e-6 * (1 + abs(float(want))):
+        # relative (6-sig-fig) tolerance - "1 + |want|" would make this an absolute test and
+        # blind the guard to drift in the sub-1 constants, which is all of them
+        if abs(got - float(want)) > 1e-6 * max(abs(got), abs(float(want))):
             bad += 1
             print(f"  !! DRIFT {league} {which}!{cell}: extracted {got:.10g} vs "
                   f"constants-latest {float(want):.10g}  [{sec}/{key}]")

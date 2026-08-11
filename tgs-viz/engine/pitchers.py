@@ -316,7 +316,12 @@ def compute(p, dp, filt, park_aa, scurves=None, currency=None):
         HR_anchor="H8", HR_sh="C16", HR_ih="B16", HR_sl="E16", HR_il="D16", HR_k="K16",
         HH_anchor="H9", HH_sh="C20", HH_ih="B20", HH_sl="E20", HH_il="D20", HH_k="K18",
         xbh_k="K19", t3b_k="K20",
-        hld_anchor="I7", sbat_k="K24", sbpct_k="K9",
+        # INTENTIONAL divergence from the sheet: the sheet's 'SB% vR/vL RP' formulas
+        # add Data Points K9 — the SP block's league SB% — while their SBAT sibling
+        # in the same formula pair correctly adds the RP block's K24. K21 is the RP
+        # league SB% and had no reader anywhere; the RP line now adds its own rate,
+        # like every other constant in RP_CFG.
+        hld_anchor="I7", sbat_k="K24", sbpct_k="K21",
         woba_w=["K29", "K30", "K31", "K32", "K33", "K34", "K35", "K36"],
         scale="I29", ra9_base="H42",
     )

@@ -3,11 +3,16 @@ hitter_tails_fit.py — audit D4: refit the PROVEN-BROKEN hitter tail regions fr
 the archive bucket data and emit calib/<LG>/hitter_tails.json, the opt-in
 `tails` layer consumed by engine/hitters.py via ratings.live_hitter_tails().
 
-The four regions (exactly the audit's list — nothing else is touched):
+The five regions (nothing else is touched):
   SO   (K vR   65..80): contact tail under-projected (K-75 +3.8 phantom runs)
   HR   (POW vR 70..80): the 70-75 hump — POW-80 must project >= POW-75
   HHR  (BA vR  20..35): the BA-20 BABIP floor (+14 phantom-dock runs)
   XBH  (GAP vR 20..35 and 70..80): XBH over-projected at both GAP tails
+  T3B  (SPE    20..45): the measured 3B/XBH relation is a floor-then-ramp, so
+        the low segment's single straight WLS line under-shoots at SPE 45 and
+        over-shoots at 30/35, dumping the whole residual into one out-of-scale
+        step at the 45->50 breakpoint (TGS +0.0381 / BLM +0.0254 against
+        archive-measured 45->50 steps of +0.0222 / +0.0153)
 
 Method (NOTHING INVENTED — every shipped knot value is an archive-measured
 bucket quantity, the SB%-cap precedent):
@@ -55,7 +60,12 @@ BLOCKS = {
     "HR":  ("POW vR", ("hPOW", "lPOW"),   +1, [(65, "hi")]),
     "HHR": ("BA vR",  ("hBABIP", "lBABIP"), +1, [(40, "lo")]),
     "XBH": ("GAP vR", ("hGAP", "lGAP"),   +1, [(40, "lo"), (65, "hi")]),
+    "T3B": ("SPE",    ("hSPE", "lSPE"),   +1, [(50, "lo")]),
 }
+
+# blocks calibrate.py fits with iferror0=True: a 0 denominator scores as the
+# grand-total rate (i.e. 0 once centred), not as an error
+IFERROR0 = {"T3B"}
 
 
 def rate_fns():
@@ -63,7 +73,8 @@ def rate_fns():
     def hrp(a):   return a["hr"] / (a["pa"] - a["ibb"] - a["bb"] - a["hp"])
     def babip(a): return (a["h"] - a["hr"]) / (a["ab"] - a["hr"] - a["k"] + a["sf"])
     def xbh(a):   return (a["d"] + a["t"]) / (a["h"] - a["hr"])
-    return {"SO": kp, "HR": hrp, "HHR": babip, "XBH": xbh}
+    def trip(a):  return a["t"] / (a["d"] + a["t"])
+    return {"SO": kp, "HR": hrp, "HHR": babip, "XBH": xbh, "T3B": trip}
 
 
 def pava(vals, wts, increasing=True):
@@ -120,7 +131,13 @@ def fit_league(league):
             r = hitters.get(i, {}).get(xcol)
             if not isinstance(r, (int, float)):
                 continue
-            pts.append((float(r), yfn(p1[i]), p1[i]["pa"]))
+            try:
+                y = yfn(p1[i])
+            except ZeroDivisionError:
+                if blk not in IFERROR0:
+                    raise
+                y = gtr
+            pts.append((float(r), y, p1[i]["pa"]))
 
         # pool fidelity: the two-segment WLS from THESE points must reproduce
         # constants-latest.json (proves the pool == the live fit pool)
@@ -213,13 +230,22 @@ def fit_league(league):
                 bad += 1
             prev = cur
             r += 0.1
-        if bad:
+        # ...and the same scan on the 5-rungs, the ONLY ratings the game emits
+        bad_rung = 0
+        rungs_all = [x for x in range(int(SUPPORT[0]), int(SUPPORT[1]) + 1, 5)]
+        for a_, b_ in zip(rungs_all, rungs_all[1:]):
+            va, vb = line(a_) + adj(a_), line(b_) + adj(b_)
+            if (vb - va) * direction < -1e-10:
+                bad_rung += 1
+        if bad or bad_rung:
             print(f"      !! composite monotonicity violations (outside the "
-                  f"50-breakpoint): {bad}")
+                  f"50-breakpoint): {bad} on the 0.1 grid, {bad_rung} on the "
+                  f"5-rungs")
         out["blocks"][blk] = {
             "x": xcol, "direction": direction,
             "regions": [[a, s] for a, s in regions],
             "knots": [[r, d] for r, d in knots],
+            "monotone_violations_rung": bad_rung,
             "report": rep, "monotone_violations": bad,
         }
     print(f"  pool fidelity vs constants-latest.json: worst rel diff "

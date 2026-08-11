@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { calculateFutureValue } from '../lib/futureValue';
+import { controlWindow, formatControl } from '../lib/serviceTime';
 import { formatCellValue, getCellColorClass } from '../lib/columns';
 import { loadRatingTrends, playerHistory } from '../lib/ratingTrends';
 import { X } from 'lucide-react';
@@ -90,7 +91,9 @@ function RatingHistory({ player }) {
 export default function PlayerDetail({ player, onClose, type = 'hitter' }) {
   if (!player) return null;
 
-  const fv = useMemo(() => calculateFutureValue(player), [player]);
+  // FV counts the seasons this club still holds, not a flat six (serviceTime).
+  const control = useMemo(() => controlWindow(player), [player]);
+  const fv = useMemo(() => calculateFutureValue(player, control.controlYears), [player, control]);
 
   // Development curve data
   const devCurve = fv.yearByYear.map(y => ({
@@ -227,6 +230,20 @@ export default function PlayerDetail({ player, onClose, type = 'hitter' }) {
               </div>
               {statLine('% to Peak', `${fv.pctToPeak}%`)}
               {statLine('ETA to Peak', fv.yearsTilPeak > 0 ? `${fv.yearsTilPeak} yrs` : 'At peak')}
+              {/* Remaining control — the window everything above is summed over.
+                  Plain div, not statLine: formatCellValue would parseFloat the
+                  composite string down to its leading number. */}
+              <div className="flex justify-between items-center py-0.5 border-t border-slate-700/50 mt-1 pt-1">
+                <span className="text-slate-500 text-xs">Control</span>
+                <span
+                  className={`text-sm font-mono ${control.source === 'default' ? 'text-amber-400' : 'text-slate-300'}`}
+                  title={control.serviceYears !== null
+                    ? `${control.serviceYears.toFixed(1)} MLB service yrs (${control.serviceBasis})`
+                    : 'No service data on this row — falling back to a full 6-year window'}
+                >
+                  {formatControl(control)}
+                </span>
+              </div>
             </div>
 
             {player._draftFV !== undefined && (

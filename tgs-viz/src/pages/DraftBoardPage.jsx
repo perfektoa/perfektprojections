@@ -114,7 +114,7 @@ export default function DraftBoardPage({ hitters, pitchers, allHitters, allPitch
       <div className="p-4">
         <h1 className="text-2xl font-bold text-white">Draft Board</h1>
         <p className="text-sm text-slate-400 mt-1">
-          Draft FV: age-relative performance (30%) + ceiling potential (70%), scored in WAR | Adjusted for durability
+          Draft FV: age percentile 30% + ceiling 60% + projected peak 10%, all in WAA | Fragile, work ethic and intelligence adjust it
           <span className="block text-xs text-slate-500 mt-0.5">
             Value columns display WAA (vs average). <b>Ceiling</b> = best case, no haircut. <b>Proj Peak</b> = same ceiling after the gap-factor + risk haircut. Ceiling is the payoff, Age Pctl is the probability.
           </span>
@@ -136,8 +136,7 @@ export default function DraftBoardPage({ hitters, pitchers, allHitters, allPitch
 
         <select value={sortBy} onChange={e => setSortBy(e.target.value)}
           className="py-1.5 px-2 bg-slate-800 border border-slate-600 rounded-lg text-sm text-slate-200">
-          <option value="_draftFV">Sort by Draft FV (20-80)</option>
-          <option value="_draftRawFV">Sort by Draft FV (Raw)</option>
+          <option value="_draftRawFV">Sort by Draft FV</option>
           <option value="_draftCeilingWAA">Sort by Ceiling (WAA)</option>
           <option value="_agePercentile">Sort by Age Percentile</option>
           <option value="_futureValue">Sort by Future Value</option>
@@ -239,8 +238,7 @@ export default function DraftBoardPage({ hitters, pitchers, allHitters, allPitch
                 <th>POS</th>
                 <th>ORG</th>
                 <th>Age</th>
-                <th>Draft FV</th>
-                <th>Raw</th>
+                <th title="age percentile x 0.30 + ceiling x 0.70, then the durability / work-ethic / intelligence modifiers.">Draft FV</th>
                 <th title="Percentile vs the whole league at this age, on current performance. The PROBABILITY half of Draft FV.">Age Pctl</th>
                 <th title="Best-case peak, WAA (vs average) — the sheet's own MAX WAA P / WAP. No risk haircut. The PAYOFF half of Draft FV. (Draft FV itself scores this in WAR so bats, SP and RP share one scale.)">Ceiling</th>
                 <th>Durability</th>
@@ -275,11 +273,8 @@ export default function DraftBoardPage({ hitters, pitchers, allHitters, allPitch
                   <td>
                     <span className="px-2 py-0.5 rounded font-bold text-sm"
                       style={{ color: fvColor(player._draftFV), background: `${fvColor(player._draftFV)}15` }}>
-                      {player._draftFV}
+                      {formatCellValue(player._draftRawFV, '_draftRawFV')}
                     </span>
-                  </td>
-                  <td className={getCellColorClass(player._draftRawFV, '_draftRawFV')}>
-                    {formatCellValue(player._draftRawFV, '_draftRawFV')}
                   </td>
                   <td className={getCellColorClass(player._agePercentile, '_agePercentile')}>
                     {formatCellValue(player._agePercentile, '_agePercentile')}

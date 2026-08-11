@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   LEVELS, LEVEL_RANK, buildRosters, listOrgs,
 } from '../lib/orgBuilder';
+import { PositionalStrengthCard } from '../components/PositionalStrength';
+import { LEAGUE_TEAMS } from './TeamStandingsPage';
 import { Building2, ArrowUpCircle, ArrowDownCircle, AlertTriangle, ChevronDown, Zap, Users } from 'lucide-react';
 
 const fmt = (v) => (v === null || v === undefined ? '—' : Number(v).toFixed(1));
@@ -189,6 +191,14 @@ export default function OrganizationPage({ hitters = [], pitchers = [], league }
   // pipeline summaries from that same placement, so the panels match the level cards.
   const rosters = useMemo(() => (org ? buildRosters(org, hitters, pitchers) : null), [org, hitters, pitchers]);
 
+  // Same club set the standings rank against, so "8th of 28" means the same
+  // thing on both screens. Unmapped leagues pass null and fall back to any org
+  // carrying a real roster.
+  const knownTeams = useMemo(() => {
+    const m = LEAGUE_TEAMS[league];
+    return m ? new Set([...m.AL, ...m.NL]) : null;
+  }, [league]);
+
   // Surplus who didn't make any roster — possible cuts, MOST cuttable first (lowest
   // youth-weighted keep value, so old no-ceiling fillers top the list and any young arm
   // sinks to the bottom).
@@ -238,6 +248,13 @@ export default function OrganizationPage({ hitters = [], pitchers = [], league }
               {rosters.buried.length === 0 ? <span className="text-xs text-slate-600">None flagged</span>
                 : rosters.buried.slice(0, 6).map((r, i) => <div key={i} className="text-xs text-slate-300 flex justify-between"><span>{r.p['Name']} <span className="text-slate-600">({r.lev} → {r.placed})</span></span><span className={valColor(r.cur)}>{fmt(r.cur)}</span></div>)}
             </SummaryCard>
+          </div>
+
+          <div className="mb-5">
+            <PositionalStrengthCard
+              hitters={hitters} pitchers={pitchers}
+              league={league} knownTeams={knownTeams} team={org}
+            />
           </div>
 
           <div className="space-y-3">

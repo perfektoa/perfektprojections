@@ -9,14 +9,23 @@
  *   2. How high is his ceiling by maturity (~25)?
  *
  * Formula:
- *   Draft FV = (agePercentile × 0.35 + ceilingScore × 0.65) × durabilityMod × workEthicMod
+ *   Draft FV = (agePercentile × 0.30 + ceilingScore × 0.60 + peakScore × 0.10)
+ *              × redFlagModifiers
+ *
+ * The blend is monotone in its three inputs; only the modifiers below can reorder two
+ * prospects, and they are deliberately small so they decide near-ties rather than
+ * overturn real gaps. Healthy durability tiers score alike on purpose: a 5% step
+ * between Normal and Durable used to outrank genuine differences in the inputs.
  *
  * Key inputs:
  *   - Hitters: wOBA wtd (current), MAX WAA P (ceiling)
  *   - Pitchers: WAA wtd (current), WAP (ceiling)
- *   - Prone column: durability modifier (Wrecked = undraftable)
- *   - WE column: work ethic development boost
- *   - INT column: flag only (TCR lottery, does not affect number)
+ *   - _potentialWAA (projected peak): the ceiling after the development gap-factor and
+ *     risk haircut, stamped upstream by usePlayersWithFV. Same units and anchors as the
+ *     ceiling, so the two sit on one scale.
+ *   - Prone column: Wrecked = undraftable, Fragile = 0.75; Normal/Durable/Iron Man = 1.0
+ *   - WrkEthic column: H +1.5%, N even, L -1.5%
+ *   - Int column: same, so H/H carries +3.0% and L/L carries -3.0%
  *
  * Age percentile is computed against the FULL league population for statistical
  * stability (~500 players per age bucket vs ~30-130 in draft pool alone).
@@ -29,9 +38,11 @@
 import { replacementOffset } from './leagueCalib.js';
 
 export const DRAFT_FV_DEFAULTS = {
-  // Weighting between current competitiveness and ceiling
+  // Weighting: how far he leads his age peers, how high he can get, and how much of
+  // that he is realistically expected to reach. Must sum to 1.
   CURRENT_WEIGHT: 0.30,
-  CEILING_WEIGHT: 0.70,
+  CEILING_WEIGHT: 0.60,
+  PEAK_WEIGHT:    0.10,
 
   // Ceiling normalization — unified scale: WAA is WAA. More WAA = better player,
   // no clamping at the top so elite outliers keep getting credit.
@@ -43,36 +54,63 @@ export const DRAFT_FV_DEFAULTS = {
 // DURABILITY MODIFIER
 // ============================================================
 
+// Only a RED FLAG may score below 1.0. Normal/Durable/Iron Man are all "healthy" and
+// score identically: splitting them let a 5% step outrank real gaps in the inputs, so a
+// Normal prospect ahead on both age percentile and ceiling could sit below a Durable one
+// behind on both. Fragile and Wrecked are real risk and are allowed to break that order.
 const DURABILITY_MAP = {
-  'Wrecked':  0,      // undraftable
-  'Fragile':  0.75,   // 25% growth penalty
-  'Normal':   0.95,   // 5% growth penalty (miss ~10% of time)
-  'Durable':  1.0,    // no penalty
-  'Iron Man': 1.0,    // no penalty, no bonus
+  'Wrecked':  0,      // undraftable (short-circuited before scoring)
+  // Draft policy, not an estimate: a fragile prospect has to be clearly better than the
+  // field before he is worth taking, so he must clear the board by ~25% to rank level.
+  // Injury proneness is real and externally tracked; this number sets the premium
+  // demanded for carrying that risk, which is a preference and not something a fit
+  // could discover.
+  'Fragile':  0.75,
+  'Normal':   1.0,
+  'Durable':  1.0,
+  'Iron Man': 1.0,
 };
 
 /**
  * Get the growth multiplier based on injury proneness.
  * @param {string} proneValue - "Wrecked", "Fragile", "Normal", "Durable", "Iron Man"
- * @returns {number} Multiplier (0 to 1.0)
+ * @returns {number} Multiplier (0 to 1.0); only Fragile/Wrecked are below 1
  */
 export function getDurabilityModifier(proneValue) {
-  if (!proneValue || typeof proneValue !== 'string') return 0.95; // default to Normal
-  return DURABILITY_MAP[proneValue] ?? 0.95;
+  if (!proneValue || typeof proneValue !== 'string') return 1.0; // unknown is not a red flag
+  return DURABILITY_MAP[proneValue] ?? 1.0;
 }
 
 // ============================================================
-// WORK ETHIC MODIFIER
+// WORK ETHIC / INTELLIGENCE MODIFIERS
 // ============================================================
 
+// Symmetric personality step, applied once for work ethic and once for intelligence,
+// so a prospect high in both carries +3.0% and one low in both carries -3.0%. Sized
+// deliberately small: these break near-ties between otherwise similar prospects and
+// must not overturn a real gap in age percentile or ceiling. A draft preference, set
+// by the user 2026-08-11 — not an estimate of a quantity a fit could recover.
+const PERSONALITY_STEP = 0.015;
+
+const personalityMod = (v) =>
+  v === 'H' ? 1 + PERSONALITY_STEP : v === 'L' ? 1 - PERSONALITY_STEP : 1.0;
+
 /**
- * Get the development boost from work ethic.
- * Only "H" (high) gets a boost.
- * @param {string} weValue - "H", "N", or "L"
- * @returns {number} Multiplier (1.0 or 1.02)
+ * Work ethic: high is a boost, low is the same size penalty.
+ * @param {string} weValue - OOTP WrkEthic: "L", "N" or "H"
+ * @returns {number} 1.015 / 1.0 / 0.985
  */
 export function getWorkEthicModifier(weValue) {
-  return weValue === 'H' ? 1.02 : 1.0;
+  return personalityMod(weValue);
+}
+
+/**
+ * Intelligence: same treatment as work ethic.
+ * @param {string} intValue - OOTP Int: "L", "N" or "H"
+ * @returns {number} 1.015 / 1.0 / 0.985
+ */
+export function getIntelligenceModifier(intValue) {
+  return personalityMod(intValue);
 }
 
 // ============================================================
@@ -296,6 +334,7 @@ export function calculateDraftFV(player, ageGroups, playerType, params = {}) {
       draftRawFV: 0,
       agePercentile: 0,
       ceilingScore: 0,
+      peakScore: null,
       draftCeiling: 0,
       draftCeilingWAA: 0,
       ceilingOffset: 0,
@@ -303,29 +342,30 @@ export function calculateDraftFV(player, ageGroups, playerType, params = {}) {
       durabilityMod: 0,
       toolPenalty: 1.0,
       proneValue: 'Wrecked',
-      highINT: player.INT === 'H',
+      highINT: player.Int === 'H',
       wrecked: true,
-      weBoost: player.WE === 'H',
+      weBoost: player.WrkEthic === 'H',
     };
   }
 
   // ---- Extract metrics based on player type ----
-  // audit M5: WAA -> WAR. Every value below carries its role's MEASURED
-  // replacement offset (leagueCalib.js, per league via player.League), so the
-  // shared CEILING_FLOOR/CEILING_ANCHOR normalization compares hitters and
-  // pitchers (and SP-vs-RP swingmen) in the same freely-available-talent
-  // currency — an average RP ceiling no longer normalizes like an average
-  // hitter ceiling.
+  // CEILING IS WINS, PLAIN. It answers one question: how many wins above average does
+  // this player add if he reaches his potential? That is the sheet's own MAX WAA P
+  // (hitters) / WAP / WAP RP (pitchers), used as-is.
+  //
+  // It used to carry each role's replacement offset (hitter 1.91, SP 2.50, RP 0.31 in
+  // BLM) so roles shared a "freely available talent" currency. That made the number the
+  // board DISPLAYED differ from the number it SCORED: three BLM prospects all showing a
+  // 0.6 ceiling scored 65.3 (hitter), 76.5 (SP) and 50.1 (RP) purely by role. The
+  // normalization anchors below were always written in WAA, so this restores their
+  // intent. Role value belongs in the dollar layer, not in "how good can he get".
   const _lg = player._appLeague;   // stamped by usePlayerData (raw 'League' is a numeric id)
-  const _hOff = replacementOffset(_lg, 'hitter');
   const _spOff = replacementOffset(_lg, 'sp');
   const _rpOff = replacementOffset(_lg, 'rp');
   let currentPerf, ceiling;
-  // ceilingOffset = the role offset baked into `ceiling`. Scoring stays on WAR
-  // (shared normalization across roles — audit M5), but the BOARD displays WAA per
-  // user directive, so we hand back ceiling - ceilingOffset as well. Subtracting it
-  // recovers the sheet's own raw ceiling column exactly (MAX WAA P / WAP / WAP RP).
-  let ceilingOffset = 0;
+  // Kept at 0 so draftCeiling and draftCeilingWAA are the same number: the board shows
+  // exactly what the score used.
+  const ceilingOffset = 0;
   let ceilingRole = null;
 
   if (playerType === 'hitter') {
@@ -335,7 +375,7 @@ export function calculateDraftFV(player, ageGroups, playerType, params = {}) {
     if (isNaN(ceiling)) {
       ceiling = parseFloat(player['Max WAA wtd']);
     }
-    if (!isNaN(ceiling)) { ceiling += _hOff; ceilingOffset = _hOff; ceilingRole = 'hitter'; }
+    if (!isNaN(ceiling)) ceilingRole = 'hitter';
   } else {
     // Pitchers: best of SP or RP for both current and ceiling, in WAR
     const spCurrent = parseFloat(player['WAA wtd']);
@@ -344,21 +384,43 @@ export function calculateDraftFV(player, ageGroups, playerType, params = {}) {
                            isNaN(rpCurrent) ? -Infinity : rpCurrent + _rpOff);
     if (!isFinite(currentPerf)) currentPerf = NaN;
 
+    // Role is an ELIGIBILITY test, not a value comparison. The engine's Starter flag
+    // (engine/pitchers.py, the sheet's own rule) is enough starter-quality pitches plus
+    // stamina; a non-qualifier gets no starter projection at all and WAP ships blank.
+    //
+    // Picking the higher of WAP / WAP RP instead put 98% of qualified starters in the
+    // bullpen — 319 of 325 BLM prospects and 415 of 442 in TGS have a higher RELIEF
+    // ceiling on paper, because a developing arm gets unloaded the third time through
+    // the order. Scoring a starting prospect on his bullpen ceiling buries him. Same
+    // reasoning orgBuilder.js:64 already applies to minor-league rotations.
+    // Eligibility GATES which lines are available; among the ones he can actually
+    // fill, his ceiling is simply the best of them. A pitcher who adds more wins in
+    // relief is a reliever. Note the two rules agree exactly at the top of the board —
+    // they differ only on arms projecting BELOW average as starters, where relief
+    // "wins" purely because it is 70 innings of a bad pitcher instead of 200.
+    const isStarter = player['Starter'] === true ||
+      String(player['Starter']).toUpperCase() === 'TRUE';
     const spCeiling = parseFloat(player['WAP']);
     const rpCeiling = parseFloat(player['WAP RP']);
-    const spCeilWAR = isNaN(spCeiling) ? -Infinity : spCeiling + _spOff;
-    const rpCeilWAR = isNaN(rpCeiling) ? -Infinity : rpCeiling + _rpOff;
-    ceiling = Math.max(spCeilWAR, rpCeilWAR);
-    if (isFinite(ceiling)) {
-      ceilingOffset = spCeilWAR >= rpCeilWAR ? _spOff : _rpOff;
-      ceilingRole = spCeilWAR >= rpCeilWAR ? 'sp' : 'rp';
+    const spOk = isStarter && !isNaN(spCeiling);
+
+    if (spOk && !isNaN(rpCeiling)) {
+      const useSP = spCeiling >= rpCeiling;
+      ceiling = useSP ? spCeiling : rpCeiling;
+      ceilingRole = useSP ? 'sp' : 'rp';
+    } else if (spOk) {
+      ceiling = spCeiling; ceilingRole = 'sp';
+    } else if (!isNaN(rpCeiling)) {
+      ceiling = rpCeiling; ceilingRole = 'rp';
+    } else if (!isNaN(spCeiling)) {
+      ceiling = spCeiling; ceilingRole = 'sp';
     } else {
-      // Fallback: best current WAR as ceiling — same role that won currentPerf
-      ceiling = currentPerf;
-      const spCurWAR = isNaN(spCurrent) ? -Infinity : spCurrent + _spOff;
-      const rpCurWAR = isNaN(rpCurrent) ? -Infinity : rpCurrent + _rpOff;
-      ceilingOffset = spCurWAR >= rpCurWAR ? _spOff : _rpOff;
-      ceilingRole = spCurWAR >= rpCurWAR ? 'sp' : 'rp';
+      // No potential data — his current best in the role he can actually fill
+      const spCur = isStarter && !isNaN(spCurrent) ? spCurrent : -Infinity;
+      const rpCur = isNaN(rpCurrent) ? -Infinity : rpCurrent;
+      ceiling = Math.max(spCur, rpCur);
+      if (!isFinite(ceiling)) ceiling = NaN;
+      ceilingRole = spCur >= rpCur ? 'sp' : 'rp';
     }
   }
 
@@ -386,13 +448,39 @@ export function calculateDraftFV(player, ageGroups, playerType, params = {}) {
   // ---- Ceiling score (unified WAA scale, no upper clamp) ----
   const ceilingScore = normalizeCeiling(ceiling, p.CEILING_FLOOR, p.CEILING_ANCHOR);
 
-  // ---- Modifiers ----
+  // ---- Projected peak (the realistic ceiling) ----
+  // _potentialWAA is stamped by usePlayersWithFV upstream: the same ceiling AFTER the
+  // development gap-factor and risk haircut. Same units (WAA) and the same anchors, so
+  // it lands on one scale with ceilingScore. Ceiling is the payoff, this is the payoff
+  // discounted by how much of it he is actually expected to reach.
+  const peakWAA = parseFloat(player._potentialWAA);
+  const hasPeak = !isNaN(peakWAA);
+  const peakScore = hasPeak
+    ? normalizeCeiling(peakWAA, p.CEILING_FLOOR, p.CEILING_ANCHOR)
+    : null;
+  // Missing peak (no FV enrichment on this row) folds its weight back into ceiling
+  // rather than scoring zero, which would crater an otherwise fine prospect.
+  const ceilW = hasPeak ? p.CEILING_WEIGHT : p.CEILING_WEIGHT + p.PEAK_WEIGHT;
+  const peakW = hasPeak ? p.PEAK_WEIGHT : 0;
+
+  // ---- Red-flag modifiers ----
+  // The board ranks on two things: how far a prospect leads his age peers, and how high
+  // he projects. Among prospects with no red flag the score is strictly monotone in
+  // those two — ahead on both can never rank lower. ONLY a red flag (Fragile/Wrecked,
+  // low work ethic, low intelligence) may break that order, which is the whole point of
+  // a flag. Every healthy durability tier scores 1.0, so Normal vs Durable cannot
+  // reorder anyone. Before 2026-08-11 these multiplied every score and produced 146/504
+  // (BLM hitters/pitchers) and 270/1007 (TGS) pairs that were ahead on both and ranked
+  // below anyway.
   const durabilityMod = getDurabilityModifier(proneValue);
-  const weMod = getWorkEthicModifier(player.WE);
+  const weMod = getWorkEthicModifier(player.WrkEthic);
+  const intMod = getIntelligenceModifier(player.Int);
 
   // ---- Combine ----
-  const rawScore = (agePercentile * p.CURRENT_WEIGHT + ceilingScore * p.CEILING_WEIGHT)
-    * durabilityMod * weMod;
+  const rawScore = (agePercentile * p.CURRENT_WEIGHT
+                    + ceilingScore * ceilW
+                    + (hasPeak ? peakScore * peakW : 0))
+    * durabilityMod * weMod * intMod;
 
   const draftFV = rawScoreToDraftFVScale(rawScore);
 
@@ -401,6 +489,7 @@ export function calculateDraftFV(player, ageGroups, playerType, params = {}) {
     draftRawFV: Math.round(rawScore * 100) / 100,
     agePercentile: Math.round(agePercentile * 10) / 10,
     ceilingScore: Math.round(ceilingScore * 10) / 10,
+    peakScore: peakScore === null ? null : Math.round(peakScore * 10) / 10,
     // draftCeiling is WAR (what ceilingScore/draftFV are actually scored on, and what
     // the board's membership filter + above/below-zero sort tier key off — unchanged).
     draftCeiling: isNaN(ceiling) ? null : Math.round(ceiling * 100) / 100,
@@ -411,8 +500,8 @@ export function calculateDraftFV(player, ageGroups, playerType, params = {}) {
     durabilityMod,
     toolPenalty,
     proneValue: proneValue || 'Normal',
-    highINT: player.INT === 'H',
+    highINT: player.Int === 'H',
     wrecked: false,
-    weBoost: player.WE === 'H',
+    weBoost: player.WrkEthic === 'H',
   };
 }

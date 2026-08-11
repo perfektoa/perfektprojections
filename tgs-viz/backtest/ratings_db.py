@@ -66,6 +66,20 @@ SMOOTH_COLS = (_PIT_CORE + _PIT_SPLITS + ["STM", "HLD"] + _PITCH_CUR + _PITCH_PO
 EXTRA_COLS = ["Ovr", "Pot"]          # OOTP's own 20-80 summary grades (context only)
 ALL_COLS = SMOOTH_COLS + EXTRA_COLS
 
+# Columns the TREND views score (movers, age curves). Everything above is still
+# STORED — this only decides what counts as "a player moved".
+#   - the 24 individual pitch grades are dropped: they step in whole grades and a
+#     pitch appearing/disappearing is a repertoire change, not development. The
+#     aggregate STU / CON / HRR / PBABIP already carry the arm's real movement.
+#   - the pitcher vR/vL splits are dropped because they DUPLICATE their own core
+#     column: one +10 control change was being counted as CON +10, CON vR +10 and
+#     CON vL +10, tripling every pitcher's total.
+# Hitter ratings exist only as vR/vL, so both are kept; a change that moves both
+# sides still counts twice there, which is a known limit of this view.
+_TREND_DROP = set(_PITCH_CUR) | set(_PITCH_POT) | {
+    f"{c} {s}" for c in _PIT_CORE for s in ("vR", "vL")}
+TREND_COLS = [c for c in SMOOTH_COLS if c not in _TREND_DROP]
+
 COL2SQL = {c: "c_" + re.sub(r"[^A-Za-z0-9]", "_", c) for c in ALL_COLS}
 SQL2COL = {v: k for k, v in COL2SQL.items()}
 assert len(SQL2COL) == len(ALL_COLS), "rating column SQL names collide"
@@ -462,20 +476,32 @@ def movers(conn, league, window=3, top=15):
         if not orec:
             continue
         total, breakdown = 0.0, {}
-        for c in SMOOTH_COLS:
+        gained, lost = [], []
+        for c in TREND_COLS:
             a, b = orec.get(c), nrec.get(c)
             if a is None or b is None:
+                continue
+            # OOTP fills an ABSENT skill with 0, below the 20 floor. Crossing that
+            # boundary is a pitch appearing or disappearing from the repertoire, not a
+            # scouting change: counting it made "gained a slider" read as +35 and put
+            # those players at the top of every movers list. Same guard age_curves uses.
+            if a < 20 or b < 20:
+                if b >= 20 > a:
+                    gained.append(c)
+                elif a >= 20 > b:
+                    lost.append(c)
                 continue
             d = b - a
             if d:
                 total += d
                 breakdown[c] = d
-        if breakdown:
+        if breakdown or gained or lost:
             scored.append({"id": pid, "name": nrec["name"], "pos": nrec["pos"],
                            "age": nrec["age"],
                            "org": _readable((new_map, old_map), pid, "org"),
                            "total": total,
                            "ncols": len(breakdown),
+                           "gained": gained, "lost": lost,
                            "breakdown": dict(sorted(breakdown.items(),
                                                     key=lambda kv: -abs(kv[1]))[:6])})
     scored.sort(key=lambda x: -x["total"])
@@ -495,8 +521,8 @@ def age_curves(conn, league):
     per year/day) — with few vintages this measures short-horizon scout churn
     more than true aging; it gets better automatically as pulls accumulate."""
     pulls = league_pulls(conn, league)
-    sums = {c: {} for c in SMOOTH_COLS}
-    counts = {c: {} for c in SMOOTH_COLS}
+    sums = {c: {} for c in TREND_COLS}
+    counts = {c: {} for c in TREND_COLS}
     npairs = 0
     prev = None
     gaps = []
@@ -511,7 +537,7 @@ def age_curves(conn, league):
                 if not orec or orec.get("age") is None:
                     continue
                 age = int(orec["age"])
-                for c in SMOOTH_COLS:
+                for c in TREND_COLS:
                     a, b = orec.get(c), nrec.get(c)
                     if a is None or b is None or a < 20 or b < 20:
                         continue
@@ -519,7 +545,7 @@ def age_curves(conn, league):
                     counts[c][age] = counts[c].get(age, 0) + 1
         prev = cur
     curves = {}
-    for c in SMOOTH_COLS:
+    for c in TREND_COLS:
         if counts[c]:
             curves[c] = {age: (sums[c][age] / counts[c][age], counts[c][age])
                          for age in sorted(counts[c])}
@@ -627,11 +653,14 @@ def export(db_path=DB_PATH, leagues=None, hist_pulls=6, mover_windows=(1, 3, 5),
                     "risers": [{"id": x["id"], "n": x["name"], "p": x["pos"],
                                 "a": _jsnum(x["age"]), "o": x["org"],
                                 "t": round(x["total"], 1), "c": x["ncols"],
+                                "g": x["gained"], "x": x["lost"],
                                 "d": {c: _jsnum(d) for c, d in x["breakdown"].items()}}
                                for x in risers],
                     "fallers": [{"id": x["id"], "n": x["name"], "p": x["pos"],
                                  "a": _jsnum(x["age"]), "o": x["org"],
                                  "t": round(x["total"], 1), "c": x["ncols"],
+                                 "g": x["gained"], "x": x["lost"],
+                                "g": x["gained"], "x": x["lost"],
                                  "d": {c: _jsnum(d) for c, d in x["breakdown"].items()}}
                                 for x in fallers],
                 }

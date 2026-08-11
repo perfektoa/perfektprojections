@@ -339,8 +339,11 @@ def sync_league(league_dir, write=False, yes=False, calib=None):
         if sval is None or (isinstance(sval, str) and sval in ERR_STRINGS):
             errors.append(m); continue
         tval = TGT[m['ts']].get(m['tc'])
-        # treat values equal to ~6 significant figures as already-current (skip float-copy noise)
-        if isinstance(tval, (int, float)) and isinstance(sval, (int, float)) and abs(tval - sval) <= 1e-6 * (1 + abs(tval)):
+        # treat values equal to ~6 significant figures as already-current (skip float-copy noise).
+        # The scale MUST be max(|target|,|source|), not 1+|target|: the "1 +" turned this into an
+        # ABSOLUTE 1e-6 test for anything below ~1, which made every fielding ARM%/DP/E% intercept
+        # (magnitudes 1e-7..1e-5) permanently unwritable however stale it was.
+        if isinstance(tval, (int, float)) and isinstance(sval, (int, float)) and abs(tval - sval) <= 1e-6 * max(abs(tval), abs(sval)):
             unchanged += 1; continue
         changes[m['ts']][m['tc']] = (sval, tval, m)
 

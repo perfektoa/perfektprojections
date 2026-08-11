@@ -10,7 +10,8 @@ import MarketValuePage from './pages/MarketValuePage';
 import TeamStandingsPage from './pages/TeamStandingsPage';
 import OrganizationPage from './pages/OrganizationPage';
 import TrendsPage from './pages/TrendsPage';
-import { Users, Zap, Target, Trophy, Loader2, AlertCircle, BarChart3, TrendingUp, ChevronDown, DollarSign, TableProperties, Building2, Activity } from 'lucide-react';
+import WaiverClaimPage from './pages/WaiverClaimPage';
+import { Users, Zap, Target, Trophy, Loader2, AlertCircle, BarChart3, TrendingUp, ChevronDown, DollarSign, TableProperties, Building2, Activity, ClipboardList } from 'lucide-react';
 
 function Sidebar({ leagues, currentLeague, onLeagueChange, features }) {
   const linkClass = ({ isActive }) =>
@@ -85,6 +86,9 @@ function Sidebar({ leagues, currentLeague, onLeagueChange, features }) {
         <p className="text-[10px] text-slate-600 uppercase tracking-widest px-3 pt-4 pb-1">Organization</p>
         <NavLink to="/organization" className={linkClass}>
           <Building2 size={16} /> Org Builder
+        </NavLink>
+        <NavLink to="/waivers" className={linkClass}>
+          <ClipboardList size={16} /> Waivers &amp; DFA
         </NavLink>
 
         <p className="text-[10px] text-slate-600 uppercase tracking-widest px-3 pt-4 pb-1">Standings</p>
@@ -250,6 +254,9 @@ export default function App() {
             } />
             <Route path="/organization" element={
               <OrganizationPage hitters={data.hitters} pitchers={data.pitchers} league={currentLeague} />
+            } />
+            <Route path="/waivers" element={
+              <WaiverClaimPage hitters={data.hitters} pitchers={data.pitchers} league={currentLeague} />
             } />
             <Route path="/market-value" element={
               <MarketValuePage hitters={data.hitters} pitchers={data.pitchers} />

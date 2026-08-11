@@ -62,6 +62,10 @@ export const FV_DEFAULTS = {
 
   // Projection window
   MAX_CAREER_AGE: 34,     // Don't project beyond this age (shorter careers)
+  // FALLBACK ONLY. Callers pass the player's real remaining control
+  // (serviceTime.controlWindow); this is what a row with neither service nor
+  // contract data falls back to — a full pre-free-agency window (6 service
+  // years is the league rule).
   DEFAULT_YEARS_OF_CONTROL: 6,
 };
 
@@ -370,12 +374,16 @@ function rawFVtoScale(rawFV) {
  *
  * @param {Object} player - Player data object with WAA columns
  * @param {number} [yearsOfControl] - Years of team control remaining
+ *        (serviceTime.controlWindow). Omitted -> DEFAULT_YEARS_OF_CONTROL.
  * @param {Object} [params] - Override model parameters (for Dev Analysis tuning)
  * @returns {Object} Future value breakdown
  */
 export function calculateFutureValue(player, yearsOfControl, params = {}) {
   const p = { ...FV_DEFAULTS, ...params };
-  const yoc = yearsOfControl || p.DEFAULT_YEARS_OF_CONTROL;
+  // A caller-supplied 0 is MEANINGFUL (a player already past free agency) and
+  // must not fall back to the default — the window clamp below still keeps the
+  // season in front of you, which is the only thing an expiring player is.
+  const yoc = Number.isFinite(yearsOfControl) ? yearsOfControl : p.DEFAULT_YEARS_OF_CONTROL;
   const age = parseFloat(player.Age) || 25;
 
   // Extract WAA values

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { calculateFutureValue } from '../lib/futureValue';
+import { controlWindow } from '../lib/serviceTime';
 import { buildAgeGroups, calculateDraftFV } from '../lib/draftFV';
 import { replacementOffset } from '../lib/leagueCalib.js';
 import { buildDevPercentileData, calculateG5FV } from '../lib/g5FV';
@@ -334,7 +335,11 @@ export function useFilteredPlayers(players, initialFilters = {}) {
 export function usePlayersWithFV(players) {
   return useMemo(() => {
     return players.map(p => {
-      const fv = calculateFutureValue(p);
+      // Value only the seasons this club actually holds. Every board used to
+      // count six for everyone, which is right for a prospect (his clock hasn't
+      // started) and badly wrong for a veteran with one year to free agency.
+      const cw = controlWindow(p);
+      const fv = calculateFutureValue(p, cw.controlYears);
       // Value Gap = our projection-based FV minus OOTP's POT (what other GMs eyeball).
       // Positive → we rate him higher than his potential shows → undervalued / a buy.
       const pot = parseFloat(p.Pot);
@@ -368,6 +373,10 @@ export function usePlayersWithFV(players) {
         // The un-haircut scouting ceiling is the board's "Ceiling (WAA)" column.
         _potentialWAA: toWAA(d.expectedPeak),
         _rawPotentialWAA: toWAA(d.potential),
+        _controlYears: cw.controlYears,
+        _controlSource: cw.source,
+        _svcYears: cw.serviceYears,
+        _controlWindow: cw,
         _fvBreakdown: fv,
       };
     });

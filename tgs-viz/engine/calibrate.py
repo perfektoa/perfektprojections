@@ -18,7 +18,9 @@ Modes:
 
 Regression model (hitting/pitching, per block):
   points  = players passing the block's rating filter
-  x       = player rating − mean(rating over the pivot's visible players)   ("GT delta")
+  x       = player rating − the centre the CONSUMER subtracts: the sheet's Data Points
+            anchor for the pitching rate blocks (audit B12), else the mean rating over
+            the pivot's visible players ("GT delta")
   y       = player stat-rate − rate over the pivot's visible-player sums    ("GT delta")
   weight  = player PA (hitting) / BF (pitching), always from the base pivot
   fit     = weighted least squares:  slope = (Σw·Σwxy − Σwx·Σwy)/(Σw·Σwx² − (Σwx)²)
@@ -254,8 +256,55 @@ def hitting(bat_rows, hitters):
 
 PIT_FIELDS = ["bf", "g", "gs", "sb", "cs", "hp", "bb", "k", "hra", "ha", "sa", "da", "ta", "iw", "ab", "sf"]
 
+# audit B12 — WHERE THE FITTED INTERCEPT IS BASED.
+# The Sheet Pitchers evaluates every one of these lines as
+#       intercept + slope * (rating - Data Points anchor) + league-rate K
+# so the intercept has to be the line's value AT THAT ANCHOR. The anchors are
+# the league's own BF-weighted mean ratings, kept in 25 Metadata.xlsx and pushed
+# to Data Points H2..H10 by ingest/sync_datapoints.py ('panchor:'). Centring the
+# fit on the pivot's unweighted mean rating instead left the intercept expressed
+# about a DIFFERENT population (1.3-7.4 rating points away); because the hi and
+# lo branches have different slopes the common shift moved them by different
+# amounts, tearing the two segments apart at rating 50 (wrong-direction rungs)
+# and pushing the projected league rate off its own archive Grand Total by up to
+# 2.8pp of K%. WLS is invariant to a shift of x, so centring here leaves every
+# fitted line bit-identical and changes only the intercept it is stated with.
+# NOT covered: the HLD (SB%/SBA) block, whose consumer anchor is the separate
+# Data Points I2/I7 "Hold" cell and whose consumer is a cubic SUMPRODUCT.
+PITCH_ANCHOR_SECTIONS = {"Starter Ratings": "SP", "Reliever Ratings": "RP"}
+PITCH_ANCHOR_COLS = {"STU": "STU vR", "HRA": "HRR vR",
+                     "pBABIP": "PBABIP vR", "CON": "CON vR"}
+LEAGUE_DIRS = {"TGS": "The Sheets TGS", "BLM": "The Sheets BLM"}
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-def pitching(pit_rows, pitchers, role):
+
+def pitch_anchors(league):
+    """{'SP'/'RP': {rating column: anchor rating}} read READ-ONLY out of that
+    league's own 25 Metadata.xlsx 'Data Points' (labels col S, values col T —
+    the same layout ingest/sync_datapoints.py pushes into the Pitchers sheet).
+    Raises rather than guessing: a fit centred on anything but the consumer's
+    anchor is the defect this guards against."""
+    from openpyxl import load_workbook
+    path = os.path.join(REPO, LEAGUE_DIRS[league], "25 Metadata.xlsx")
+    wb = load_workbook(path, read_only=True, data_only=True)
+    ws = wb["Data Points"]
+    out, role = {"SP": {}, "RP": {}}, None
+    for lab, val in ws.iter_rows(min_col=19, max_col=20, values_only=True):   # S, T
+        lab = lab.strip() if isinstance(lab, str) else lab
+        if lab in PITCH_ANCHOR_SECTIONS:
+            role = PITCH_ANCHOR_SECTIONS[lab]
+        elif role and lab in PITCH_ANCHOR_COLS and isinstance(val, (int, float)):
+            out[role][PITCH_ANCHOR_COLS[lab]] = float(val)
+    wb.close()
+    for r, cols in out.items():
+        missing = set(PITCH_ANCHOR_COLS.values()) - set(cols)
+        if missing:
+            raise KeyError(f"{league} 25 Metadata.xlsx 'Data Points' is missing the "
+                           f"{r} anchor(s) for {sorted(missing)} (labels col S / values col T)")
+    return out
+
+
+def pitching(pit_rows, pitchers, role, anchors):
     if role == "SP":
         agg, _ = group_sum(pit_rows, "player_id", PIT_FIELDS, where=lambda r: r.get("split_id") == 1)
         vis = sorted(i for i, a in agg.items() if a["gs"] >= 250)
@@ -274,7 +323,8 @@ def pitching(pit_rows, pitchers, role):
 
     def block_pts(xcol, yfn, filt):
         xr = {i: pitchers[i][xcol] for i in pitchers if isinstance(pitchers[i].get(xcol), (int, float))}
-        xbase = rating_mean(pitchers, vis, xcol)
+        # audit B12: centre on the anchor the sheet subtracts, not the pivot mean
+        xbase = anchors[xcol] if xcol in anchors else rating_mean(pitchers, vis, xcol)
         ybase = yfn(gt)
         return [(xr[i] - xbase, yfn(agg[i]) - ybase, agg[i]["bf"])
                 for i in vis if i in xr and filt(xr[i])]
@@ -331,8 +381,50 @@ def fielding(fld_rows, pit_rows, hitters):
     #   fit  = OLS with intercept on centered x and y -> intercept ~ 0, so the
     #          engine's ((TDP - live anchor)*slope + K)*H33 stays a deviation
     #          and the position-average TDP contribution stays ~ 0.
+    #
+    # audit D8b — DP OPPORTUNITY EXPOSURE (the fix for the wrong-signed BLM slopes).
+    # y is GIDP per INNING, but a GIDP needs a runner on first AND a ground ball, and
+    # neither is constant across cells. A team's mean middle-infield TDP is strongly
+    # NEGATIVELY correlated with the baserunners its pitchers allow (defensive ratings
+    # co-move, so high-TDP infields are also high-range infields that suppress hits).
+    # Measured in BLM's own archive: corr(TDP_2B, baserunners/IP) = -0.39 while
+    # corr(baserunners/IP, dp/IP) = +0.50. Regressing dp/IP on TDP alone therefore
+    # carries a negative omitted-variable bias through the opportunity channel — in BLM
+    # big enough to invert the sign (a better TDP rating projecting FEWER double plays).
+    # The bias is a property of the fit, not of a league, so the controls are always on
+    # and each league's size is whatever its own archive says it is.
+    # Controlling for the cell's own DP opportunity
+    #   BR/IP = (hits allowed + BB + HBP - HR)/IP     GB/IP = ground balls/IP
+    # removes it. Both controls are properties of the opposing offence / pitching staff,
+    # so the reported TDP coefficients keep their dp-per-inning units and the engine's
+    # application form is untouched; controlling for BR/IP additionally stops the DP
+    # block double-counting infield RANGE, which already has its own PM% block.
     def _dollarde(ip):
         return int(ip) + (ip - int(ip)) * 10.0 / 3.0
+
+    def _ols_se(ys, xcols):
+        """OLS with intercept over k predictors; returns (intercept, coefs, ses)."""
+        n, k = len(ys), len(xcols)
+        cols = list(xcols) + [[1.0] * n]
+        m = k + 1
+        A = [[sum(cols[i][r] * cols[j][r] for r in range(n)) for j in range(m)] for i in range(m)]
+        rhs = [sum(cols[i][r] * ys[r] for r in range(n)) for i in range(m)]
+        M = [row[:] + [1.0 if i == j else 0.0 for j in range(m)] for i, row in enumerate(A)]
+        for c in range(m):
+            p = max(range(c, m), key=lambda r: abs(M[r][c]))
+            M[c], M[p] = M[p], M[c]
+            pv = M[c][c]
+            M[c] = [v / pv for v in M[c]]
+            for r in range(m):
+                if r != c and M[r][c]:
+                    f = M[r][c]
+                    M[r] = [M[r][i] - f * M[c][i] for i in range(2 * m)]
+        inv = [row[m:] for row in M]
+        sol = [sum(inv[i][j] * rhs[j] for j in range(m)) for i in range(m)]
+        res = [ys[r] - sum(cols[i][r] * sol[i] for i in range(m)) for r in range(n)]
+        s2 = sum(v * v for v in res) / (n - m)
+        ses = [(s2 * inv[i][i]) ** 0.5 for i in range(m)]
+        return sol[k], sol[:k], ses[:k]
 
     def team_year_tdp(code):
         sip, sipt = defaultdict(float), defaultdict(float)
@@ -350,23 +442,43 @@ def fielding(fld_rows, pit_rows, hitters):
 
     x2b_t, xss_t = team_year_tdp(4), team_year_tdp(6)
     dp_t, ip_t = defaultdict(float), defaultdict(float)
+    opp_t = defaultdict(lambda: defaultdict(float))
     for r in pit_rows:
         if r.get("split_id") != 1:
             continue
         key = (r.get("team_id"), r.get("year"))
         dp_t[key] += r.get("dp") or 0.0
         ip_t[key] += _dollarde(r.get("ip") or 0.0)
+        for f in ("ha", "bb", "hp", "hra", "gb"):
+            v = r.get(f)
+            if isinstance(v, (int, float)):
+                opp_t[key][f] += v
     cells = sorted(k for k in dp_t if k in x2b_t and k in xss_t and ip_t[k] > 0)
     yv = [dp_t[k] / ip_t[k] for k in cells]
     ybar = sum(yv) / len(yv)
-    x1bar = sum(x2b_t[k] for k in cells) / len(cells)
-    x2bar = sum(xss_t[k] for k in cells) / len(cells)
-    dp_b, dp_m2b, dp_mss = linest([y - ybar for y in yv],
-                                  [[x2b_t[k] - x1bar for k in cells],
-                                   [xss_t[k] - x2bar for k in cells]])
-    print(f"  D8 DP bivariate team regression: n={len(cells)} team-year cells; "
-          f"slopes 2B {dp_m2b:.6g} / SS {dp_mss:.6g} dp-per-inning per TDP point "
-          f"(intercept {dp_b:.2e}; league {ybar:.5f} dp/inning)")
+    # DP-opportunity exposure per inning (audit D8b) — same cells, same denominator as y
+    br_v = [(opp_t[k]["ha"] + opp_t[k]["bb"] + opp_t[k]["hp"] - opp_t[k]["hra"]) / ip_t[k] for k in cells]
+    gb_v = [opp_t[k]["gb"] / ip_t[k] for k in cells]
+    xcols_raw = [[x2b_t[k] for k in cells], [xss_t[k] for k in cells], br_v, gb_v]
+    xnames = ["TDP_2B", "TDP_SS", "BR/IP", "GB/IP"]
+    if not any(br_v) or not any(gb_v):
+        # opportunity columns unavailable in this dump vintage — fall back to the bare
+        # bivariate fit rather than silently regressing on a column of zeros
+        xcols_raw, xnames = xcols_raw[:2], xnames[:2]
+        print("  D8b WARNING: no ha/bb/gb columns in the pitching dump — DP fit runs "
+              "WITHOUT the opportunity controls and its slopes may be sign-unstable")
+    xcols = [[v - sum(c) / len(c) for v in c] for c in xcols_raw]  # centred, as above
+    dp_b, coefs, ses = _ols_se([y - ybar for y in yv], xcols)
+    dp_m2b, dp_mss = coefs[0], coefs[1]
+    dp_prov = ("bivariate-team-regression+opportunity-controls" if len(xnames) == 4
+               else "bivariate-team-regression")
+    print(f"  D8 DP bivariate team regression [{dp_prov}]: n={len(cells)} team-year cells; "
+          f"intercept {dp_b:.2e}; league {ybar:.5f} dp/inning")
+    for nm, c, se in zip(xnames, coefs, ses):
+        flag = ""
+        if nm.startswith("TDP"):
+            flag = "   <-- WRONG SIGN" if c < 0 else ("   (CI covers 0)" if abs(c) < 1.96 * se else "")
+        print(f"      {nm:8s} {c:+.6g}  se {se:.4g}  t {c / se:+.2f}{flag}")
 
     R = lambda i, col: hitters[i][col]
 
@@ -417,7 +529,10 @@ def fielding(fld_rows, pit_rows, hitters):
         # team regression above; intercept ~0 keeps the deviation form.
         if pos in ("2B", "SS"):
             out[f"{pos} DP"] = {"intercept": dp_b,
-                                "x": dp_m2b if pos == "2B" else dp_mss}
+                                "x": dp_m2b if pos == "2B" else dp_mss,
+                                "_fit": dp_prov,
+                                "_se": ses[0] if pos == "2B" else ses[1],
+                                "_n": len(cells)}
 
     # ---------- outfield blocks
     for pos in ("LF", "CF", "RF"):
@@ -535,9 +650,12 @@ def drop_partial_final_season(bat, pit, fld):
     return [r for r in bat if ok(r)], [r for r in pit if ok(r)], [r for r in fld if ok(r)]
 
 
-def compute_all(csv_dir=None, dumps=None, ratings_dir=None):
+def compute_all(csv_dir=None, dumps=None, ratings_dir=None, league=None):
     """csv_dir and dumps may BOTH be given: the archived table CSVs are pooled together with
-    any clone dumps on disk (e.g. BLM's historical sample + newly-simmed clones)."""
+    any clone dumps on disk (e.g. BLM's historical sample + newly-simmed clones).
+
+    league picks the 25 Metadata.xlsx whose anchors the pitching fits are centred on
+    (audit B12). Only that league's own workbook is ever read."""
     bat, pit, fld = [], [], []
     hitters = pitchers = None
     if csv_dir:
@@ -568,8 +686,9 @@ def compute_all(csv_dir=None, dumps=None, ratings_dir=None):
         compute_all.newly_pooled = list(getattr(load_from_dumps, "used", []))
     compute_all.pooled = dict(bat=bat, pit=pit, fld=fld)   # archive keeps EVERY row
     bat_f, pit_f, fld_f = drop_partial_final_season(bat, pit, fld)
-    sp = pitching(pit_f, pitchers, "SP")
-    rp = pitching(pit_f, pitchers, "RP")
+    anchors = pitch_anchors(league)
+    sp = pitching(pit_f, pitchers, "SP", anchors["SP"])
+    rp = pitching(pit_f, pitchers, "RP", anchors["RP"])
     # audit B7: fit the real lo-BABIP block from the pooled SP+RP x<50 points (per-role
     # pools are too thin — SP alone has ~10 lo players); both roles share the fit.
     lo_pts = sp.pop("_lBABIP_pts", []) + rp.pop("_lBABIP_pts", [])
@@ -649,6 +768,9 @@ def main():
     ap.add_argument("--csv-dir", help="dir with Batting/Pitching/Fielding/Hitters/Pitchers.csv")
     ap.add_argument("--dumps", help="glob of clone .lg dirs (e.g. 'C:/OOTP 26/data/saved_games/0tgs*.lg')")
     ap.add_argument("--ratings-dir", help="dir with Hitters.csv/Pitchers.csv (required with --dumps)")
+    ap.add_argument("--league", choices=sorted(LEAGUE_DIRS),
+                    help="league whose 25 Metadata.xlsx supplies the pitching fit anchors "
+                         "(default: the --csv-dir folder name)")
     ap.add_argument("--validate", help="expected_dp.json to compare against")
     ap.add_argument("--json", help="write computed constants to this path")
     ap.add_argument("--archive-dir", help="after a successful compute, write the pooled data rows "
@@ -657,7 +779,13 @@ def main():
     a = ap.parse_args()
     if not a.csv_dir and not a.dumps:
         ap.error("need --csv-dir or --dumps (or both to pool archive + new clones)")
-    res = compute_all(csv_dir=a.csv_dir, dumps=a.dumps, ratings_dir=a.ratings_dir or a.csv_dir)
+    league = a.league or os.path.basename(os.path.normpath(a.csv_dir or a.ratings_dir or ""))
+    if league not in LEAGUE_DIRS:
+        ap.error(f"can't tell which league this is from {a.csv_dir!r} - pass --league "
+                 f"{'|'.join(sorted(LEAGUE_DIRS))} (it selects the metadata anchors the "
+                 f"pitching fits are centred on)")
+    res = compute_all(csv_dir=a.csv_dir, dumps=a.dumps,
+                      ratings_dir=a.ratings_dir or a.csv_dir, league=league)
 
     if a.archive_dir:
         # secure the pooled sample so the clone folders are no longer the only copy

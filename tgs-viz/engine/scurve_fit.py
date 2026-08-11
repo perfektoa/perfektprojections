@@ -60,8 +60,13 @@ def rate_fns():
 
 
 # ---------------------------------------------------------------- archive pools
-def build_pools(csv_dir):
-    """Archive CSVs -> per-role {block: [(rating, rate, bf), ...]} + pool metadata."""
+def build_pools(csv_dir, anchors):
+    """Archive CSVs -> per-role {block: [(rating, rate, bf), ...]} + pool metadata.
+
+    anchors: calibrate.pitch_anchors(league) — the two-segment constants are stated
+    about the sheet's Data Points anchor (audit B12), so the two-line reference and
+    the pool-fidelity refit below must use that same centre. The S-curve fit itself
+    never touches xbar."""
     bat = C.load_rows(os.path.join(csv_dir, "Batting.csv"))
     pit = C.load_rows(os.path.join(csv_dir, "Pitching.csv"))
     pitchers = {r["ID"]: r for r in C.load_rows(os.path.join(csv_dir, "Pitchers.csv"))
@@ -92,7 +97,7 @@ def build_pools(csv_dir):
         pools[role] = {
             "blocks": blocks,
             "gt_rate": {blk: fns[blk](gt) for blk in BLOCKS},
-            "xbar": {blk: C.rating_mean(pitchers, vis, BLOCKS[blk][0]) for blk in BLOCKS},
+            "xbar": {blk: anchors[role][BLOCKS[blk][0]] for blk in BLOCKS},
             "n": len(vis),
         }
     return pools
@@ -413,7 +418,7 @@ def main():
     out_path = a.out or os.path.join(csv_dir, "scurves-preview.json")
 
     print(f"== {lg}: archive pools ==")
-    pools = build_pools(csv_dir)
+    pools = build_pools(csv_dir, C.pitch_anchors(lg))
 
     # current two-segment constants for the honesty comparison
     consts = json.load(open(os.path.join(csv_dir, "constants-latest.json")))

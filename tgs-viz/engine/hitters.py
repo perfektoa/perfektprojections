@@ -113,9 +113,9 @@ def compute(p, dp, filt, park, league="TGS", currency=None, tails=None, fielding
     tails (OPT-IN, audit D4 — INTENTIONAL divergence from the sheet when
     passed): calib/<LEAGUE>/hitter_tails.json from hitter_tails_fit.py.
     Archive-MEASURED monotone corrections to the two-segment rate fits in the
-    four proven-broken tail regions only (SO at K 65-80, HR at POW 70-80,
-    BABIP at BA 20-35, XBH at both GAP tails): an additive rate delta that is
-    identically 0 outside the audited regions, lands on the PA-weighted
+    five proven-broken tail regions only (SO at K 65-80, HR at POW 70-80,
+    BABIP at BA 20-35, XBH at both GAP tails, 3B/XBH at SPE 20-45): an
+    additive rate delta that is identically 0 outside those regions, lands on the PA-weighted
     isotonic archive bucket means inside them, and holds its last value beyond
     rating 80. The sheet keeps its two-line formulas (formula changes are out
     of scope) — the SB%-cap precedent.
@@ -208,10 +208,11 @@ def compute(p, dp, filt, park, league="TGS", currency=None, tails=None, fielding
             XBH = ((GAP - g("H6")) * g("E11") + g("D11") + g("C37") + tadj("XBH", GAP)) * HHR * f("C9")
         XBH = max(XBH, 0.0)
         # 3B (SPE rating); >=50 adds ballpark AI, <50 * Filters C10
+        # tadj("T3B") is identically 0 at and above SPE 50 (region is lo/50)
         if SPE >= 50:
-            T3B = ((SPE - g("H7")) * g("C13") + g("B13") + g("C38")) * XBH + ai
+            T3B = ((SPE - g("H7")) * g("C13") + g("B13") + g("C38") + tadj("T3B", SPE)) * XBH + ai
         else:
-            T3B = ((SPE - g("H7")) * g("E13") + g("D13") + g("C38")) * XBH * f("C10")
+            T3B = ((SPE - g("H7")) * g("E13") + g("D13") + g("C38") + tadj("T3B", SPE)) * XBH * f("C10")
         T3B = max(T3B, 0.0)
         D2B = XBH - T3B
         S1B = HHR - XBH
@@ -430,9 +431,9 @@ def compute(p, dp, filt, park, league="TGS", currency=None, tails=None, fielding
         XBHp = max(XBHp, 0.0)
         SPE = p["SPE"]
         if SPE >= 50:
-            T3Bp = ((SPE - g("H7")) * g("C13") + g("B13") + g("C38")) * XBHp + pblend("AI")
+            T3Bp = ((SPE - g("H7")) * g("C13") + g("B13") + g("C38") + tadj("T3B", SPE)) * XBHp + pblend("AI")
         else:
-            T3Bp = ((SPE - g("H7")) * g("E13") + g("D13") + g("C38")) * XBHp * f("C10")
+            T3Bp = ((SPE - g("H7")) * g("E13") + g("D13") + g("C38") + tadj("T3B", SPE)) * XBHp * f("C10")
         T3Bp = max(T3Bp, 0.0)
         D2Bp, S1Bp = XBHp - T3Bp, HHRp - XBHp
         wobaP = (HBPp * g("H12") + uBBp * g("H13") + S1Bp * g("H14") + D2Bp * g("H15")

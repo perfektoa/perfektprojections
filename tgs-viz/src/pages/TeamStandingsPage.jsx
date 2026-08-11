@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { optimizeRoster, leagueGames } from '../lib/rosterOptimizer';
+import { PositionalStrengthGrid } from '../components/PositionalStrength';
 import { Download, ArrowUpDown, Loader2 } from 'lucide-react';
 
 // ─── League assignments, per league ──────────────────────────────
@@ -408,6 +409,14 @@ export default function TeamStandingsPage({ hitters, pitchers, league }) {
             onExport={() => exportLeague(allTeams, 'team_projections.csv')}
           />
         )}
+
+        {/* Where the wins above actually come from, position by position. Ranked
+            inside this league only — never against the other league. */}
+        <PositionalStrengthGrid
+          hitters={hitters} pitchers={pitchers}
+          league={league} knownTeams={knownTeams}
+          title="Positional Strength"
+        />
       </div>
     </div>
   );

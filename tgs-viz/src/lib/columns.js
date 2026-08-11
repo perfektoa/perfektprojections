@@ -105,7 +105,7 @@ export const HITTER_COLUMN_GROUPS = {
   },
   draftValue: {
     label: 'Draft FV',
-    columns: ['_draftFV', '_draftRawFV', '_agePercentile', '_draftCeiling', '_durability', '_highINT'],
+    columns: ['_draftRawFV', '_agePercentile', '_draftCeiling', '_durability', '_highINT'],
   },
   g5Value: {
     label: 'G5 Peak FV',
@@ -184,7 +184,7 @@ export const PITCHER_COLUMN_GROUPS = {
   },
   draftValue: {
     label: 'Draft FV',
-    columns: ['_draftFV', '_draftRawFV', '_agePercentile', '_draftCeiling', '_durability', '_highINT'],
+    columns: ['_draftRawFV', '_agePercentile', '_draftCeiling', '_durability', '_highINT'],
   },
   g5Value: {
     label: 'G5 Peak FV',
@@ -487,7 +487,7 @@ export const COLUMN_LABELS = {
   'WAA wtd RP': 'RP WAA',
   'WAR wtd': 'SP WAR',
   '_draftFV': 'Draft FV',
-  '_draftRawFV': 'Draft Raw',
+  '_draftRawFV': 'Draft FV',
   '_agePercentile': 'Age Pctl',
   '_draftCeiling': 'Ceiling (WAR)',
   '_draftCeilingWAA': 'Ceiling',

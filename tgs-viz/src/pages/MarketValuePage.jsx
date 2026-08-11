@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, Cell } from 'recharts';
 import { analyzeMarket, calculatePlayerValue, resolveRate, getPlayerRole, formatMoney } from '../lib/marketValue';
+import { formatControl } from '../lib/serviceTime';
 import { usePlayersWithFV } from '../hooks/usePlayerData';
 import { Search, ChevronDown, ChevronUp, DollarSign, TrendingUp, Info } from 'lucide-react';
 
@@ -582,8 +583,14 @@ function PlayerValuationDetail({ player }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-6 gap-3 mb-4">
+      <div className="grid grid-cols-7 gap-3 mb-4">
         <MiniStat label="Current WAR" value={val.warNow.toFixed(1)} color={waaColor(val.warNow)} />
+        {/* Remaining team control — the horizon behind the offer table below. */}
+        <MiniStat
+          label="Control"
+          value={formatControl(val.control)}
+          color={val.control.source === 'default' ? 'text-amber-400' : 'text-slate-300'}
+        />
         <MiniStat label="Current Salary" value={formatMoney(player.Price)} color="text-green-400" />
         <MiniStat
           label={val.tier === 'scarcity' ? 'Line Value (understates tier)' : 'Line Value — replaceable tier'}
@@ -693,7 +700,13 @@ function PlayerValuationDetail({ player }) {
               </tbody>
             </table>
           </div>
-          <p className="text-[10px] text-slate-500 mt-1">* default horizon ({val.offerYears} yrs — controlled-seasons window clipped at career end)</p>
+          <p className="text-[10px] text-slate-500 mt-1">
+            * default horizon ({val.offerYears} yrs — this player&apos;s remaining control
+            {val.control.serviceYears !== null && `, ${val.control.serviceYears.toFixed(1)} svc yrs`}
+            {val.control.contractYears !== null && `, ${val.control.contractYears} yr left on the deal`}
+            {val.control.source === 'default' && ' — NO service data, 6-yr fallback'}
+            , clipped at career end)
+          </p>
         </div>
       )}
 
