@@ -21,3 +21,4 @@ pull_id,league,real_date,real_ts,source,source_files,n_players,content_hash,inge
 29,TGS,2026-08-05,2026-08-05T08:12:00,history,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_tgs_20260805-0812.json""]",17184,27bd2ad75ac79615a4842d6f08eaebf18cf7517e,2026-08-05T18:42:37
 31,TGS,2026-08-08,2026-08-08T07:48:22,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_tgs_20260808-0748.json""]",16849,5e2d39572f216bd1ac586f36e3992b7ae5e480fa,2026-08-08T07:48:23
 33,TGS,2026-08-10,2026-08-10T14:50:05,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_tgs_20260810-1450.json""]",14978,54088b946ca85ef8447b9c0b79f39e0aea7dd219,2026-08-10T14:50:06
+36,TGS,2026-08-11,2026-08-11T17:47:48,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_tgs_20260811-1747.json""]",14989,f6baf04bc90ff9307b34e833ba1ce72f4c9c2440,2026-08-11T17:47:48

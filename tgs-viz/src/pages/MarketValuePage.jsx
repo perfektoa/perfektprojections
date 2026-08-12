@@ -11,7 +11,7 @@ import { Search, ChevronDown, ChevronUp, DollarSign, TrendingUp, Info } from 'lu
  * WAR = WAA + measured replacement offsets); it re-fits on every data refresh.
  * Helps answer: "Is this contract good?" and "How much should I offer this FA?"
  */
-export default function MarketValuePage({ hitters, pitchers }) {
+export default function MarketValuePage({ hitters, pitchers, marketBank }) {
   // Compute FV for all players (needed for year-by-year projections)
   const hittersWithFV = usePlayersWithFV(hitters);
   const pitchersWithFV = usePlayersWithFV(pitchers);
@@ -25,9 +25,13 @@ export default function MarketValuePage({ hitters, pitchers }) {
   const [slopeOverride, setSlopeOverride] = useState('');
   const [floorOverride, setFloorOverride] = useState('');
 
-  // Run market analysis (fits the FA line)
-  const market = useMemo(() => analyzeMarket(hittersWithFV, pitchersWithFV), [hittersWithFV, pitchersWithFV]);
+  // Run market analysis (fits the FA line, or keeps the banked one when FA
+  // opening has collapsed the live sample — see marketValue.js fitFAMarket)
+  const market = useMemo(
+    () => analyzeMarket(hittersWithFV, pitchersWithFV, { banked: marketBank }),
+    [hittersWithFV, pitchersWithFV, marketBank]);
   const fit = market.fit;
+  const prov = fit?.provenance;
 
   const override = useMemo(() => ({
     slope: slopeOverride !== '' && !isNaN(parseFloat(slopeOverride)) ? parseFloat(slopeOverride) * 1_000_000 : undefined,
@@ -175,12 +179,26 @@ export default function MarketValuePage({ hitters, pitchers }) {
           </p>
         </div>
 
+        {/* Banked-fit notice — never price off a stale line silently */}
+        {prov?.used === 'banked' && (
+          <div className="bg-amber-950/40 rounded-lg border border-amber-800/60 p-3 text-sm text-amber-200">
+            <span className="font-semibold">Market fit: banked {prov.bankedAt}</span>
+            {' '}(n={prov.bankedN}) — the live sample is only n={prov.liveN}, too small to
+            re-price a win. Free agency resets every contract to year 1, which empties the
+            open-market sample. The live fit takes over again by itself once it rests on at
+            least as many signings.
+          </div>
+        )}
+
         {/* Fitted Market Cards */}
         <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
           <StatCard
             label="Fitted $/WAR"
             value={fit?.pooled ? fmtSlope(fit.pooled.slope) : '-'}
-            sub={fit?.pooled ? `pooled, n=${fit.pooled.n}` : 'no FA sample'}
+            sub={fit?.pooled
+              ? `pooled, n=${fit.pooled.n}`
+                + (prov?.used === 'banked' ? ` · BANKED ${prov.bankedAt}` : '')
+              : 'no FA sample'}
             color="text-green-400"
           />
           <StatCard

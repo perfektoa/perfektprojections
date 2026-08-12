@@ -250,6 +250,72 @@ export function getPlayerRole(player) {
  * _appLeague) — the open-market currency salaries clear in. Identical to the
  * currency futureValue's getPlayerWAAValues uses for currentWAA.
  */
+// ============================================================
+// HEALTH RISK DISCOUNT ($ layer only)
+// ============================================================
+
+// What a durability flag is worth in MONEY. A draft policy, not an estimate: the user
+// will pay 40 cents on the dollar for a Wrecked player and 75 for a Fragile one, because
+// the projection prices the seasons he is on the field for and says nothing about how
+// often he is not. Injury proneness is real and externally tracked; these set the premium
+// demanded for carrying that risk. Deliberately applied ONLY to dollars — WAR, WAA and
+// every rating-driven projection stay untouched, so the flag never quietly edits talent.
+const HEALTH_VALUE_FACTOR = { 'Wrecked': 0.40, 'Fragile': 0.75 };
+
+export function healthValueFactor(player) {
+  return HEALTH_VALUE_FACTOR[player && player.Prone] ?? 1.0;
+}
+
+/**
+ * Scale every dollar VALUE in a calculatePlayerValue result by the player's health
+ * factor. Salary is never scaled — an obligation is an obligation — so each surplus is
+ * re-derived rather than scaled: surplus = f*value - salary = surplus - (1-f)*value.
+ */
+function applyHealthDiscount(out, player) {
+  const f = healthValueFactor(player);
+  out.healthFactor = f;
+  out.proneValue = (player && player.Prone) || null;
+  if (f === 1) return out;
+  const s = (v) => (Number.isFinite(v) ? Math.round(v * f) : v);
+  const drop = (v) => (Number.isFinite(v) ? Math.round((1 - f) * v) : 0);
+
+  // surpluses first — they need the UNDISCOUNTED value they were derived from
+  out.surplus = Number.isFinite(out.surplus) ? out.surplus - drop(out.annualValue) : out.surplus;
+  out.marketSurplus = Number.isFinite(out.marketSurplus)
+    ? out.marketSurplus - drop(out.marketPrice) : out.marketSurplus;
+
+  for (const k of ['annualValue', 'marketPrice', 'localSD',
+                   'offerFloor', 'offerMid', 'offerCeiling',
+                   'futureAnnualValue', 'futureOfferFloor', 'futureOfferMid',
+                   'futureOfferCeiling', 'totalValue', 'adjustedValue']) {
+    out[k] = s(out[k]);
+  }
+  if (Array.isArray(out.yearlyValues)) {
+    out.yearlyValues = out.yearlyValues.map(y => ({ ...y, yearValue: s(y.yearValue) }));
+  }
+  if (Array.isArray(out.offerByLength)) {
+    out.offerByLength = out.offerByLength.map(o => ({
+      ...o, aav: s(o.aav), total: s(o.total), low: s(o.low), high: s(o.high),
+    }));
+  }
+  if (out.contract) {
+    const c = out.contract;
+    out.contract = {
+      ...c,
+      surplus: Number.isFinite(c.surplus) ? c.surplus - drop(c.totalValue) : c.surplus,
+      totalValue: s(c.totalValue),   // totalSalary is NOT scaled
+      years: Array.isArray(c.years) ? c.years.map(y => ({
+        ...y,
+        surplus: Number.isFinite(y.surplus) ? y.surplus - drop(y.value) : y.surplus,
+        discSurplus: Number.isFinite(y.discSurplus) && Number.isFinite(y.value)
+          ? y.discSurplus - drop(y.value) : y.discSurplus,
+        value: s(y.value),
+      })) : c.years,
+    };
+  }
+  return out;
+}
+
 export function getPlayerWAR(player) {
   const lg = player._appLeague;
   let best = null;
@@ -765,8 +831,25 @@ function fitCell(points, minSalary) {
 }
 
 /**
+ * Sample size backing a fit — the single number the banking script and the
+ * live-vs-banked choice below both key off, so they can never disagree about
+ * which of two fits is better supported.
+ */
+export function marketFitSupport(fit) {
+  return fit && fit.pooled ? fit.pooled.n : 0;
+}
+
+/**
  * Fit the FA market from the loaded league rows. Re-runs on every data
  * refresh — nothing here is hardcoded to a league.
+ *
+ * opts.banked — a previously banked fit for THIS league (scripts/bank_market_fit.mjs
+ * writes public/data/<LG>/market_fit.json). When free agency opens, OOTP resets
+ * ContractYr across the whole league and the open-market sample collapses to a
+ * handful of deals; the line refitted on those is noise, not a new measurement
+ * of the price of a win. So when the bank rests on more signings than the live
+ * sample does, the banked fit is returned unchanged. Nothing about the fitting
+ * itself changes — this is only a choice between two already-computed fits.
  */
 export function fitFAMarket(hitters, pitchers, opts) {
   const L = svcYearDays(opts);
@@ -874,7 +957,7 @@ export function fitFAMarket(hitters, pitchers, opts) {
     }
   }
 
-  return {
+  const live = {
     pooled, hitter, pitcher,
     perRole, useRoleLine, roleCV, slopeDiffT, ratioPH,
     sample,
@@ -882,6 +965,33 @@ export function fitFAMarket(hitters, pitchers, opts) {
     svcYearDays: L, serviceBasis, extensionsDropped,
     notes,
     lowConfidence: !pooled || pooled.n < 30 || pooled.slope <= 0,
+  };
+
+  // Live vs banked. No threshold: the better-supported fit wins, and once the
+  // live sample recovers past the banked one the bank stops being used on its
+  // own. The provenance rides on the returned fit so the page can say which
+  // line it is pricing with.
+  const banked = opts && opts.banked && opts.banked.fit ? opts.banked : null;
+  const liveN = marketFitSupport(live);
+  const bankedN = banked ? marketFitSupport(banked.fit) : 0;
+  const provenance = {
+    used: bankedN > liveN ? 'banked' : 'live',
+    liveN,
+    bankedN: banked ? bankedN : null,
+    bankedAt: banked ? banked.bankedAt || null : null,
+  };
+  if (provenance.used !== 'banked') return { ...live, provenance };
+
+  return {
+    ...banked.fit,
+    provenance,
+    notes: [
+      `BANKED FIT IN USE — measured ${banked.bankedAt || 'earlier'} on `
+      + `${bankedN} open-market signings. Today's live sample is only ${liveN} `
+      + '(free agency reset ContractYr across the league). The live fit takes over '
+      + 'again as soon as it rests on at least as many signings.',
+      ...(banked.fit.notes || []),
+    ],
   };
 }
 
@@ -1237,7 +1347,7 @@ export function calculatePlayerValue(player, rate) {
   totalValue = Math.round(totalValue);
   const productiveYears = yearlyValues.filter(y => y.rawWAA > 0).length || 1;
 
-  return {
+  return applyHealthDiscount({
     // year-0 — line economy ("line value — replaceable tier")
     annualValue, surplus,
     // year-0 — tier-local economy ("market price — scarcity tier")
@@ -1263,7 +1373,7 @@ export function calculatePlayerValue(player, rate) {
       perRole: rate ? !!rate.perRole : false,
       boundary,
     },
-  };
+  }, player);
 }
 
 // Convenience wrappers (API compatible with the hooks)
@@ -1282,8 +1392,8 @@ export function calculatePitcherValue(player, rate) {
  * Analyze the salary market for the page: the FA fit plus WAR-based scatter
  * points, buckets and tiers. All in WAR currency (offsets included).
  */
-export function analyzeMarket(hitters, pitchers) {
-  const fit = fitFAMarket(hitters, pitchers);
+export function analyzeMarket(hitters, pitchers, opts) {
+  const fit = fitFAMarket(hitters, pitchers, opts);
   const faKeys = new Set(fit.sample.map(s => `${s.name}|${s.org}`));
 
   const allPlayers = [...(hitters || []), ...(pitchers || [])];

@@ -114,6 +114,7 @@ export function usePlayerData(league) {
     hitters_fa: [],
     pitchers_fa: [],
     metadata: null,
+    marketBank: null,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -131,6 +132,7 @@ export function usePlayerData(league) {
       hitters_draft: [], pitchers_draft: [],
       hitters_fa: [], pitchers_fa: [],
       metadata: null,
+      marketBank: null,
     });
 
     const dataFiles = getDataFiles(league);
@@ -166,13 +168,25 @@ export function usePlayerData(league) {
         }
       }
 
+      const base = league ? `/data/${league}` : '/data';
+
       // Per-league metadata (matchup shares etc.) — an object, not a player array.
       try {
-        const mres = await fetch(`${league ? `/data/${league}` : '/data'}/metadata.json`);
+        const mres = await fetch(`${base}/metadata.json`);
         const mtype = mres.headers.get('content-type') || '';
         results.metadata = (mres.ok && mtype.includes('json')) ? await mres.json() : null;
       } catch {
         results.metadata = null;
+      }
+
+      // Banked FA market fit (scripts/bank_market_fit.mjs). Optional: a league
+      // that has never been banked just prices off its live fit.
+      try {
+        const bres = await fetch(`${base}/market_fit.json`);
+        const btype = bres.headers.get('content-type') || '';
+        results.marketBank = (bres.ok && btype.includes('json')) ? await bres.json() : null;
+      } catch {
+        results.marketBank = null;
       }
 
       if (!cancelled) {
@@ -339,7 +353,9 @@ export function usePlayersWithFV(players) {
       // count six for everyone, which is right for a prospect (his clock hasn't
       // started) and badly wrong for a veteran with one year to free agency.
       const cw = controlWindow(p);
-      const fv = calculateFutureValue(p, cw.controlYears);
+      // valueYears, not controlYears: a free agent controls zero seasons but the value
+      // left in him is the term you would sign him for (serviceTime.controlWindow).
+      const fv = calculateFutureValue(p, cw.valueYears);
       // Value Gap = our projection-based FV minus OOTP's POT (what other GMs eyeball).
       // Positive → we rate him higher than his potential shows → undervalued / a buy.
       const pot = parseFloat(p.Pot);
@@ -498,12 +514,14 @@ export function usePlayersWithHybridFV(players) {
  * fitFAMarket: salary ~ slope * WAR + floor over fresh FA signings only).
  * Re-fits automatically whenever the league data refreshes.
  * Call once in App and pass down to pages. Name kept for App.jsx compat.
+ * `banked` is the league's market_fit.json, used when FA opening has left the
+ * live sample smaller than the banked one (see fitFAMarket).
  */
-export function useMarketRate(hitters, pitchers) {
+export function useMarketRate(hitters, pitchers, banked) {
   return useMemo(() => {
     if (!hitters.length && !pitchers.length) return null;
-    return fitFAMarket(hitters, pitchers);
-  }, [hitters, pitchers]);
+    return fitFAMarket(hitters, pitchers, { banked });
+  }, [hitters, pitchers, banked]);
 }
 
 /** Shared enrichment for both market-value hooks. */

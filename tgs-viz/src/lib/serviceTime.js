@@ -125,8 +125,21 @@ export function controlWindow(player, opts = {}) {
     source = 'default';
   }
 
+  // How many seasons of him are worth counting, which is NOT the same question as how
+  // many you control. A free agent has zero remaining control by definition — right for
+  // surplus, wrong for "how much value is left in this player", because the horizon you
+  // would actually hold him for is the contract you are about to sign. Using control
+  // there inverted the board: Gildardo Lares (1.52 WAA, 10 svc yrs) counted ONE season
+  // and scored 2.63, below Peyton Sorey (0.10 WAA, 1.4 svc yrs) who counted five for
+  // 6.49. Controlled players keep their real window; free agents fall back to the
+  // labelled default term.
+  const isFreeAgent = String(player.Lev) === 'FA' || String(player.ORG) === '0';
+  const valueYears = (isFreeAgent && controlYears <= 0) ? FA_SERVICE_YEARS : controlYears;
+
   return {
     controlYears,
+    valueYears,
+    isFreeAgent,
     faYear: seasonYear !== null ? seasonYear + controlYears : null,
     arbStartYear: (seasonYear !== null && yearsToArb !== null)
       ? seasonYear + yearsToArb : null,

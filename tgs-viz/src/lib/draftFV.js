@@ -327,26 +327,15 @@ export function calculateDraftFV(player, ageGroups, playerType, params = {}) {
   const proneValue = player.Prone || null;
   const isWrecked = proneValue === 'Wrecked';
 
-  // Short-circuit for wrecked players
-  if (isWrecked) {
-    return {
-      draftFV: 20,
-      draftRawFV: 0,
-      agePercentile: 0,
-      ceilingScore: 0,
-      peakScore: null,
-      draftCeiling: 0,
-      draftCeilingWAA: 0,
-      ceilingOffset: 0,
-      ceilingRole: null,
-      durabilityMod: 0,
-      toolPenalty: 1.0,
-      proneValue: 'Wrecked',
-      highINT: player.Int === 'H',
-      wrecked: true,
-      weBoost: player.WrkEthic === 'H',
-    };
-  }
+  // Wrecked is NOT short-circuited. It used to return a hard draftCeiling/
+  // draftCeilingWAA of 0, which is fine on a draft board (you do not spend a pick on him,
+  // and the board hides him anyway) but wrong everywhere else: HittersPage and
+  // PitchersPage run this same hook, so an established player or free agent showed a
+  // fabricated 0 ceiling. Henderson Macias — 2.42 WAA, 4.07 WAR, elite CF glove and legs
+  // — read as a 0-ceiling player purely because of the flag.
+  // Nothing special is needed: DURABILITY_MAP maps Wrecked to 0, so the draft SCORE still
+  // collapses to 0 on its own, while the ceiling stays honest and `wrecked` keeps driving
+  // the board's own hide filter.
 
   // ---- Extract metrics based on player type ----
   // CEILING IS WINS, PLAIN. It answers one question: how many wins above average does
@@ -501,7 +490,7 @@ export function calculateDraftFV(player, ageGroups, playerType, params = {}) {
     toolPenalty,
     proneValue: proneValue || 'Normal',
     highINT: player.Int === 'H',
-    wrecked: false,
+    wrecked: isWrecked,   // still flags him; the draft board's hideWrecked filter reads this
     weBoost: player.WrkEthic === 'H',
   };
 }

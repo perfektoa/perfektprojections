@@ -27,6 +27,10 @@ export default function PitchersPage({ players, isDraft = false, isFA = false, a
   const finalPlayers = usePitchersWithMarketValue(playersWithHybrid, marketRate);
   const fit = marketRate?.pooled;
   const lowConfidence = marketRate?.lowConfidence;
+  // A banked fit carries lowConfidence:false, so without this the stale line would show
+  // in green AND suppress the warning the collapsed live sample would have raised —
+  // silently stale dollars on the page free agents are actually shopped from.
+  const banked = marketRate?.provenance?.used === 'banked' ? marketRate.provenance : null;
 
   const defaultGroups = isFA
     ? ['info', 'value', 'futureValue', 'marketCurrent', 'marketFuture']
@@ -46,12 +50,17 @@ export default function PitchersPage({ players, isDraft = false, isFA = false, a
           </div>
           {fit && fit.slope > 0 && (
             <div className="text-right">
-              <p className="text-xs text-slate-500">FA market fit {lowConfidence && '⚠️'}</p>
-              <p className={`text-sm font-semibold ${lowConfidence ? 'text-orange-400' : 'text-green-400'}`}>
+              <p className="text-xs text-slate-500">FA market fit {(lowConfidence || banked) && '⚠️'}</p>
+              <p className={`text-sm font-semibold ${lowConfidence ? 'text-orange-400' : banked ? 'text-amber-400' : 'text-green-400'}`}>
                 {formatMoney(fit.slope)}/WAR + {formatMoney(fit.floor)}
               </p>
               <p className="text-[10px] text-slate-500">n={fit.n} FA signings, r²={fit.r2.toFixed(2)}</p>
               {lowConfidence && <p className="text-[10px] text-orange-400">Low data — few FA signings in sample</p>}
+              {banked && (
+                <p className="text-[10px] text-amber-400">
+                  BANKED {banked.bankedAt} — live sample only n={banked.liveN}
+                </p>
+              )}
             </div>
           )}
         </div>

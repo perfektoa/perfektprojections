@@ -248,7 +248,12 @@ def hitting(bat_rows, hitters):
     # added the live base C41 on top — double-counting the league rate (+0.4..+2.0 wSB
     # runs per fast player). Slope is unchanged; only the intercept drops by the GT rate.
     out["hSBA"] = block_p2("STE", sba,      "STE", lambda f: f >= 55, subtract_gt=True)
-    out["SB%"]  = block_p2("STE", sbpct,    "SPE", lambda f: f >= 55)          # filter=SPE, x=STE (as built)
+    # audit B12: the SB% block selected its pool on SPE while regressing on STE — the
+    # same swapped-column copy-drag as B10, and the odd one out here: hSBA and UBR both
+    # filter on their own predictor. Stolen-base SUCCESS is a function of stealing
+    # ability, not raw speed (user directive), so the pool is now the players the fit is
+    # actually about. A fast runner who cannot steal no longer sets the success curve.
+    out["SB%"]  = block_p2("STE", sbpct,    "STE", lambda f: f >= 55)
     out["UBR"]  = block_p2("RUN", ubr_rate, "RUN", lambda f: True, weight_iferror0=True)
     return out
 

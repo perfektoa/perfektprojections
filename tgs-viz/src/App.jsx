@@ -201,7 +201,7 @@ export default function App() {
   const { data, loading, error, loadProgress } = usePlayerData(currentLeague);
 
   // Compute league-wide $/WAA rate (must be before early returns — React hooks rule)
-  const marketRate = useMarketRate(data.hitters, data.pitchers);
+  const marketRate = useMarketRate(data.hitters, data.pitchers, data.marketBank);
 
   // Per-league feature flags from the manifest (unknown league -> everything on,
   // pages already degrade gracefully on missing fields/datasets).
@@ -259,7 +259,7 @@ export default function App() {
               <WaiverClaimPage hitters={data.hitters} pitchers={data.pitchers} league={currentLeague} />
             } />
             <Route path="/market-value" element={
-              <MarketValuePage hitters={data.hitters} pitchers={data.pitchers} />
+              <MarketValuePage hitters={data.hitters} pitchers={data.pitchers} marketBank={data.marketBank} />
             } />
             <Route path="/optimizer" element={
               <RosterOptimizerPage hitters={data.hitters} pitchers={data.pitchers} metadata={data.metadata} league={currentLeague} />

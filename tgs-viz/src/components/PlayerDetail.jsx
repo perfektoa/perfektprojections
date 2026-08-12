@@ -93,7 +93,9 @@ export default function PlayerDetail({ player, onClose, type = 'hitter' }) {
 
   // FV counts the seasons this club still holds, not a flat six (serviceTime).
   const control = useMemo(() => controlWindow(player), [player]);
-  const fv = useMemo(() => calculateFutureValue(player, control.controlYears), [player, control]);
+  // valueYears: control is what you keep, valueYears is what is worth counting (a free
+  // agent controls 0 seasons but is not worth 0). See serviceTime.controlWindow.
+  const fv = useMemo(() => calculateFutureValue(player, control.valueYears), [player, control]);
 
   // Development curve data
   const devCurve = fv.yearByYear.map(y => ({

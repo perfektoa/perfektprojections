@@ -394,69 +394,52 @@ def compute(p, dp, filt, park, league="TGS", currency=None, tails=None, fielding
         vals = [out[f"{pos} WAA {suf}"] for pos in elig if elig[pos]]
         out[f"Max WAA {suf}"] = max(vals) if vals else None
 
-    # ---- POTENTIAL (prospect ceiling): single line from P-ratings ----
+    # ---- POTENTIAL (prospect ceiling): split-aware line from P-ratings ----
+    # OOTP publishes potential WITHOUT splits, so a P rating is one number per skill.
+    # It reads on the vR basis (measured over fully-developed hitters, where potential
+    # must equal current: mean abs error vs vR 1.20 TGS / 2.37 BLM, vs the platoon-
+    # weighted average 1.31 / 2.39, vs vL 2.13 / 3.41 — vR wins in both leagues).
+    # The current line is built twice (vR and vL) and weighted, so it banks the
+    # player's platoon advantage; a one-line potential banks none of it. For a maxed
+    # player that difference IS the whole gap, which is how a ceiling landed under a
+    # floor. So give the potential line the player's OWN measured platoon shape —
+    # potential vL = P + (current vL - current vR) — and run both lines through the
+    # same split_stats/woba/wsb/ubr path the current line uses, weighted by the same
+    # platoon share. Nothing is fitted or tuned here; the gap is read off his ratings.
     EYEp, POWp, Kp, HTp, GAPp = (p.get(k) for k in ("EYE P", "POW P", "K P", "HT P", "GAP P"))
     out["MAX WAA P"] = None
     if None not in (EYEp, POWp, Kp, HTp, GAPp):
-        HBPp = g("H37") * PA
-        uBBp = max((piece(EYEp, g("H2"), g("C3"), g("B3"), g("E3"), g("D3")) + g("C33")) * (PA - HBPp), 0.0)
-        if B == "R":
-            hrh = f("C11")
-        elif B == "L":
-            hrh = f("D11")
-        else:
-            hrh = f("C11") * g("H25") + f("D11") * (1 - g("H25"))
-        HRp = max((piece(POWp, g("H3"), g("C5"), g("B5"), g("E5"), g("D5")) + g("C34")
-                   + tadj("HR", POWp)) * (PA - HBPp - uBBp) * hrh, 0.0)
-        SOp = max((piece(Kp, g("H4"), g("C7"), g("B7"), g("E7"), g("D7")) + g("C35")
-                   + tadj("SO", Kp)) * (PA - HBPp - uBBp), 0.0)
+        def vl_of(pot, cur_vR, cur_vL):
+            # Fallback to today's shapeless behaviour when a current split is missing.
+            if cur_vR is None or cur_vL is None:
+                return pot
+            # Carrying the platoon gap can INVENT a rating the model was never fitted on:
+            # TGS publishes no hitting rating above 80 at all (0 of 102,495 slots), yet the
+            # derived vL reached 85 and 90, and those slots landed on 4 of the TGS and 9 of
+            # the BLM draft top-25 — the most visible rankings resting on the least
+            # supported arithmetic. Cap at the B11/B1 support end (80, same as the RUN and
+            # STE input clamps above), but never below a rating this player actually
+            # carries, so BLM's genuine 85s and 90s are not clipped.
+            cap = max(80.0, cur_vR, cur_vL, pot)
+            return min(pot + (cur_vL - cur_vR), cap)
 
-        def pblend(col):  # potential blends home/away park by platoon share
-            home, away = park[col + "_home"], park[col + "_away"]
-            sh = g("H24") if B == "R" else g("H23")
-            return home * sh + (1 - sh) * away
-
-        remp = PA - HBPp - uBBp - HRp - SOp
-        if HTp >= 50:
-            HHRp = ((HTp - g("H5")) * g("C9") + g("B9") + g("C36") + tadj("HHR", HTp)) * remp + pblend("AH")
-        else:
-            c3 = filt.get("C3")
-            hand = 1.0 if c3 in (None, "") else {"R": f("C8"), "L": f("D8")}.get(B, f("C8") * g("H25") + f("D8") * (1 - g("H25")))
-            HHRp = ((HTp - g("H5")) * g("E9") + g("D9") + g("C36") + tadj("HHR", HTp)) * remp * hand
-        HHRp = max(HHRp, 0.0)
-        if GAPp >= 50:
-            XBHp = ((GAPp - g("H6")) * g("C11") + g("B11") + g("C37") + tadj("XBH", GAPp)) * HHRp + pblend("AG")
-        else:
-            XBHp = ((GAPp - g("H6")) * g("E11") + g("D11") + g("C37") + tadj("XBH", GAPp)) * HHRp * f("C9")
-        XBHp = max(XBHp, 0.0)
         SPE = p["SPE"]
-        if SPE >= 50:
-            T3Bp = ((SPE - g("H7")) * g("C13") + g("B13") + g("C38") + tadj("T3B", SPE)) * XBHp + pblend("AI")
-        else:
-            T3Bp = ((SPE - g("H7")) * g("E13") + g("D13") + g("C38") + tadj("T3B", SPE)) * XBHp * f("C10")
-        T3Bp = max(T3Bp, 0.0)
-        D2Bp, S1Bp = XBHp - T3Bp, HHRp - XBHp
-        wobaP = (HBPp * g("H12") + uBBp * g("H13") + S1Bp * g("H14") + D2Bp * g("H15")
-                 + T3Bp * g("H16") + HRp * g("H17")) / PA / park["AA"]
-        out["wOBA P"] = wobaP
+        pR = split_stats("vR", EYEp, POWp, Kp, HTp, GAPp, SPE)
+        pL = split_stats("vL",
+                         vl_of(EYEp, p["EYE vR"], p["EYE vL"]),
+                         vl_of(POWp, p["POW vR"], p["POW vL"]),
+                         vl_of(Kp, p["K vR"], p["K vL"]),
+                         vl_of(HTp, p["BA vR"], p["BA vL"]),
+                         vl_of(GAPp, p["GAP vR"], p["GAP vL"]),
+                         SPE)
+        out["wOBA P"] = wobaP = wtd(woba(pR), woba(pL))
         out["BatR P"] = BatRp = ((wobaP - g("H29")) / g("H20")) * PA
-        dhwobaP = ((HBPp * g("H12") + uBBp * g("H13") + S1Bp * g("H14") + D2Bp * g("H15")
-                    + T3Bp * g("H16")) * 0.98 + HRp * g("H17")) / (PA - SOp * 0.02) / park["AA"]
+        dhwobaP = wtd(dh_woba(pR), dh_woba(pL))
         DHBatRp = ((dhwobaP - g("H29")) / g("H20")) * PA
-        # STE capped + C41 added once (audit B1), RUN clamped (B11), +C40 (B9) —
-        # same semantics as the main path above.
-        SBATp = max((sum((ste_c - g("H8")) ** k * g0(c + "15") for k, c in zip(range(4), "BCDE")) + g("C41"))
-                    * (S1Bp + uBBp + HBPp), 0.0)
-        SBnp = SBpct * SBATp; CSnp = SBATp - SBnp
-        wSBp = max(SBnp * 0.2 + CSnp * g("H35"), 0.0) - g("H36") * (S1Bp + uBBp + HBPp)
-        cubicp = sum((run_c - g("H9")) ** k * g0(c + "19") for k, c in zip(range(4), "BCDE"))
-        UBRp = (cubicp + g("C40")) * ((uBBp + S1Bp + HBPp) * 3 + D2Bp * 2 + T3Bp
-                                      - (CSnp * 3 - SBnp if out["wSB vL"] > 0 else 0))
-        BSRp = UBRp + wSBp
-        H30 = g("H30")
+        BSRp = wtd(ubr(pR) + wsb(pR), ubr(pL) + wsb(pL))
         # audit B8: BSR scaled to the catcher's H32 PA basis (see C WAA above)
-        out["C WAA P"] = (rp["C"] + BSRp * (g("H32") / PA) + ((wobaP - g("H29")) / g("H20") * g("H32"))
-                          + (park["AB"] / PA * g("H32")) + g("W2")) / H30
+        out["C WAA P"] = (rp["C"] + BSRp * (H32 / PA) + ((wobaP - g("H29")) / g("H20") * H32)
+                          + (park["AB"] / PA * H32) + g("W2")) / H30
         for pos, w in (("1B", "W3"), ("2B", "W4"), ("3B", "W5"), ("SS", "W6"),
                        ("LF", "W7"), ("CF", "W8"), ("RF", "W9")):
             out[f"{pos} WAA P"] = (rp[pos] + BSRp + BatRp + g(w)) / H30
