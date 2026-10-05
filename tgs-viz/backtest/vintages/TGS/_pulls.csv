@@ -49,3 +49,10 @@ pull_id,league,real_date,real_ts,source,source_files,n_players,content_hash,inge
 566,TGS,2042-01-01,2026-09-30T22:41:10,asof,"[""tgs-viz\\ingest\\.cache\\asof\\tgs\\2042-01-01.json""]",10496,f70017eecda71db1aeea80c37b1c95d4d036e2c8,2026-09-30T22:41:11,2042-01-01
 567,TGS,2042-07-01,2026-09-30T22:56:30,asof,"[""tgs-viz\\ingest\\.cache\\asof\\tgs\\2042-07-01.json""]",11327,6bd55f8a29715dcfbe681c61e3a180f6d43c58d2,2026-09-30T22:56:31,2042-07-01
 568,TGS,2026-10-01,2026-10-01T09:11:38,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_tgs_20261001-0911.json""]",16574,d03b8f3197fb741e66b14c1c96aa2488d5287429,2026-10-01T09:11:39,2045-08-07
+575,TGS,2040-07-01,2026-10-04T21:12:58,asof,"[""tgs-viz\\ingest\\.cache\\asof\\tgs\\2040-07-01.json""]",9073,ae312b09648bdf821441ef6694ed4fc4cc21721e,2026-10-04T21:12:58,2040-07-01
+576,TGS,2043-01-01,2026-10-04T21:28:19,asof,"[""tgs-viz\\ingest\\.cache\\asof\\tgs\\2043-01-01.json""]",11425,621879d839374ed2057c3e2d0ff310af3b745f1a,2026-10-04T21:28:19,2043-01-01
+577,TGS,2043-07-01,2026-10-04T21:43:24,asof,"[""tgs-viz\\ingest\\.cache\\asof\\tgs\\2043-07-01.json""]",12382,666a0181adf09fe1932dde99ef96a89b9a47ebe8,2026-10-04T21:43:25,2043-07-01
+578,TGS,2043-12-28,2026-10-04T21:58:30,asof,"[""tgs-viz\\ingest\\.cache\\asof\\tgs\\2043-12-28.json""]",12451,f02bdb23ff8569de38ee064999ec167224589ee3,2026-10-04T21:58:31,2043-12-28
+579,TGS,2044-06-27,2026-10-04T22:13:35,asof,"[""tgs-viz\\ingest\\.cache\\asof\\tgs\\2044-06-27.json""]",13624,96508fc2d180a6e95c7c0d16d14f9b3d097117d2,2026-10-04T22:13:36,2044-06-27
+580,TGS,2044-12-26,2026-10-04T22:28:41,asof,"[""tgs-viz\\ingest\\.cache\\asof\\tgs\\2044-12-26.json""]",13764,847e00fa27a2d479d1f5d2593f9e5b34ce7d16f1,2026-10-04T22:28:42,2044-12-26
+581,TGS,2045-06-05,2026-10-04T22:44:02,asof,"[""tgs-viz\\ingest\\.cache\\asof\\tgs\\2045-06-05.json""]",16596,f2784b86e2476bd3de8414bc0239ea84b86cf98a,2026-10-04T22:44:03,2045-06-05
