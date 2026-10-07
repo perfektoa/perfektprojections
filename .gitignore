@@ -31,7 +31,28 @@ nul
 tgs-viz/ingest/.cache/
 tgs-viz/backtest/vintages/*/.waa_cache/
 tgs-viz/backtest/.lens_cache/
-tgs-viz/backtest/.dev_cache/
+tgs-viz/backtest/.dev_cache/*
+# ML models and training tables go to GitHub through Git LFS (2026-10-06): the
+# TGS and BLM model sets, their tuned settings and the four DEV training tables.
+# Clones skip them by default (.lfsconfig); see the README. Everything else in
+# .dev_cache stays local (old tables, files over GitHub's 2 GB LFS limit).
+!tgs-viz/backtest/.dev_cache/ml/
+tgs-viz/backtest/.dev_cache/ml/*
+!tgs-viz/backtest/.dev_cache/ml/models/
+tgs-viz/backtest/.dev_cache/ml/models/*
+!tgs-viz/backtest/.dev_cache/ml/models/*_settings.json
+!tgs-viz/backtest/.dev_cache/ml/models/TGS/
+!tgs-viz/backtest/.dev_cache/ml/models/BLM/
+!tgs-viz/backtest/.dev_cache/ml/data/
+tgs-viz/backtest/.dev_cache/ml/data/*
+!tgs-viz/backtest/.dev_cache/ml/data/dev_H_TGS.pkl
+!tgs-viz/backtest/.dev_cache/ml/data/dev_P_TGS.pkl
+!tgs-viz/backtest/.dev_cache/ml/data/dev_H_BLM.pkl
+!tgs-viz/backtest/.dev_cache/ml/data/dev_P_BLM.pkl
+!tgs-viz/backtest/.dev_cache/ml/data/schema_TGS.json
+!tgs-viz/backtest/.dev_cache/ml/data/schema_BLM.json
+!tgs-viz/backtest/.dev_cache/ml/data/parity_TGS.json
+!tgs-viz/backtest/.dev_cache/ml/data/parity_BLM.json
 tgs-viz/engine/calib/*/*.csv
 # park tables are small and checked in (ingest/parks.py reads them)
 !tgs-viz/engine/calib/*/park_*.csv

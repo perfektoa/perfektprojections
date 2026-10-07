@@ -1,0 +1,2 @@
+[lfs]
+	fetchexclude = tgs-viz/backtest/.dev_cache/**

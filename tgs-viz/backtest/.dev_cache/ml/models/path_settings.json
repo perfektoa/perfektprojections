@@ -1,0 +1,293 @@
+{
+ "H": {
+  "params": {
+   "max_leaf_nodes": 255,
+   "min_samples_leaf": 400
+  },
+  "loss": {
+   "d1": "absolute_error",
+   "d2": "absolute_error",
+   "d3": "absolute_error",
+   "d4": "absolute_error",
+   "d5": "absolute_error"
+  },
+  "grid": [
+   {
+    "max_leaf_nodes": 31,
+    "min_samples_leaf": 100,
+    "d1_mae": 0.2532387752604468,
+    "d1_iters": 1349,
+    "d3_mae": 0.529200697876939,
+    "d3_iters": 1074
+   },
+   {
+    "max_leaf_nodes": 63,
+    "min_samples_leaf": 200,
+    "d1_mae": 0.2528066886293603,
+    "d1_iters": 771,
+    "d3_mae": 0.5281721035257431,
+    "d3_iters": 648
+   },
+   {
+    "max_leaf_nodes": 127,
+    "min_samples_leaf": 200,
+    "d1_mae": 0.25242738564639194,
+    "d1_iters": 540,
+    "d3_mae": 0.5269376682085957,
+    "d3_iters": 378
+   },
+   {
+    "max_leaf_nodes": 127,
+    "min_samples_leaf": 800,
+    "d1_mae": 0.2524219691458769,
+    "d1_iters": 504,
+    "d3_mae": 0.526468563361645,
+    "d3_iters": 417
+   },
+   {
+    "max_leaf_nodes": 255,
+    "min_samples_leaf": 400,
+    "d1_mae": 0.25220936322594034,
+    "d1_iters": 359,
+    "d3_mae": 0.5262892888076602,
+    "d3_iters": 211
+   }
+  ],
+  "loss_check": {
+   "d1": {
+    "squared_error": {
+     "mae": 0.25220936322594034,
+     "rmse": 0.3541768683829971,
+     "mean_bias": 0.0024147372625987437,
+     "iters": 359,
+     "n_val": 76524
+    },
+    "absolute_error": {
+     "mae": 0.24240623044893866,
+     "rmse": 0.365851988865438,
+     "mean_bias": -0.052188797037780725,
+     "iters": 482,
+     "n_val": 76524
+    }
+   },
+   "d2": {
+    "squared_error": {
+     "mae": 0.39377883869602787,
+     "rmse": 0.5418475209017756,
+     "mean_bias": 0.0040765824430291425,
+     "iters": 292,
+     "n_val": 66673
+    },
+    "absolute_error": {
+     "mae": 0.3861087885486165,
+     "rmse": 0.5510540361119995,
+     "mean_bias": -0.05439701034620182,
+     "iters": 398,
+     "n_val": 66673
+    }
+   },
+   "d3": {
+    "squared_error": {
+     "mae": 0.5262892888076602,
+     "rmse": 0.7250088798553135,
+     "mean_bias": 0.006241959642556092,
+     "iters": 211,
+     "n_val": 57199
+    },
+    "absolute_error": {
+     "mae": 0.5189947808917387,
+     "rmse": 0.7372556993355519,
+     "mean_bias": -0.07081432804301428,
+     "iters": 286,
+     "n_val": 57199
+    }
+   },
+   "d4": {
+    "squared_error": {
+     "mae": 0.6568146337510434,
+     "rmse": 0.9065986526232855,
+     "mean_bias": 0.011902760612111032,
+     "iters": 182,
+     "n_val": 48018
+    },
+    "absolute_error": {
+     "mae": 0.646196752451205,
+     "rmse": 0.9181541442938176,
+     "mean_bias": -0.08547926373913409,
+     "iters": 448,
+     "n_val": 48018
+    }
+   },
+   "d5": {
+    "squared_error": {
+     "mae": 0.7832986082216766,
+     "rmse": 1.0755386671709393,
+     "mean_bias": 0.017634296170979807,
+     "iters": 160,
+     "n_val": 39154
+    },
+    "absolute_error": {
+     "mae": 0.7665521194615608,
+     "rmse": 1.0842100373454195,
+     "mean_bias": -0.09938543431911652,
+     "iters": 333,
+     "n_val": 39154
+    }
+   }
+  },
+  "rule": "tree shape by d1 + d3 held-out MAE (squared loss); loss per horizon by held-out MAE",
+  "data": "fold 0 training set (folds 1-4), scored on its held-back 10% of players"
+ },
+ "_meta": {
+  "written": "2026-09-24T21:13:59",
+  "sklearn": "1.7.2",
+  "fixed": {
+   "learning_rate": 0.1,
+   "max_iter": 2000,
+   "max_leaf_nodes": 63,
+   "min_samples_leaf": 200,
+   "l2_regularization": 1.0,
+   "max_bins": 255,
+   "n_iter_no_change": 30
+  }
+ },
+ "P": {
+  "params": {
+   "max_leaf_nodes": 127,
+   "min_samples_leaf": 800
+  },
+  "loss": {
+   "d1": "absolute_error",
+   "d2": "absolute_error",
+   "d3": "absolute_error",
+   "d4": "absolute_error",
+   "d5": "absolute_error"
+  },
+  "grid": [
+   {
+    "max_leaf_nodes": 31,
+    "min_samples_leaf": 100,
+    "d1_mae": 0.18312925711828146,
+    "d1_iters": 1052,
+    "d3_mae": 0.341800964052787,
+    "d3_iters": 933
+   },
+   {
+    "max_leaf_nodes": 63,
+    "min_samples_leaf": 200,
+    "d1_mae": 0.18293480020128725,
+    "d1_iters": 874,
+    "d3_mae": 0.3416404474004138,
+    "d3_iters": 778
+   },
+   {
+    "max_leaf_nodes": 127,
+    "min_samples_leaf": 200,
+    "d1_mae": 0.18297506727346693,
+    "d1_iters": 467,
+    "d3_mae": 0.3420404331226146,
+    "d3_iters": 418
+   },
+   {
+    "max_leaf_nodes": 127,
+    "min_samples_leaf": 800,
+    "d1_mae": 0.1826019111464511,
+    "d1_iters": 479,
+    "d3_mae": 0.3417576380837707,
+    "d3_iters": 452
+   },
+   {
+    "max_leaf_nodes": 255,
+    "min_samples_leaf": 400,
+    "d1_mae": 0.18283651639622678,
+    "d1_iters": 338,
+    "d3_mae": 0.34241334714558064,
+    "d3_iters": 224
+   }
+  ],
+  "loss_check": {
+   "d1": {
+    "squared_error": {
+     "mae": 0.1826019111464511,
+     "rmse": 0.26048914094399295,
+     "mean_bias": -1.710594110282402e-05,
+     "iters": 479,
+     "n_val": 86207
+    },
+    "absolute_error": {
+     "mae": 0.17637562965389375,
+     "rmse": 0.267635188183058,
+     "mean_bias": -0.027668305081586818,
+     "iters": 1911,
+     "n_val": 86207
+    }
+   },
+   "d2": {
+    "squared_error": {
+     "mae": 0.26616820541330183,
+     "rmse": 0.36946954282089856,
+     "mean_bias": -0.001015400040909252,
+     "iters": 439,
+     "n_val": 74728
+    },
+    "absolute_error": {
+     "mae": 0.2620025539895014,
+     "rmse": 0.37430459758914036,
+     "mean_bias": -0.02771965742521063,
+     "iters": 623,
+     "n_val": 74728
+    }
+   },
+   "d3": {
+    "squared_error": {
+     "mae": 0.3417576380837707,
+     "rmse": 0.4702543386863071,
+     "mean_bias": -0.0016669880640361482,
+     "iters": 452,
+     "n_val": 63677
+    },
+    "absolute_error": {
+     "mae": 0.3386233716241796,
+     "rmse": 0.4772683757478953,
+     "mean_bias": -0.03672916429325871,
+     "iters": 349,
+     "n_val": 63677
+    }
+   },
+   "d4": {
+    "squared_error": {
+     "mae": 0.41898889585093363,
+     "rmse": 0.5695077526868544,
+     "mean_bias": -0.004355695449330742,
+     "iters": 316,
+     "n_val": 53180
+    },
+    "absolute_error": {
+     "mae": 0.4152792762764052,
+     "rmse": 0.5772642986543108,
+     "mean_bias": -0.04678710526287545,
+     "iters": 459,
+     "n_val": 53180
+    }
+   },
+   "d5": {
+    "squared_error": {
+     "mae": 0.4940968337183544,
+     "rmse": 0.6653090245939083,
+     "mean_bias": -0.007647987213767898,
+     "iters": 284,
+     "n_val": 43196
+    },
+    "absolute_error": {
+     "mae": 0.48903659849590225,
+     "rmse": 0.6737077886574278,
+     "mean_bias": -0.05755801481137332,
+     "iters": 452,
+     "n_val": 43196
+    }
+   }
+  },
+  "rule": "tree shape by d1 + d3 held-out MAE (squared loss); loss per horizon by held-out MAE",
+  "data": "fold 0 training set (folds 1-4), scored on its held-back 10% of players"
+ }
+}

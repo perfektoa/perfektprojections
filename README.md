@@ -168,10 +168,38 @@ shown.
 |---|---|---|
 | `ratings_history.db` (ratings archive) | Most update tasks refuse | Rebuild ratings archive (step 7) |
 | `StatsPlus Tokens.txt` | Online pulls ask for browser cookies | Paste your own tokens |
-| ML models (`tgs-viz/backtest/.dev_cache/`) | ML scores fail; the app falls back to the cell method after a pull | Bank Dev Seasons or Retrain, which need a DEV league of your own |
+| ML models and training tables (`tgs-viz/backtest/.dev_cache/ml/`) | On GitHub through Git LFS, but a clone skips them. Until you download them, ML scores stop with a message and the app falls back to the cell method after a pull | [Download the ML files](#download-the-ml-files) |
 | DEV vintages and dumps | DEV tasks have nothing to read | Run your own DEV research league |
 | Clone-sim archive and baseline ratings tables (`tgs-viz/engine/calib/<LG>/*.csv`) | Recalibrate and Grind need them. The app and the update tasks use the shipped fitted constants | Not in the repo |
 | `tgs-viz/ingest/.cache/` (cached StatsPlus pulls) | Tasks that rebuild from the cached pull have nothing to read | Run Get StatsPlus Ratings once |
+
+### Download the ML files
+
+The trained models (TGS and BLM) and the four DEV training tables are stored with Git LFS,
+7.6 GB in all. A clone skips them, because every download counts against the repo owner's
+monthly LFS allowance. To get them:
+
+1. Install Git LFS once: `git lfs install` (on a Mac, first `brew install git-lfs`).
+2. In the repo folder, run:
+
+   ```bash
+   git lfs pull --include="tgs-viz/backtest/.dev_cache/**" --exclude=""
+   ```
+
+What you get:
+
+| Folder | Contents | Use |
+|---|---|---|
+| `ml/models/TGS`, `ml/models/BLM` | The trained models (XGBoost, saved for CPU scoring) and their manifests | Score players after a pull |
+| `ml/models/*_settings.json` | The tuned model settings | Retraining |
+| `ml/data/dev_H_*.pkl`, `dev_P_*.pkl` | The DEV training tables for each league basis, with their schema and parity files | Retrain or change the models without the DEV league |
+
+Not included: the DEV league dumps and vintages, the re-priced WAA caches, the history tables
+(over GitHub's 2 GB file limit) and the old prediction and report files. Adding new inputs to the
+tables needs those, so it needs a DEV league of your own.
+
+The files were saved with pandas 2.3.3, xgboost 3.4.1 and scikit-learn 1.7.2 (Python 3.14). Older
+versions may refuse to load them; match these if a load fails. Training without an NVIDIA GPU falls back to the CPU and is much slower.
 
 ---
 

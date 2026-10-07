@@ -1,0 +1,2710 @@
+{
+ "generated": "2026-10-06T02:09:50",
+ "format": "pandas pickle (.pkl), one DataFrame per file; load with pandas.read_pickle or common.load_table. pyarrow is not installed under Python 3.14, so no parquet. Features are float32, categorical features are pandas categories with fixed category lists (common.CATEGORICAL), flags int8, targets float32 with NaN where undefined.",
+ "key": [
+  "pid",
+  "dump_year"
+ ],
+ "basis": "BLM",
+ "basis_rule": "one model set per league: DEV priced with this league's engine calibration, scored on this league's own app values (TGS and BLM never mixed)",
+ "files": {
+  "dev": [
+   "dev_H_BLM.pkl",
+   "dev_P_BLM.pkl"
+  ],
+  "score": [
+   "score_BLM_H.pkl",
+   "score_BLM_P.pkl"
+  ],
+  "parity": "parity_BLM.json"
+ },
+ "source": {
+  "league": "DEV",
+  "dumps": 483,
+  "years": [
+   2025,
+   2507
+  ],
+  "waa": "backtest/vintages/DEV/.waa_cache/*.csv.gz.ffe4c78059-BLM.json (BLM engine calibration, neutral park), picked by that tag",
+  "playing_time_seasons": [
+   2026,
+   2507
+  ]
+ },
+ "row_rule": "one row per DEV player-dump with a priced now_WAA at ages 16-40; role = the role held in most of the player's dumps (dev_odds; a tie goes to the role of his first dump); features use only that dump and earlier dumps",
+ "families": [
+  "bat",
+  "bat_pot",
+  "growth",
+  "glove",
+  "pitch",
+  "pitch_pot",
+  "value",
+  "context"
+ ],
+ "targets": {
+  "peak": "max now_WAA over this dump and every later dump the engine priced; NaN unless peak_known",
+  "peak_known": "1 when the player is seen at age >= 27 at some dump (realized, the app's rule) or retired (absent from every later dump while later dumps exist); constant per player",
+  "gain": "peak - now_WAA (never below 0); NaN unless peak_known",
+  "reach_mlb": "peak >= -1.0 (dev_odds PEAK_BARS mlb); NaN unless peak_known",
+  "reach_useful": "peak >= 0.0; NaN unless peak_known",
+  "reach_good": "peak >= +1.5; NaN unless peak_known",
+  "regular_future": "1 when some MLB season s > dump_year (a season played after this Jan-1 dump) has >= 300 PA or >= 150 BF (dev_mlb_pt, level_id 1); 0 when none and peak_known; else NaN. Differs from dev_odds' outcome, which counts any season of the career, including seasons already played (kept as regular_ever). Seasons start at 2026: the cache has no 2025 season.",
+  "regular_ever": "dev_odds' outcome: some season of the career (2026 on) with >= 300 PA or >= 150 BF; not censoring-aware, reference only",
+  "waa_k": "now_WAA at dump_year + k (k = 1..5); NaN when retired, not priced, or beyond the last dump",
+  "d_k": "waa_k - now_WAA",
+  "present_k": "1 when the player is in the raw dump dump_year + k, 0 when absent (retired), NaN beyond the last dump"
+ },
+ "flags": {
+  "realized": "seen at age >= 27 at some dump (dev_odds / app definition)",
+  "retired": "absent from every dump after his last one while later dumps exist (players never come back)",
+  "censored": "still active at the last dump and never seen at 27+: peak and outcomes unknown",
+  "cohort_first20": "first seen at age <= 20 and ever in an org (dev_odds cohort without its year window)",
+  "cohort_dev_odds": "cohort_first20 and first seen from 2025 to the last banked dump minus 23 (dev_odds COHORT_YEARS exactly; the end moves with the last banked year)",
+  "left_censored": "first seen in the first dump (2025): his earlier years are unknown",
+  "first_seen_year": "dump_year of his first dump",
+  "first_seen_age": "age at his first dump",
+  "last_seen_year": "dump_year of his last dump",
+  "max_age_seen": "highest age in any dump"
+ },
+ "info": {
+  "pid": "player id (int64); key with dump_year",
+  "dump_year": "season just played; the dump is dated Jan 1 of dump_year + 1",
+  "now_kind": "engine record the cache priced at this dump (H or P); differs from the role for a few position changers",
+  "lev_raw": "raw dump Lev before the collapse / parked fix",
+  "mlb_pa": "MLB PA in season dump_year (0 when none or unknown)",
+  "mlb_bf": "MLB BF in season dump_year",
+  "fold": "0..4, md5 of the pid string mod 5; every dump of a player in one fold",
+  "grow_steps_r_card": "grow_steps_r BEFORE the card-replaced failsafe (the DEV card a year back as it is). Only the cell method reads it (baseline.py, as dev_odds builds its cells from every DEV card); never a model feature",
+  "has_prev_card": "has_prev BEFORE the card-replaced failsafe; read with grow_steps_r_card by baseline.py only",
+  "time_split": "train when first_seen_year <= the cutoff, else test",
+  "sim_depth": "simulated archive depth of the row (history tables only): -1 = full record (about half the rows), else 0, 1, 2 or 3 seasons of archive (one eighth each); md5 of 'pid/dump_year' (common.sim_depth). common.apply_archive_depth() applies it; never a model feature",
+  "rec_start_pull": "scoring rows (history tables only): pull id of E, the start of his record; -1 = none"
+ },
+ "folds": {
+  "rule": "fold = int(md5(str(pid)).hexdigest()[:8], 16) % 5 (common.fold_of); every dump of a player lands in one fold",
+  "time_split": "train = players first seen in dump years <= 2479, test = first seen after 2479; the cutoff is the latest year that leaves >= 4000 realized careers (seen at 27+, a row at ages 17-22, not left-censored) per role on the test side. A cutoff counting only finished careers would sit at 2158, where the test side is mostly early washouts (the recent debuts can finish only by retiring young) and its useful share falls below the train side's",
+  "time_cutoff": 2479,
+  "test_careers_17_22": {
+   "H": {
+    "test_finished": 15823,
+    "test_realized": 4169,
+    "test_censored": 6214,
+    "train_finished": 366816,
+    "useful_share_test": 0.0295,
+    "useful_share_train": 0.0322
+   },
+   "P": {
+    "test_finished": 18574,
+    "test_realized": 4815,
+    "test_censored": 6896,
+    "train_finished": 420323,
+    "useful_share_test": 0.0503,
+    "useful_share_train": 0.0546
+   }
+  }
+ },
+ "level_rule": "DEV Lev collapsed to none/R/A/AA/AAA/MLB; an MLB label with no MLB PA and no MLB BF in the season just played at age <= 22 reads R (parked international kids; 388445 rows); in_org uses the raw Lev (dev_odds ORG_LEV). The 2025 dump has no playing time, so its MLB labels are kept.",
+ "left_out": {
+  "personality": "not included. The DEV letters (WrkEthic, Int, Lead, Loy, Greed) are terciles that dump_vintages cut from the raw 1-200 values; the TGS / BLM letters are OOTP's own labels with other cut points (TGS work ethic N 68%, H 24%, L 8% vs DEV one third each), so the scales do not map",
+  "prone": "DEV carries raw injury numbers, StatsPlus a text label; no known mapping",
+  "arm_slot, bunt, GB/FB hitter type, draft fields": "not asked for; left out"
+ },
+ "scoring": {
+  "BLM": {
+   "to_pull": 585,
+   "to_date": "2059-02-02",
+   "from_pull": 7,
+   "from_date": "2058-03-28",
+   "span_game_years": 0.851,
+   "pull_rule": "dev_signals.choose_clean_pulls: the pull nearest one game-year back whose pair with the latest pull ratings_db.pair_guard does not flag; growth / span",
+   "unguarded_from_pull": 6,
+   "dates": "in-game",
+   "choose_notes": [
+    "pull 6 (2058-01-20) skipped, rating scale event between it and the latest pull: hitters: rating scale event: median K P shift -5.0 points across 4151 hitters (bar 2)",
+    "pull 5 (2057-12-31) skipped, rating scale event between it and the latest pull: pitchers: rating scale event: median STU P shift -5.0 points across 3680 pitchers (bar 2); hitters: rating scale event: median K P shift -5.0 points across 3898 hitters (bar 2)",
+    "earlier pull moved from 6 to 7 by the scale-event guard"
+   ],
+   "from_by_role": {
+    "P": {
+     "pull": 7,
+     "date": "2058-03-28",
+     "span_game_years": 0.851
+    },
+    "H": {
+     "pull": 7,
+     "date": "2058-03-28",
+     "span_game_years": 0.851
+    }
+   },
+   "to_source": "tgs-viz\\ingest\\.cache\\history\\statsplus_blm_20261006-1955.json",
+   "raw_vs_app_ratings": {
+    "agree": 39357,
+    "differ": 0
+   },
+   "waa_cache": {
+    "fingerprint": "ffe4c78059",
+    "to": "2026-10-06_p585.csv.gz.ffe4c78059.json",
+    "from_H": "2026-07-20_p7.csv.gz.ffe4c78059.json",
+    "from_P": "2026-07-20_p7.csv.gz.ffe4c78059.json"
+   },
+   "wl_read_as_R": 0,
+   "app_now_vs_cache_now": {
+    "n": 13119,
+    "mean_app_minus_cache": 0.0,
+    "corr": 1.0,
+    "why": "the app's now must match the neutral-park engine the DEV cache used; a gap here would mean a park or calibration layer in the app numbers"
+   },
+   "from_source": {
+    "H": "vintages/BLM/2026-07-20_p7.csv.gz",
+    "P": "vintages/BLM/2026-07-20_p7.csv.gz"
+   },
+   "reused_id": {
+    "H": 1,
+    "P": 0
+   },
+   "earlier_card": {
+    "H": {
+     "ages_16_26": 5782,
+     "out_of_org_a_year_back_card_read": 1372,
+     "in_org_a_year_back": 3816,
+     "card_replaced": 0,
+     "card_replaced_all_ages": 0,
+     "no_earlier_card": 594
+    },
+    "P": {
+     "ages_16_26": 5858,
+     "out_of_org_a_year_back_card_read": 1566,
+     "in_org_a_year_back": 3644,
+     "card_replaced": 1,
+     "card_replaced_all_ages": 1,
+     "no_earlier_card": 648
+    }
+   },
+   "players": {
+    "H": 6567,
+    "P": 6552
+   }
+  }
+ },
+ "hand_check_pids": {
+  "146304": "star",
+  "40936": "washout",
+  "950106": "still active"
+ },
+ "roles": {
+  "H": {
+   "file": "dev_H_BLM.pkl",
+   "rows": 3557826,
+   "players": 396269,
+   "rows_by_age": {
+    "16": 204235,
+    "17": 333810,
+    "18": 333403,
+    "19": 329637,
+    "20": 347790,
+    "21": 353009,
+    "22": 333854,
+    "23": 308305,
+    "24": 268485,
+    "25": 220485,
+    "26": 170252,
+    "27": 110059,
+    "28": 67355,
+    "29": 41906,
+    "30": 33718,
+    "31": 27692,
+    "32": 23476,
+    "33": 19775,
+    "34": 14826,
+    "35": 7286,
+    "36": 3791,
+    "37": 2304,
+    "38": 1303,
+    "39": 709,
+    "40": 361
+   },
+   "finished_rows": 3525224,
+   "finished_players": 389640,
+   "time_split_rows": {
+    "train": 3388337,
+    "test": 169489
+   },
+   "usable_features": [
+    "age",
+    "level",
+    "level_rank",
+    "in_org",
+    "prev_in_org",
+    "pos",
+    "bats",
+    "throws",
+    "height",
+    "now_waa",
+    "ceiling_waa",
+    "ceiling_gap",
+    "ovr",
+    "pot",
+    "pot_minus_ovr",
+    "pot_scale",
+    "babip_mean",
+    "babip_lean",
+    "pot_babip",
+    "room_babip",
+    "gap_mean",
+    "gap_lean",
+    "pot_gap",
+    "room_gap",
+    "pow_mean",
+    "pow_lean",
+    "pot_pow",
+    "room_pow",
+    "eye_mean",
+    "eye_lean",
+    "pot_eye",
+    "room_eye",
+    "avk_mean",
+    "avk_lean",
+    "pot_avk",
+    "room_avk",
+    "cnt_mean",
+    "cnt_lean",
+    "pot_cnt",
+    "room_cnt",
+    "core_int",
+    "room_core",
+    "speed",
+    "stlrt",
+    "steal",
+    "run",
+    "ifr",
+    "ife",
+    "ifa",
+    "tdp",
+    "ofr",
+    "ofe",
+    "ofa",
+    "cblk",
+    "cfrm",
+    "carm",
+    "pos_c",
+    "potpos_c",
+    "pos_1b",
+    "potpos_1b",
+    "pos_2b",
+    "potpos_2b",
+    "pos_3b",
+    "potpos_3b",
+    "pos_ss",
+    "potpos_ss",
+    "pos_lf",
+    "potpos_lf",
+    "pos_cf",
+    "potpos_cf",
+    "pos_rf",
+    "potpos_rf",
+    "best_pos",
+    "best_pos_pot",
+    "n_pos50",
+    "g_babip_steps",
+    "g_babip_int",
+    "g_gap_steps",
+    "g_gap_int",
+    "g_pow_steps",
+    "g_pow_int",
+    "g_eye_steps",
+    "g_eye_int",
+    "g_avk_steps",
+    "g_avk_int",
+    "grow_steps",
+    "grow_steps_r",
+    "grow_int",
+    "d_pot",
+    "d_ovr",
+    "has_prev"
+   ],
+   "dropped_features": {
+    "age_frac": "TGS / BLM data carry no birth date, so the fractional age cannot be built there",
+    "grow2_steps": "the TGS / BLM archives span under two game-years (TGS 2043-11 to 2045-07, BLM 2057-07 to 2058-10, and BLM's usable span starts after its 2057-12-31 scale event), so two-year growth is never known there",
+    "grow2_int": "same as grow2_steps",
+    "d_ceiling": "BLM non-null share 0.00 vs DEV 0.91",
+    "d_now": "BLM non-null share 0.00 vs DEV 0.91"
+   },
+   "columns": [
+    {
+     "name": "pid",
+     "dtype": "int64",
+     "kind": "key",
+     "desc": "player id (int64); key with dump_year"
+    },
+    {
+     "name": "dump_year",
+     "dtype": "int16",
+     "kind": "key",
+     "desc": "season just played; the dump is dated Jan 1 of dump_year + 1"
+    },
+    {
+     "name": "age",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "context",
+     "desc": "integer age",
+     "dev_source": "raw dump Age (Jan-1 age, integer)",
+     "lg_source": "app hitters/pitchers.json Age (age at the pull date)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "age_frac",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "context",
+     "desc": "fractional age at the dump",
+     "dev_source": "(Jan 1 of dump_year+1 - DOB) / 365.25 from the raw dump DOB",
+     "lg_source": "none: TGS / BLM data carry no birth date",
+     "usable_for_scoring": false,
+     "drop_reason": "TGS / BLM data carry no birth date, so the fractional age cannot be built there"
+    },
+    {
+     "name": "level",
+     "dtype": "category[none,R,A,AA,AAA,MLB]",
+     "kind": "feature",
+     "family": "context",
+     "desc": "org level",
+     "dev_source": "raw dump Lev collapsed (MLB AAA AA A R none); MLB with no MLB PA and no MLB BF in the season just played and age <= 22 reads R (parked international kids)",
+     "lg_source": "app Lev collapsed (A+/A- -> A, R+/R- -> R, AMA/FA/INT -> none, WL -> R: the rookie rung, scoring rule 2026-09-24, common.score_level)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "level_rank",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "context",
+     "desc": "org level rank",
+     "dev_source": "level as 0..5 (none R A AA AAA MLB)",
+     "lg_source": "same",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "in_org",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "context",
+     "desc": "1 = under contract with an org",
+     "dev_source": "raw Lev in dev_odds.ORG_LEV",
+     "lg_source": "app Lev not in AMA/FA/INT and not blank (dev_signals.in_org)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "prev_in_org",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "context",
+     "desc": "1 = in an org at the earlier card, 0 = out of an org there (an amateur or free agent; his card is read all the same), NaN = no earlier card",
+     "dev_source": "raw Lev at dump_year-1 in dev_odds.ORG_LEV: 1, else 0; NaN when he is not in that dump (first seen)",
+     "lg_source": "earlier pull's lev (the archive vintage dev_signals.choose_clean_pulls picks; a blank lev is rebuilt from the raw pull first, dev_signals.fill_blank_levs): 0 for AMA, FA, INT, '-' (foreign league) or blank, else 1; NaN when he is missing from that pull or there is no earlier pull",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pos",
+     "dtype": "category[C,1B,2B,3B,SS,LF,CF,RF,DH,SP,RP,CL]",
+     "kind": "feature",
+     "family": "context",
+     "desc": "listed position",
+     "dev_source": "raw dump Pos",
+     "lg_source": "app POS",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "bats",
+     "dtype": "category[R,L,S]",
+     "kind": "feature",
+     "family": "context",
+     "desc": "R / L / S",
+     "dev_source": "raw dump Bats",
+     "lg_source": "raw pull Bats",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "throws",
+     "dtype": "category[R,L]",
+     "kind": "feature",
+     "family": "context",
+     "desc": "R / L",
+     "dev_source": "raw dump Throws",
+     "lg_source": "raw pull Throws",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "height",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "context",
+     "desc": "height in cm",
+     "dev_source": "raw dump Height (cm)",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key Height (cm)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "now_waa",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "value",
+     "desc": "WAA today",
+     "dev_source": "vintages/DEV/.waa_cache files tagged <BLM fingerprint>-BLM (BLM engine calibration, neutral park) element 0",
+     "lg_source": "app hitters.json 'Max WAA wtd' / pitchers.json max('WAA wtd', 'WAA wtd RP') (dev_signals.app_rows)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "ceiling_waa",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "value",
+     "desc": "engine WAA at the listed potential ratings",
+     "dev_source": "vintages/DEV/.waa_cache files tagged <BLM fingerprint>-BLM (BLM engine calibration, neutral park) element 1",
+     "lg_source": "app hitters.json 'MAX WAA P' / pitchers.json max('WAP', 'WAP RP')",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "ceiling_gap",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "value",
+     "desc": "listed room in WAA",
+     "dev_source": "ceiling_waa - now_waa",
+     "lg_source": "same",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "ovr",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "value",
+     "desc": "OOTP overall grade",
+     "dev_source": "raw dump Ovr (1-point steps; NaN in the 2025 dump)",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key Ovr (TGS 1-point, BLM 5-point steps)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pot",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "value",
+     "desc": "OOTP potential grade",
+     "dev_source": "raw dump Pot (NaN in 2025)",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key Pot (TGS 1-point, BLM 5-point steps)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pot_minus_ovr",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "value",
+     "desc": "grade room",
+     "dev_source": "pot - ovr",
+     "lg_source": "same",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pot_scale",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "value",
+     "desc": "OOTP OVR / POT scale",
+     "dev_source": "1.0 from DEV dump 2415 (OVR / POT relative to position), 0.0 before (relative to all players)",
+     "lg_source": "TGS and BLM 0.0 (relative to all players)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "babip_mean",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat",
+     "desc": "babip display value, vR/vL mean",
+     "dev_source": "raw dump (BABIP_R + BABIP_L) / 2",
+     "lg_source": "raw StatsPlus pull BABIP_R / BABIP_L (app: the same keys)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "babip_lean",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat",
+     "desc": "babip vR minus vL",
+     "dev_source": "raw dump BABIP_R - BABIP_L",
+     "lg_source": "raw StatsPlus pull BABIP_R / BABIP_L (app: the same keys)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pot_babip",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat_pot",
+     "desc": "babip potential (display)",
+     "dev_source": "raw dump PotBABIP",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key PotBABIP",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "room_babip",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat_pot",
+     "desc": "babip room in internal points",
+     "dev_source": "underlying(PotBABIP) - mean(underlying(BABIP_R), underlying(BABIP_L))",
+     "lg_source": "same from the raw pull",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "gap_mean",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat",
+     "desc": "gap display value, vR/vL mean",
+     "dev_source": "raw dump (Gap_R + Gap_L) / 2",
+     "lg_source": "raw StatsPlus pull Gap_R / Gap_L (app: the same keys)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "gap_lean",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat",
+     "desc": "gap vR minus vL",
+     "dev_source": "raw dump Gap_R - Gap_L",
+     "lg_source": "raw StatsPlus pull Gap_R / Gap_L (app: the same keys)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pot_gap",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat_pot",
+     "desc": "gap potential (display)",
+     "dev_source": "raw dump PotGap",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key PotGap",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "room_gap",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat_pot",
+     "desc": "gap room in internal points",
+     "dev_source": "underlying(PotGap) - mean(underlying(Gap_R), underlying(Gap_L))",
+     "lg_source": "same from the raw pull",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pow_mean",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat",
+     "desc": "pow display value, vR/vL mean",
+     "dev_source": "raw dump (Pow_R + Pow_L) / 2",
+     "lg_source": "raw StatsPlus pull Pow_R / Pow_L (app: the same keys)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pow_lean",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat",
+     "desc": "pow vR minus vL",
+     "dev_source": "raw dump Pow_R - Pow_L",
+     "lg_source": "raw StatsPlus pull Pow_R / Pow_L (app: the same keys)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pot_pow",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat_pot",
+     "desc": "pow potential (display)",
+     "dev_source": "raw dump PotPow",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key PotPow",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "room_pow",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat_pot",
+     "desc": "pow room in internal points",
+     "dev_source": "underlying(PotPow) - mean(underlying(Pow_R), underlying(Pow_L))",
+     "lg_source": "same from the raw pull",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "eye_mean",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat",
+     "desc": "eye display value, vR/vL mean",
+     "dev_source": "raw dump (Eye_R + Eye_L) / 2",
+     "lg_source": "raw StatsPlus pull Eye_R / Eye_L (app: the same keys)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "eye_lean",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat",
+     "desc": "eye vR minus vL",
+     "dev_source": "raw dump Eye_R - Eye_L",
+     "lg_source": "raw StatsPlus pull Eye_R / Eye_L (app: the same keys)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pot_eye",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat_pot",
+     "desc": "eye potential (display)",
+     "dev_source": "raw dump PotEye",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key PotEye",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "room_eye",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat_pot",
+     "desc": "eye room in internal points",
+     "dev_source": "underlying(PotEye) - mean(underlying(Eye_R), underlying(Eye_L))",
+     "lg_source": "same from the raw pull",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "avk_mean",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat",
+     "desc": "avk display value, vR/vL mean",
+     "dev_source": "raw dump (Ks_R + Ks_L) / 2",
+     "lg_source": "raw StatsPlus pull Ks_R / Ks_L (app: the same keys)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "avk_lean",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat",
+     "desc": "avk vR minus vL",
+     "dev_source": "raw dump Ks_R - Ks_L",
+     "lg_source": "raw StatsPlus pull Ks_R / Ks_L (app: the same keys)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pot_avk",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat_pot",
+     "desc": "avk potential (display)",
+     "dev_source": "raw dump PotKs",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key PotKs",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "room_avk",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat_pot",
+     "desc": "avk room in internal points",
+     "dev_source": "underlying(PotKs) - mean(underlying(Ks_R), underlying(Ks_L))",
+     "lg_source": "same from the raw pull",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "cnt_mean",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat",
+     "desc": "cnt display value, vR/vL mean",
+     "dev_source": "raw dump (Cntct_R + Cntct_L) / 2",
+     "lg_source": "raw StatsPlus pull Cntct_R / Cntct_L (app: the same keys)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "cnt_lean",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat",
+     "desc": "cnt vR minus vL",
+     "dev_source": "raw dump Cntct_R - Cntct_L",
+     "lg_source": "raw StatsPlus pull Cntct_R / Cntct_L (app: the same keys)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pot_cnt",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat_pot",
+     "desc": "cnt potential (display)",
+     "dev_source": "raw dump PotCntct",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key PotCntct",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "room_cnt",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat_pot",
+     "desc": "cnt room in internal points",
+     "dev_source": "underlying(PotCntct) - mean(underlying(Cntct_R), underlying(Cntct_L))",
+     "lg_source": "same from the raw pull",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "core_int",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat",
+     "desc": "core skills in internal points",
+     "dev_source": "sum over the core skills of the internal vR/vL mean",
+     "lg_source": "same",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "room_core",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat_pot",
+     "desc": "core room in internal points",
+     "dev_source": "sum of the core rooms",
+     "lg_source": "same",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "speed",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat",
+     "desc": "running: Speed",
+     "dev_source": "raw dump Speed",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key Speed",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "stlrt",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat",
+     "desc": "running: StlRt",
+     "dev_source": "raw dump StlRt",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key StlRt",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "steal",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat",
+     "desc": "running: Steal",
+     "dev_source": "raw dump Steal",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key Steal",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "run",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "bat",
+     "desc": "running: Run",
+     "dev_source": "raw dump Run",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key Run",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "ifr",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "fielding: IFR",
+     "dev_source": "raw dump IFR",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key IFR",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "ife",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "fielding: IFE",
+     "dev_source": "raw dump IFE",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key IFE",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "ifa",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "fielding: IFA",
+     "dev_source": "raw dump IFA",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key IFA",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "tdp",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "fielding: TDP",
+     "dev_source": "raw dump TDP",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key TDP",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "ofr",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "fielding: OFR",
+     "dev_source": "raw dump OFR",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key OFR",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "ofe",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "fielding: OFE",
+     "dev_source": "raw dump OFE",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key OFE",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "ofa",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "fielding: OFA",
+     "dev_source": "raw dump OFA",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key OFA",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "cblk",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "fielding: CBlk",
+     "dev_source": "raw dump CBlk",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key CBlk",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "cfrm",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "fielding: CFrm",
+     "dev_source": "raw dump CFrm",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key CFrm",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "carm",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "fielding: CArm",
+     "dev_source": "raw dump CArm",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key CArm",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pos_c",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "position rating C (0 = cannot play)",
+     "dev_source": "raw dump C",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key C",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "potpos_c",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "position potential C",
+     "dev_source": "raw dump PotC, set to 0 where C is 0 (the StatsPlus rule)",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key PotC",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pos_1b",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "position rating 1B (0 = cannot play)",
+     "dev_source": "raw dump 1B",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key 1B",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "potpos_1b",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "position potential 1B",
+     "dev_source": "raw dump Pot1B, set to 0 where 1B is 0 (the StatsPlus rule)",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key Pot1B",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pos_2b",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "position rating 2B (0 = cannot play)",
+     "dev_source": "raw dump 2B",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key 2B",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "potpos_2b",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "position potential 2B",
+     "dev_source": "raw dump Pot2B, set to 0 where 2B is 0 (the StatsPlus rule)",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key Pot2B",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pos_3b",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "position rating 3B (0 = cannot play)",
+     "dev_source": "raw dump 3B",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key 3B",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "potpos_3b",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "position potential 3B",
+     "dev_source": "raw dump Pot3B, set to 0 where 3B is 0 (the StatsPlus rule)",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key Pot3B",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pos_ss",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "position rating SS (0 = cannot play)",
+     "dev_source": "raw dump SS",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key SS",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "potpos_ss",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "position potential SS",
+     "dev_source": "raw dump PotSS, set to 0 where SS is 0 (the StatsPlus rule)",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key PotSS",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pos_lf",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "position rating LF (0 = cannot play)",
+     "dev_source": "raw dump LF",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key LF",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "potpos_lf",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "position potential LF",
+     "dev_source": "raw dump PotLF, set to 0 where LF is 0 (the StatsPlus rule)",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key PotLF",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pos_cf",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "position rating CF (0 = cannot play)",
+     "dev_source": "raw dump CF",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key CF",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "potpos_cf",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "position potential CF",
+     "dev_source": "raw dump PotCF, set to 0 where CF is 0 (the StatsPlus rule)",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key PotCF",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pos_rf",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "position rating RF (0 = cannot play)",
+     "dev_source": "raw dump RF",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key RF",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "potpos_rf",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "position potential RF",
+     "dev_source": "raw dump PotRF, set to 0 where RF is 0 (the StatsPlus rule)",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key PotRF",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "best_pos",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "best position rating",
+     "dev_source": "max of the 8 position ratings C..RF",
+     "lg_source": "same",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "best_pos_pot",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "best position potential",
+     "dev_source": "max of PotC..PotRF",
+     "lg_source": "same",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "n_pos50",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "glove",
+     "desc": "positions playable at 50+",
+     "dev_source": "count of C..RF ratings >= 50",
+     "lg_source": "same",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "g_babip_steps",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "babip growth in display steps per game-year",
+     "dev_source": "(display now - display at dump_year-1) / 5",
+     "lg_source": "earlier pull = the archive vintage (vintages/<LG>/*.csv.gz) dev_signals.choose_clean_pulls picks: the pull nearest one game-year before the latest whose pair with the latest pull ratings_db.pair_guard does not flag; per game-year = divided by the span",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "g_babip_int",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "babip growth in internal points per game-year",
+     "dev_source": "internal now - internal at dump_year-1",
+     "lg_source": "earlier pull = the archive vintage (vintages/<LG>/*.csv.gz) dev_signals.choose_clean_pulls picks: the pull nearest one game-year before the latest whose pair with the latest pull ratings_db.pair_guard does not flag; per game-year = divided by the span",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "g_gap_steps",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "gap growth in display steps per game-year",
+     "dev_source": "(display now - display at dump_year-1) / 5",
+     "lg_source": "earlier pull = the archive vintage (vintages/<LG>/*.csv.gz) dev_signals.choose_clean_pulls picks: the pull nearest one game-year before the latest whose pair with the latest pull ratings_db.pair_guard does not flag; per game-year = divided by the span",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "g_gap_int",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "gap growth in internal points per game-year",
+     "dev_source": "internal now - internal at dump_year-1",
+     "lg_source": "earlier pull = the archive vintage (vintages/<LG>/*.csv.gz) dev_signals.choose_clean_pulls picks: the pull nearest one game-year before the latest whose pair with the latest pull ratings_db.pair_guard does not flag; per game-year = divided by the span",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "g_pow_steps",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "pow growth in display steps per game-year",
+     "dev_source": "(display now - display at dump_year-1) / 5",
+     "lg_source": "earlier pull = the archive vintage (vintages/<LG>/*.csv.gz) dev_signals.choose_clean_pulls picks: the pull nearest one game-year before the latest whose pair with the latest pull ratings_db.pair_guard does not flag; per game-year = divided by the span",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "g_pow_int",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "pow growth in internal points per game-year",
+     "dev_source": "internal now - internal at dump_year-1",
+     "lg_source": "earlier pull = the archive vintage (vintages/<LG>/*.csv.gz) dev_signals.choose_clean_pulls picks: the pull nearest one game-year before the latest whose pair with the latest pull ratings_db.pair_guard does not flag; per game-year = divided by the span",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "g_eye_steps",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "eye growth in display steps per game-year",
+     "dev_source": "(display now - display at dump_year-1) / 5",
+     "lg_source": "earlier pull = the archive vintage (vintages/<LG>/*.csv.gz) dev_signals.choose_clean_pulls picks: the pull nearest one game-year before the latest whose pair with the latest pull ratings_db.pair_guard does not flag; per game-year = divided by the span",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "g_eye_int",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "eye growth in internal points per game-year",
+     "dev_source": "internal now - internal at dump_year-1",
+     "lg_source": "earlier pull = the archive vintage (vintages/<LG>/*.csv.gz) dev_signals.choose_clean_pulls picks: the pull nearest one game-year before the latest whose pair with the latest pull ratings_db.pair_guard does not flag; per game-year = divided by the span",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "g_avk_steps",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "avk growth in display steps per game-year",
+     "dev_source": "(display now - display at dump_year-1) / 5",
+     "lg_source": "earlier pull = the archive vintage (vintages/<LG>/*.csv.gz) dev_signals.choose_clean_pulls picks: the pull nearest one game-year before the latest whose pair with the latest pull ratings_db.pair_guard does not flag; per game-year = divided by the span",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "g_avk_int",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "avk growth in internal points per game-year",
+     "dev_source": "internal now - internal at dump_year-1",
+     "lg_source": "earlier pull = the archive vintage (vintages/<LG>/*.csv.gz) dev_signals.choose_clean_pulls picks: the pull nearest one game-year before the latest whose pair with the latest pull ratings_db.pair_guard does not flag; per game-year = divided by the span",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "grow_steps",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "core growth, display steps",
+     "dev_source": "sum of g_*_steps over the core skills",
+     "lg_source": "earlier pull = the archive vintage (vintages/<LG>/*.csv.gz) dev_signals.choose_clean_pulls picks: the pull nearest one game-year before the latest whose pair with the latest pull ratings_db.pair_guard does not flag; per game-year = divided by the span",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "grow_steps_r",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "dev_odds growth value",
+     "dev_source": "grow_steps rounded to 0.5 (dev_odds growth)",
+     "lg_source": "earlier pull = the archive vintage (vintages/<LG>/*.csv.gz) dev_signals.choose_clean_pulls picks: the pull nearest one game-year before the latest whose pair with the latest pull ratings_db.pair_guard does not flag; per game-year = divided by the span",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "grow_int",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "core growth, internal points",
+     "dev_source": "sum of g_*_int",
+     "lg_source": "earlier pull = the archive vintage (vintages/<LG>/*.csv.gz) dev_signals.choose_clean_pulls picks: the pull nearest one game-year before the latest whose pair with the latest pull ratings_db.pair_guard does not flag; per game-year = divided by the span",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "grow2_steps",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "two-year core growth, steps",
+     "dev_source": "core display steps gained since dump_year-2 (total, not per year)",
+     "lg_source": "none: the TGS / BLM archives span under two game-years",
+     "usable_for_scoring": false,
+     "drop_reason": "the TGS / BLM archives span under two game-years (TGS 2043-11 to 2045-07, BLM 2057-07 to 2058-10, and BLM's usable span starts after its 2057-12-31 scale event), so two-year growth is never known there"
+    },
+    {
+     "name": "grow2_int",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "two-year core growth, internal",
+     "dev_source": "core internal points gained since dump_year-2",
+     "lg_source": "none (same reason)",
+     "usable_for_scoring": false,
+     "drop_reason": "same as grow2_steps"
+    },
+    {
+     "name": "d_pot",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "Pot grade change",
+     "dev_source": "Pot - Pot at dump_year-1",
+     "lg_source": "latest Pot - earlier pull c_Pot (not scaled, dev_signals pot_delta)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "d_ovr",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "Ovr grade change",
+     "dev_source": "Ovr - Ovr at dump_year-1",
+     "lg_source": "latest Ovr - earlier pull c_Ovr",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "d_ceiling",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "listed-peak change",
+     "dev_source": "ceiling_waa - ceiling_waa at dump_year-1 (DEV prices on the same basis)",
+     "lg_source": "league .waa_cache (the league's own current calibration fingerprint, neutral park) at the latest pull minus at the earlier pull",
+     "usable_for_scoring": false,
+     "drop_reason": "BLM non-null share 0.00 vs DEV 0.91"
+    },
+    {
+     "name": "d_now",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "now-WAA change",
+     "dev_source": "now_waa - now_waa at dump_year-1",
+     "lg_source": "league .waa_cache pair, as d_ceiling",
+     "usable_for_scoring": false,
+     "drop_reason": "BLM non-null share 0.00 vs DEV 0.91"
+    },
+    {
+     "name": "has_prev",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "growth known flag",
+     "dev_source": "1 when growth is known (0 when there is no earlier card or the card-replaced failsafe tripped, common.mask_earlier_card)",
+     "lg_source": "same",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "grow_steps_r_card",
+     "dtype": "float32",
+     "kind": "info",
+     "desc": "grow_steps_r BEFORE the card-replaced failsafe (the DEV card a year back as it is). Only the cell method reads it (baseline.py, as dev_odds builds its cells from every DEV card); never a model feature"
+    },
+    {
+     "name": "has_prev_card",
+     "dtype": "float32",
+     "kind": "info",
+     "desc": "has_prev BEFORE the card-replaced failsafe; read with grow_steps_r_card by baseline.py only"
+    },
+    {
+     "name": "now_kind",
+     "dtype": "category[H,P]",
+     "kind": "info",
+     "desc": "engine record the cache priced at this dump (H or P); differs from the role for a few position changers"
+    },
+    {
+     "name": "lev_raw",
+     "dtype": "category[A,AA,AAA,AMA,FA,MLB,R]",
+     "kind": "info",
+     "desc": "raw dump Lev before the collapse / parked fix"
+    },
+    {
+     "name": "mlb_pa",
+     "dtype": "float32",
+     "kind": "info",
+     "desc": "MLB PA in season dump_year (0 when none or unknown)"
+    },
+    {
+     "name": "mlb_bf",
+     "dtype": "float32",
+     "kind": "info",
+     "desc": "MLB BF in season dump_year"
+    },
+    {
+     "name": "peak",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "max now_WAA over this dump and every later dump the engine priced; NaN unless peak_known"
+    },
+    {
+     "name": "peak_known",
+     "dtype": "int8",
+     "kind": "target",
+     "desc": "1 when the player is seen at age >= 27 at some dump (realized, the app's rule) or retired (absent from every later dump while later dumps exist); constant per player"
+    },
+    {
+     "name": "gain",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "peak - now_WAA (never below 0); NaN unless peak_known"
+    },
+    {
+     "name": "reach_mlb",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "peak >= -1.0 (dev_odds PEAK_BARS mlb); NaN unless peak_known"
+    },
+    {
+     "name": "reach_useful",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "peak >= 0.0; NaN unless peak_known"
+    },
+    {
+     "name": "reach_good",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "peak >= +1.5; NaN unless peak_known"
+    },
+    {
+     "name": "regular_future",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "1 when some MLB season s > dump_year (a season played after this Jan-1 dump) has >= 300 PA or >= 150 BF (dev_mlb_pt, level_id 1); 0 when none and peak_known; else NaN. Differs from dev_odds' outcome, which counts any season of the career, including seasons already played (kept as regular_ever). Seasons start at 2026: the cache has no 2025 season."
+    },
+    {
+     "name": "regular_ever",
+     "dtype": "int8",
+     "kind": "target",
+     "desc": "dev_odds' outcome: some season of the career (2026 on) with >= 300 PA or >= 150 BF; not censoring-aware, reference only"
+    },
+    {
+     "name": "waa_1",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "now_WAA at dump_year + k (k = 1..5); NaN when retired, not priced, or beyond the last dump"
+    },
+    {
+     "name": "d_1",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "waa_k - now_WAA"
+    },
+    {
+     "name": "present_1",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "1 when the player is in the raw dump dump_year + k, 0 when absent (retired), NaN beyond the last dump"
+    },
+    {
+     "name": "waa_2",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "now_WAA at dump_year + k (k = 1..5); NaN when retired, not priced, or beyond the last dump"
+    },
+    {
+     "name": "d_2",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "waa_k - now_WAA"
+    },
+    {
+     "name": "present_2",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "1 when the player is in the raw dump dump_year + k, 0 when absent (retired), NaN beyond the last dump"
+    },
+    {
+     "name": "waa_3",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "now_WAA at dump_year + k (k = 1..5); NaN when retired, not priced, or beyond the last dump"
+    },
+    {
+     "name": "d_3",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "waa_k - now_WAA"
+    },
+    {
+     "name": "present_3",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "1 when the player is in the raw dump dump_year + k, 0 when absent (retired), NaN beyond the last dump"
+    },
+    {
+     "name": "waa_4",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "now_WAA at dump_year + k (k = 1..5); NaN when retired, not priced, or beyond the last dump"
+    },
+    {
+     "name": "d_4",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "waa_k - now_WAA"
+    },
+    {
+     "name": "present_4",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "1 when the player is in the raw dump dump_year + k, 0 when absent (retired), NaN beyond the last dump"
+    },
+    {
+     "name": "waa_5",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "now_WAA at dump_year + k (k = 1..5); NaN when retired, not priced, or beyond the last dump"
+    },
+    {
+     "name": "d_5",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "waa_k - now_WAA"
+    },
+    {
+     "name": "present_5",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "1 when the player is in the raw dump dump_year + k, 0 when absent (retired), NaN beyond the last dump"
+    },
+    {
+     "name": "realized",
+     "dtype": "int8",
+     "kind": "flag",
+     "desc": "seen at age >= 27 at some dump (dev_odds / app definition)"
+    },
+    {
+     "name": "retired",
+     "dtype": "int8",
+     "kind": "flag",
+     "desc": "absent from every dump after his last one while later dumps exist (players never come back)"
+    },
+    {
+     "name": "censored",
+     "dtype": "int8",
+     "kind": "flag",
+     "desc": "still active at the last dump and never seen at 27+: peak and outcomes unknown"
+    },
+    {
+     "name": "cohort_first20",
+     "dtype": "int8",
+     "kind": "flag",
+     "desc": "first seen at age <= 20 and ever in an org (dev_odds cohort without its year window)"
+    },
+    {
+     "name": "cohort_dev_odds",
+     "dtype": "int8",
+     "kind": "flag",
+     "desc": "cohort_first20 and first seen from 2025 to the last banked dump minus 23 (dev_odds COHORT_YEARS exactly; the end moves with the last banked year)"
+    },
+    {
+     "name": "left_censored",
+     "dtype": "int8",
+     "kind": "flag",
+     "desc": "first seen in the first dump (2025): his earlier years are unknown"
+    },
+    {
+     "name": "first_seen_year",
+     "dtype": "int16",
+     "kind": "flag",
+     "desc": "dump_year of his first dump"
+    },
+    {
+     "name": "first_seen_age",
+     "dtype": "float32",
+     "kind": "flag",
+     "desc": "age at his first dump"
+    },
+    {
+     "name": "last_seen_year",
+     "dtype": "int16",
+     "kind": "flag",
+     "desc": "dump_year of his last dump"
+    },
+    {
+     "name": "max_age_seen",
+     "dtype": "float32",
+     "kind": "flag",
+     "desc": "highest age in any dump"
+    },
+    {
+     "name": "fold",
+     "dtype": "int8",
+     "kind": "info",
+     "desc": "0..4, md5 of the pid string mod 5; every dump of a player in one fold"
+    },
+    {
+     "name": "time_split",
+     "dtype": "category[train,test]",
+     "kind": "info",
+     "desc": "train when first_seen_year <= the cutoff, else test"
+    }
+   ]
+  },
+  "P": {
+   "file": "dev_P_BLM.pkl",
+   "rows": 3955969,
+   "players": 455454,
+   "rows_by_age": {
+    "16": 222580,
+    "17": 385249,
+    "18": 385165,
+    "19": 376307,
+    "20": 389854,
+    "21": 383661,
+    "22": 346266,
+    "23": 310531,
+    "24": 268432,
+    "25": 230340,
+    "26": 202803,
+    "27": 128762,
+    "28": 72921,
+    "29": 50900,
+    "30": 41397,
+    "31": 35062,
+    "32": 31685,
+    "33": 29297,
+    "34": 25340,
+    "35": 14970,
+    "36": 9273,
+    "37": 6548,
+    "38": 4279,
+    "39": 2703,
+    "40": 1644
+   },
+   "finished_rows": 3920011,
+   "finished_players": 448056,
+   "time_split_rows": {
+    "train": 3765543,
+    "test": 190426
+   },
+   "usable_features": [
+    "age",
+    "level",
+    "level_rank",
+    "in_org",
+    "prev_in_org",
+    "pos",
+    "bats",
+    "throws",
+    "height",
+    "now_waa",
+    "ceiling_waa",
+    "ceiling_gap",
+    "ovr",
+    "pot",
+    "pot_minus_ovr",
+    "pot_scale",
+    "stu_mean",
+    "stu_lean",
+    "pot_stu",
+    "room_stu",
+    "hrr_mean",
+    "hrr_lean",
+    "pot_hrr",
+    "room_hrr",
+    "pbabip_mean",
+    "pbabip_lean",
+    "pot_pbabip",
+    "room_pbabip",
+    "con_mean",
+    "con_lean",
+    "pot_con",
+    "room_con",
+    "core_int",
+    "room_core",
+    "mov",
+    "pot_mov",
+    "room_mov",
+    "vel",
+    "stm",
+    "hold",
+    "gb",
+    "n_pitches45",
+    "best_pitch",
+    "best_pitch_pot",
+    "g_stu_steps",
+    "g_stu_int",
+    "g_hrr_steps",
+    "g_hrr_int",
+    "g_pbabip_steps",
+    "g_pbabip_int",
+    "g_con_steps",
+    "g_con_int",
+    "grow_steps",
+    "grow_steps_r",
+    "grow_int",
+    "d_pot",
+    "d_ovr",
+    "d_ceiling",
+    "d_now",
+    "has_prev"
+   ],
+   "dropped_features": {
+    "age_frac": "TGS / BLM data carry no birth date, so the fractional age cannot be built there",
+    "grow2_steps": "the TGS / BLM archives span under two game-years (TGS 2043-11 to 2045-07, BLM 2057-07 to 2058-10, and BLM's usable span starts after its 2057-12-31 scale event), so two-year growth is never known there",
+    "grow2_int": "same as grow2_steps"
+   },
+   "columns": [
+    {
+     "name": "pid",
+     "dtype": "int64",
+     "kind": "key",
+     "desc": "player id (int64); key with dump_year"
+    },
+    {
+     "name": "dump_year",
+     "dtype": "int16",
+     "kind": "key",
+     "desc": "season just played; the dump is dated Jan 1 of dump_year + 1"
+    },
+    {
+     "name": "age",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "context",
+     "desc": "integer age",
+     "dev_source": "raw dump Age (Jan-1 age, integer)",
+     "lg_source": "app hitters/pitchers.json Age (age at the pull date)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "age_frac",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "context",
+     "desc": "fractional age at the dump",
+     "dev_source": "(Jan 1 of dump_year+1 - DOB) / 365.25 from the raw dump DOB",
+     "lg_source": "none: TGS / BLM data carry no birth date",
+     "usable_for_scoring": false,
+     "drop_reason": "TGS / BLM data carry no birth date, so the fractional age cannot be built there"
+    },
+    {
+     "name": "level",
+     "dtype": "category[none,R,A,AA,AAA,MLB]",
+     "kind": "feature",
+     "family": "context",
+     "desc": "org level",
+     "dev_source": "raw dump Lev collapsed (MLB AAA AA A R none); MLB with no MLB PA and no MLB BF in the season just played and age <= 22 reads R (parked international kids)",
+     "lg_source": "app Lev collapsed (A+/A- -> A, R+/R- -> R, AMA/FA/INT -> none, WL -> R: the rookie rung, scoring rule 2026-09-24, common.score_level)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "level_rank",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "context",
+     "desc": "org level rank",
+     "dev_source": "level as 0..5 (none R A AA AAA MLB)",
+     "lg_source": "same",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "in_org",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "context",
+     "desc": "1 = under contract with an org",
+     "dev_source": "raw Lev in dev_odds.ORG_LEV",
+     "lg_source": "app Lev not in AMA/FA/INT and not blank (dev_signals.in_org)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "prev_in_org",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "context",
+     "desc": "1 = in an org at the earlier card, 0 = out of an org there (an amateur or free agent; his card is read all the same), NaN = no earlier card",
+     "dev_source": "raw Lev at dump_year-1 in dev_odds.ORG_LEV: 1, else 0; NaN when he is not in that dump (first seen)",
+     "lg_source": "earlier pull's lev (the archive vintage dev_signals.choose_clean_pulls picks; a blank lev is rebuilt from the raw pull first, dev_signals.fill_blank_levs): 0 for AMA, FA, INT, '-' (foreign league) or blank, else 1; NaN when he is missing from that pull or there is no earlier pull",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pos",
+     "dtype": "category[C,1B,2B,3B,SS,LF,CF,RF,DH,SP,RP,CL]",
+     "kind": "feature",
+     "family": "context",
+     "desc": "listed position",
+     "dev_source": "raw dump Pos",
+     "lg_source": "app POS",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "bats",
+     "dtype": "category[R,L,S]",
+     "kind": "feature",
+     "family": "context",
+     "desc": "R / L / S",
+     "dev_source": "raw dump Bats",
+     "lg_source": "raw pull Bats",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "throws",
+     "dtype": "category[R,L]",
+     "kind": "feature",
+     "family": "context",
+     "desc": "R / L",
+     "dev_source": "raw dump Throws",
+     "lg_source": "raw pull Throws",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "height",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "context",
+     "desc": "height in cm",
+     "dev_source": "raw dump Height (cm)",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key Height (cm)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "now_waa",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "value",
+     "desc": "WAA today",
+     "dev_source": "vintages/DEV/.waa_cache files tagged <BLM fingerprint>-BLM (BLM engine calibration, neutral park) element 0",
+     "lg_source": "app hitters.json 'Max WAA wtd' / pitchers.json max('WAA wtd', 'WAA wtd RP') (dev_signals.app_rows)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "ceiling_waa",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "value",
+     "desc": "engine WAA at the listed potential ratings",
+     "dev_source": "vintages/DEV/.waa_cache files tagged <BLM fingerprint>-BLM (BLM engine calibration, neutral park) element 1",
+     "lg_source": "app hitters.json 'MAX WAA P' / pitchers.json max('WAP', 'WAP RP')",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "ceiling_gap",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "value",
+     "desc": "listed room in WAA",
+     "dev_source": "ceiling_waa - now_waa",
+     "lg_source": "same",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "ovr",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "value",
+     "desc": "OOTP overall grade",
+     "dev_source": "raw dump Ovr (1-point steps; NaN in the 2025 dump)",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key Ovr (TGS 1-point, BLM 5-point steps)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pot",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "value",
+     "desc": "OOTP potential grade",
+     "dev_source": "raw dump Pot (NaN in 2025)",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key Pot (TGS 1-point, BLM 5-point steps)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pot_minus_ovr",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "value",
+     "desc": "grade room",
+     "dev_source": "pot - ovr",
+     "lg_source": "same",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pot_scale",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "value",
+     "desc": "OOTP OVR / POT scale",
+     "dev_source": "1.0 from DEV dump 2415 (OVR / POT relative to position), 0.0 before (relative to all players)",
+     "lg_source": "TGS and BLM 0.0 (relative to all players)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "stu_mean",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch",
+     "desc": "stu display value, vR/vL mean",
+     "dev_source": "raw dump (Stf_R + Stf_L) / 2",
+     "lg_source": "raw StatsPlus pull Stf_R / Stf_L (app: the same keys)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "stu_lean",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch",
+     "desc": "stu vR minus vL",
+     "dev_source": "raw dump Stf_R - Stf_L",
+     "lg_source": "raw StatsPlus pull Stf_R / Stf_L (app: the same keys)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pot_stu",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch_pot",
+     "desc": "stu potential (display)",
+     "dev_source": "raw dump PotStf",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key PotStf",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "room_stu",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch_pot",
+     "desc": "stu room in internal points",
+     "dev_source": "underlying(PotStf) - mean(underlying(Stf_R), underlying(Stf_L))",
+     "lg_source": "same from the raw pull",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "hrr_mean",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch",
+     "desc": "hrr display value, vR/vL mean",
+     "dev_source": "raw dump (HRA_R + HRA_L) / 2",
+     "lg_source": "raw StatsPlus pull HRA_R / HRA_L (app: the same keys)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "hrr_lean",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch",
+     "desc": "hrr vR minus vL",
+     "dev_source": "raw dump HRA_R - HRA_L",
+     "lg_source": "raw StatsPlus pull HRA_R / HRA_L (app: the same keys)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pot_hrr",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch_pot",
+     "desc": "hrr potential (display)",
+     "dev_source": "raw dump PotHRA",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key PotHRA",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "room_hrr",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch_pot",
+     "desc": "hrr room in internal points",
+     "dev_source": "underlying(PotHRA) - mean(underlying(HRA_R), underlying(HRA_L))",
+     "lg_source": "same from the raw pull",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pbabip_mean",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch",
+     "desc": "pbabip display value, vR/vL mean",
+     "dev_source": "raw dump (PBABIP_R + PBABIP_L) / 2",
+     "lg_source": "raw StatsPlus pull PBABIP_R / PBABIP_L (app: the same keys)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pbabip_lean",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch",
+     "desc": "pbabip vR minus vL",
+     "dev_source": "raw dump PBABIP_R - PBABIP_L",
+     "lg_source": "raw StatsPlus pull PBABIP_R / PBABIP_L (app: the same keys)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pot_pbabip",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch_pot",
+     "desc": "pbabip potential (display)",
+     "dev_source": "raw dump PotPBABIP",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key PotPBABIP",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "room_pbabip",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch_pot",
+     "desc": "pbabip room in internal points",
+     "dev_source": "underlying(PotPBABIP) - mean(underlying(PBABIP_R), underlying(PBABIP_L))",
+     "lg_source": "same from the raw pull",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "con_mean",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch",
+     "desc": "con display value, vR/vL mean",
+     "dev_source": "raw dump (Ctrl_R + Ctrl_L) / 2",
+     "lg_source": "raw StatsPlus pull Ctrl_R / Ctrl_L (app: the same keys)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "con_lean",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch",
+     "desc": "con vR minus vL",
+     "dev_source": "raw dump Ctrl_R - Ctrl_L",
+     "lg_source": "raw StatsPlus pull Ctrl_R / Ctrl_L (app: the same keys)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pot_con",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch_pot",
+     "desc": "con potential (display)",
+     "dev_source": "raw dump PotCtrl",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key PotCtrl",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "room_con",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch_pot",
+     "desc": "con room in internal points",
+     "dev_source": "underlying(PotCtrl) - mean(underlying(Ctrl_R), underlying(Ctrl_L))",
+     "lg_source": "same from the raw pull",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "core_int",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch",
+     "desc": "core skills in internal points",
+     "dev_source": "sum over the core skills of the internal vR/vL mean",
+     "lg_source": "same",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "room_core",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch_pot",
+     "desc": "core room in internal points",
+     "dev_source": "sum of the core rooms",
+     "lg_source": "same",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "mov",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch",
+     "desc": "movement (overall)",
+     "dev_source": "raw dump Mov",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key Mov",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "pot_mov",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch_pot",
+     "desc": "movement potential",
+     "dev_source": "raw dump PotMov",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key PotMov",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "room_mov",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch_pot",
+     "desc": "movement room, internal points",
+     "dev_source": "underlying(PotMov) - underlying(Mov)",
+     "lg_source": "same",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "vel",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch",
+     "desc": "velocity code",
+     "dev_source": "raw dump VelCode (OOTP velocity code)",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key Vel band mapped to the code by common.VEL_BANDS (inferred order)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "stm",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch",
+     "desc": "Stm",
+     "dev_source": "raw dump Stm",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key Stm",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "hold",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch",
+     "desc": "Hold",
+     "dev_source": "raw dump Hold",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key Hold",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "gb",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch",
+     "desc": "GB",
+     "dev_source": "raw dump GB",
+     "lg_source": "raw StatsPlus pull of the latest vintage (ingest/.cache/history), key GB",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "n_pitches45",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch",
+     "desc": "pitches at 45+",
+     "dev_source": "count of the 12 pitch grades >= 45",
+     "lg_source": "same",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "best_pitch",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch",
+     "desc": "best pitch grade",
+     "dev_source": "max pitch grade",
+     "lg_source": "same",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "best_pitch_pot",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "pitch_pot",
+     "desc": "best pitch potential",
+     "dev_source": "max pitch potential",
+     "lg_source": "same",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "g_stu_steps",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "stu growth in display steps per game-year",
+     "dev_source": "(display now - display at dump_year-1) / 5",
+     "lg_source": "earlier pull = the archive vintage (vintages/<LG>/*.csv.gz) dev_signals.choose_clean_pulls picks: the pull nearest one game-year before the latest whose pair with the latest pull ratings_db.pair_guard does not flag; per game-year = divided by the span",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "g_stu_int",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "stu growth in internal points per game-year",
+     "dev_source": "internal now - internal at dump_year-1",
+     "lg_source": "earlier pull = the archive vintage (vintages/<LG>/*.csv.gz) dev_signals.choose_clean_pulls picks: the pull nearest one game-year before the latest whose pair with the latest pull ratings_db.pair_guard does not flag; per game-year = divided by the span",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "g_hrr_steps",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "hrr growth in display steps per game-year",
+     "dev_source": "(display now - display at dump_year-1) / 5",
+     "lg_source": "earlier pull = the archive vintage (vintages/<LG>/*.csv.gz) dev_signals.choose_clean_pulls picks: the pull nearest one game-year before the latest whose pair with the latest pull ratings_db.pair_guard does not flag; per game-year = divided by the span",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "g_hrr_int",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "hrr growth in internal points per game-year",
+     "dev_source": "internal now - internal at dump_year-1",
+     "lg_source": "earlier pull = the archive vintage (vintages/<LG>/*.csv.gz) dev_signals.choose_clean_pulls picks: the pull nearest one game-year before the latest whose pair with the latest pull ratings_db.pair_guard does not flag; per game-year = divided by the span",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "g_pbabip_steps",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "pbabip growth in display steps per game-year",
+     "dev_source": "(display now - display at dump_year-1) / 5",
+     "lg_source": "earlier pull = the archive vintage (vintages/<LG>/*.csv.gz) dev_signals.choose_clean_pulls picks: the pull nearest one game-year before the latest whose pair with the latest pull ratings_db.pair_guard does not flag; per game-year = divided by the span",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "g_pbabip_int",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "pbabip growth in internal points per game-year",
+     "dev_source": "internal now - internal at dump_year-1",
+     "lg_source": "earlier pull = the archive vintage (vintages/<LG>/*.csv.gz) dev_signals.choose_clean_pulls picks: the pull nearest one game-year before the latest whose pair with the latest pull ratings_db.pair_guard does not flag; per game-year = divided by the span",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "g_con_steps",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "con growth in display steps per game-year",
+     "dev_source": "(display now - display at dump_year-1) / 5",
+     "lg_source": "earlier pull = the archive vintage (vintages/<LG>/*.csv.gz) dev_signals.choose_clean_pulls picks: the pull nearest one game-year before the latest whose pair with the latest pull ratings_db.pair_guard does not flag; per game-year = divided by the span",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "g_con_int",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "con growth in internal points per game-year",
+     "dev_source": "internal now - internal at dump_year-1",
+     "lg_source": "earlier pull = the archive vintage (vintages/<LG>/*.csv.gz) dev_signals.choose_clean_pulls picks: the pull nearest one game-year before the latest whose pair with the latest pull ratings_db.pair_guard does not flag; per game-year = divided by the span",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "grow_steps",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "core growth, display steps",
+     "dev_source": "sum of g_*_steps over the core skills",
+     "lg_source": "earlier pull = the archive vintage (vintages/<LG>/*.csv.gz) dev_signals.choose_clean_pulls picks: the pull nearest one game-year before the latest whose pair with the latest pull ratings_db.pair_guard does not flag; per game-year = divided by the span",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "grow_steps_r",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "dev_odds growth value",
+     "dev_source": "grow_steps rounded to 0.5 (dev_odds growth)",
+     "lg_source": "earlier pull = the archive vintage (vintages/<LG>/*.csv.gz) dev_signals.choose_clean_pulls picks: the pull nearest one game-year before the latest whose pair with the latest pull ratings_db.pair_guard does not flag; per game-year = divided by the span",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "grow_int",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "core growth, internal points",
+     "dev_source": "sum of g_*_int",
+     "lg_source": "earlier pull = the archive vintage (vintages/<LG>/*.csv.gz) dev_signals.choose_clean_pulls picks: the pull nearest one game-year before the latest whose pair with the latest pull ratings_db.pair_guard does not flag; per game-year = divided by the span",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "grow2_steps",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "two-year core growth, steps",
+     "dev_source": "core display steps gained since dump_year-2 (total, not per year)",
+     "lg_source": "none: the TGS / BLM archives span under two game-years",
+     "usable_for_scoring": false,
+     "drop_reason": "the TGS / BLM archives span under two game-years (TGS 2043-11 to 2045-07, BLM 2057-07 to 2058-10, and BLM's usable span starts after its 2057-12-31 scale event), so two-year growth is never known there"
+    },
+    {
+     "name": "grow2_int",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "two-year core growth, internal",
+     "dev_source": "core internal points gained since dump_year-2",
+     "lg_source": "none (same reason)",
+     "usable_for_scoring": false,
+     "drop_reason": "same as grow2_steps"
+    },
+    {
+     "name": "d_pot",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "Pot grade change",
+     "dev_source": "Pot - Pot at dump_year-1",
+     "lg_source": "latest Pot - earlier pull c_Pot (not scaled, dev_signals pot_delta)",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "d_ovr",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "Ovr grade change",
+     "dev_source": "Ovr - Ovr at dump_year-1",
+     "lg_source": "latest Ovr - earlier pull c_Ovr",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "d_ceiling",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "listed-peak change",
+     "dev_source": "ceiling_waa - ceiling_waa at dump_year-1 (DEV prices on the same basis)",
+     "lg_source": "league .waa_cache (the league's own current calibration fingerprint, neutral park) at the latest pull minus at the earlier pull",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "d_now",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "now-WAA change",
+     "dev_source": "now_waa - now_waa at dump_year-1",
+     "lg_source": "league .waa_cache pair, as d_ceiling",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "has_prev",
+     "dtype": "float32",
+     "kind": "feature",
+     "family": "growth",
+     "desc": "growth known flag",
+     "dev_source": "1 when growth is known (0 when there is no earlier card or the card-replaced failsafe tripped, common.mask_earlier_card)",
+     "lg_source": "same",
+     "usable_for_scoring": true,
+     "drop_reason": null
+    },
+    {
+     "name": "grow_steps_r_card",
+     "dtype": "float32",
+     "kind": "info",
+     "desc": "grow_steps_r BEFORE the card-replaced failsafe (the DEV card a year back as it is). Only the cell method reads it (baseline.py, as dev_odds builds its cells from every DEV card); never a model feature"
+    },
+    {
+     "name": "has_prev_card",
+     "dtype": "float32",
+     "kind": "info",
+     "desc": "has_prev BEFORE the card-replaced failsafe; read with grow_steps_r_card by baseline.py only"
+    },
+    {
+     "name": "now_kind",
+     "dtype": "category[H,P]",
+     "kind": "info",
+     "desc": "engine record the cache priced at this dump (H or P); differs from the role for a few position changers"
+    },
+    {
+     "name": "lev_raw",
+     "dtype": "category[A,AA,AAA,AMA,FA,MLB,R]",
+     "kind": "info",
+     "desc": "raw dump Lev before the collapse / parked fix"
+    },
+    {
+     "name": "mlb_pa",
+     "dtype": "float32",
+     "kind": "info",
+     "desc": "MLB PA in season dump_year (0 when none or unknown)"
+    },
+    {
+     "name": "mlb_bf",
+     "dtype": "float32",
+     "kind": "info",
+     "desc": "MLB BF in season dump_year"
+    },
+    {
+     "name": "peak",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "max now_WAA over this dump and every later dump the engine priced; NaN unless peak_known"
+    },
+    {
+     "name": "peak_known",
+     "dtype": "int8",
+     "kind": "target",
+     "desc": "1 when the player is seen at age >= 27 at some dump (realized, the app's rule) or retired (absent from every later dump while later dumps exist); constant per player"
+    },
+    {
+     "name": "gain",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "peak - now_WAA (never below 0); NaN unless peak_known"
+    },
+    {
+     "name": "reach_mlb",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "peak >= -1.0 (dev_odds PEAK_BARS mlb); NaN unless peak_known"
+    },
+    {
+     "name": "reach_useful",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "peak >= 0.0; NaN unless peak_known"
+    },
+    {
+     "name": "reach_good",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "peak >= +1.5; NaN unless peak_known"
+    },
+    {
+     "name": "regular_future",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "1 when some MLB season s > dump_year (a season played after this Jan-1 dump) has >= 300 PA or >= 150 BF (dev_mlb_pt, level_id 1); 0 when none and peak_known; else NaN. Differs from dev_odds' outcome, which counts any season of the career, including seasons already played (kept as regular_ever). Seasons start at 2026: the cache has no 2025 season."
+    },
+    {
+     "name": "regular_ever",
+     "dtype": "int8",
+     "kind": "target",
+     "desc": "dev_odds' outcome: some season of the career (2026 on) with >= 300 PA or >= 150 BF; not censoring-aware, reference only"
+    },
+    {
+     "name": "waa_1",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "now_WAA at dump_year + k (k = 1..5); NaN when retired, not priced, or beyond the last dump"
+    },
+    {
+     "name": "d_1",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "waa_k - now_WAA"
+    },
+    {
+     "name": "present_1",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "1 when the player is in the raw dump dump_year + k, 0 when absent (retired), NaN beyond the last dump"
+    },
+    {
+     "name": "waa_2",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "now_WAA at dump_year + k (k = 1..5); NaN when retired, not priced, or beyond the last dump"
+    },
+    {
+     "name": "d_2",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "waa_k - now_WAA"
+    },
+    {
+     "name": "present_2",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "1 when the player is in the raw dump dump_year + k, 0 when absent (retired), NaN beyond the last dump"
+    },
+    {
+     "name": "waa_3",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "now_WAA at dump_year + k (k = 1..5); NaN when retired, not priced, or beyond the last dump"
+    },
+    {
+     "name": "d_3",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "waa_k - now_WAA"
+    },
+    {
+     "name": "present_3",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "1 when the player is in the raw dump dump_year + k, 0 when absent (retired), NaN beyond the last dump"
+    },
+    {
+     "name": "waa_4",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "now_WAA at dump_year + k (k = 1..5); NaN when retired, not priced, or beyond the last dump"
+    },
+    {
+     "name": "d_4",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "waa_k - now_WAA"
+    },
+    {
+     "name": "present_4",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "1 when the player is in the raw dump dump_year + k, 0 when absent (retired), NaN beyond the last dump"
+    },
+    {
+     "name": "waa_5",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "now_WAA at dump_year + k (k = 1..5); NaN when retired, not priced, or beyond the last dump"
+    },
+    {
+     "name": "d_5",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "waa_k - now_WAA"
+    },
+    {
+     "name": "present_5",
+     "dtype": "float32",
+     "kind": "target",
+     "desc": "1 when the player is in the raw dump dump_year + k, 0 when absent (retired), NaN beyond the last dump"
+    },
+    {
+     "name": "realized",
+     "dtype": "int8",
+     "kind": "flag",
+     "desc": "seen at age >= 27 at some dump (dev_odds / app definition)"
+    },
+    {
+     "name": "retired",
+     "dtype": "int8",
+     "kind": "flag",
+     "desc": "absent from every dump after his last one while later dumps exist (players never come back)"
+    },
+    {
+     "name": "censored",
+     "dtype": "int8",
+     "kind": "flag",
+     "desc": "still active at the last dump and never seen at 27+: peak and outcomes unknown"
+    },
+    {
+     "name": "cohort_first20",
+     "dtype": "int8",
+     "kind": "flag",
+     "desc": "first seen at age <= 20 and ever in an org (dev_odds cohort without its year window)"
+    },
+    {
+     "name": "cohort_dev_odds",
+     "dtype": "int8",
+     "kind": "flag",
+     "desc": "cohort_first20 and first seen from 2025 to the last banked dump minus 23 (dev_odds COHORT_YEARS exactly; the end moves with the last banked year)"
+    },
+    {
+     "name": "left_censored",
+     "dtype": "int8",
+     "kind": "flag",
+     "desc": "first seen in the first dump (2025): his earlier years are unknown"
+    },
+    {
+     "name": "first_seen_year",
+     "dtype": "int16",
+     "kind": "flag",
+     "desc": "dump_year of his first dump"
+    },
+    {
+     "name": "first_seen_age",
+     "dtype": "float32",
+     "kind": "flag",
+     "desc": "age at his first dump"
+    },
+    {
+     "name": "last_seen_year",
+     "dtype": "int16",
+     "kind": "flag",
+     "desc": "dump_year of his last dump"
+    },
+    {
+     "name": "max_age_seen",
+     "dtype": "float32",
+     "kind": "flag",
+     "desc": "highest age in any dump"
+    },
+    {
+     "name": "fold",
+     "dtype": "int8",
+     "kind": "info",
+     "desc": "0..4, md5 of the pid string mod 5; every dump of a player in one fold"
+    },
+    {
+     "name": "time_split",
+     "dtype": "category[train,test]",
+     "kind": "info",
+     "desc": "train when first_seen_year <= the cutoff, else test"
+    }
+   ]
+  }
+ },
+ "scoring_rebuilt": "2026-10-06T19:58:17"
+}

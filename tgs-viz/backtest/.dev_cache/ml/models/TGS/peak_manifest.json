@@ -1,0 +1,476 @@
+{
+ "method": "ml",
+ "group": "peak",
+ "date": "2026-10-06",
+ "sklearn": "1.7.2",
+ "python": "3.14.3",
+ "basis": "TGS",
+ "basis_rule": "one model set per league: DEV priced with this league's engine calibration (DEV engine price tag 608cdff64c-TGS); score only this league",
+ "rows": "all",
+ "row_rule": "DEV player-dumps at ages 16-26, peak_known 1 (washouts kept), in an org or not (amateurs and free agents read level 'none'; the 'amateur' feature tells them apart)",
+ "age_range": [
+  16,
+  26
+ ],
+ "app_rule": "p_* = 1.0 when now_waa >= bar - 0.05; reach models train on rows below that line only",
+ "order_rule": "p_useful = min(p_useful, p_mlb), p_good = min(p_good, p_useful) (common.chance_order, fix 2)",
+ "extra_features": {
+  "amateur": "1 = amateur: DEV lev_raw AMA; TGS / BLM app Lev AMA or INT (common.amateur_flag); 0 = in an org or a free agent"
+ },
+ "settings_file": "models\\peak_settings.json",
+ "quantiles": {
+  "gain_q10": 0.1,
+  "gain_q25": 0.25,
+  "gain_q50": 0.5,
+  "gain_q75": 0.75,
+  "gain_q90": 0.9
+ },
+ "bars": {
+  "p_mlb": -1.0,
+  "p_useful": 0.0,
+  "p_good": 1.5
+ },
+ "post": "gain quantiles clipped at 0 and sorted per row; isotonic step applied when settings.calibrate says so (fit on the grouped validation players)",
+ "roles": {
+  "H": {
+   "features": [
+    "age",
+    "level",
+    "level_rank",
+    "in_org",
+    "prev_in_org",
+    "pos",
+    "bats",
+    "throws",
+    "height",
+    "now_waa",
+    "ceiling_waa",
+    "ceiling_gap",
+    "ovr",
+    "pot",
+    "pot_minus_ovr",
+    "pot_scale",
+    "babip_mean",
+    "babip_lean",
+    "pot_babip",
+    "room_babip",
+    "gap_mean",
+    "gap_lean",
+    "pot_gap",
+    "room_gap",
+    "pow_mean",
+    "pow_lean",
+    "pot_pow",
+    "room_pow",
+    "eye_mean",
+    "eye_lean",
+    "pot_eye",
+    "room_eye",
+    "avk_mean",
+    "avk_lean",
+    "pot_avk",
+    "room_avk",
+    "cnt_mean",
+    "cnt_lean",
+    "pot_cnt",
+    "room_cnt",
+    "core_int",
+    "room_core",
+    "speed",
+    "stlrt",
+    "steal",
+    "run",
+    "ifr",
+    "ife",
+    "ifa",
+    "tdp",
+    "ofr",
+    "ofe",
+    "ofa",
+    "cblk",
+    "cfrm",
+    "carm",
+    "pos_c",
+    "potpos_c",
+    "pos_1b",
+    "potpos_1b",
+    "pos_2b",
+    "potpos_2b",
+    "pos_3b",
+    "potpos_3b",
+    "pos_ss",
+    "potpos_ss",
+    "pos_lf",
+    "potpos_lf",
+    "pos_cf",
+    "potpos_cf",
+    "pos_rf",
+    "potpos_rf",
+    "best_pos",
+    "best_pos_pot",
+    "n_pos50",
+    "g_babip_steps",
+    "g_babip_int",
+    "g_gap_steps",
+    "g_gap_int",
+    "g_pow_steps",
+    "g_pow_int",
+    "g_eye_steps",
+    "g_eye_int",
+    "g_avk_steps",
+    "g_avk_int",
+    "grow_steps",
+    "grow_steps_r",
+    "grow_int",
+    "d_pot",
+    "d_ovr",
+    "d_ceiling",
+    "d_now",
+    "has_prev",
+    "amateur"
+   ],
+   "categorical": {
+    "level": [
+     "none",
+     "R",
+     "A",
+     "AA",
+     "AAA",
+     "MLB"
+    ],
+    "pos": [
+     "C",
+     "1B",
+     "2B",
+     "3B",
+     "SS",
+     "LF",
+     "CF",
+     "RF",
+     "DH",
+     "SP",
+     "RP",
+     "CL"
+    ],
+    "bats": [
+     "R",
+     "L",
+     "S"
+    ],
+    "throws": [
+     "R",
+     "L"
+    ]
+   },
+   "settings": {
+    "quantile": {
+     "learning_rate": 0.1,
+     "max_leaf_nodes": 63,
+     "min_samples_leaf": 400,
+     "l2_regularization": 1.0
+    },
+    "classifier": {
+     "learning_rate": 0.03,
+     "max_leaf_nodes": 63,
+     "min_samples_leaf": 200,
+     "l2_regularization": 0.5
+    },
+    "max_iter": 2000,
+    "n_iter_no_change": 30,
+    "max_bins": 255,
+    "val_share": 0.1,
+    "monotonic_now": true,
+    "calibrate": {
+     "reach_mlb": false,
+     "reach_useful": false,
+     "reach_good": false,
+     "regular_future": false
+    },
+    "source": "tune on the fold-0 training set (folds 1-4), run 2026-09-24"
+   },
+   "train_rows": 3170663,
+   "train_players": 387573,
+   "train_rows_outside_org": 956394,
+   "train_rows_amateur": 381868,
+   "fit_seconds": 463.1,
+   "models": {
+    "gain_q10": {
+     "file": "peak_H_gain_q10.pkl",
+     "train_rows": 2853640,
+     "val_rows": 317023,
+     "iterations": 2000,
+     "val_loss": 0.099289,
+     "isotonic": false
+    },
+    "gain_q25": {
+     "file": "peak_H_gain_q25.pkl",
+     "train_rows": 2853640,
+     "val_rows": 317023,
+     "iterations": 2000,
+     "val_loss": 0.205798,
+     "isotonic": false
+    },
+    "gain_q50": {
+     "file": "peak_H_gain_q50.pkl",
+     "train_rows": 2853640,
+     "val_rows": 317023,
+     "iterations": 2000,
+     "val_loss": 0.299956,
+     "isotonic": false
+    },
+    "gain_q75": {
+     "file": "peak_H_gain_q75.pkl",
+     "train_rows": 2853640,
+     "val_rows": 317023,
+     "iterations": 2000,
+     "val_loss": 0.276816,
+     "isotonic": false
+    },
+    "gain_q90": {
+     "file": "peak_H_gain_q90.pkl",
+     "train_rows": 2853640,
+     "val_rows": 317023,
+     "iterations": 2000,
+     "val_loss": 0.174516,
+     "isotonic": false
+    },
+    "reach_mlb": {
+     "file": "peak_H_reach_mlb.pkl",
+     "train_rows": 2815116,
+     "val_rows": 312723,
+     "iterations": 680,
+     "val_loss": 0.070434,
+     "isotonic": false
+    },
+    "reach_useful": {
+     "file": "peak_H_reach_useful.pkl",
+     "train_rows": 2836460,
+     "val_rows": 315075,
+     "iterations": 424,
+     "val_loss": 0.039141,
+     "isotonic": false
+    },
+    "reach_good": {
+     "file": "peak_H_reach_good.pkl",
+     "train_rows": 2848096,
+     "val_rows": 316458,
+     "iterations": 211,
+     "val_loss": 0.017027,
+     "isotonic": false
+    },
+    "regular_future": {
+     "file": "peak_H_regular_future.pkl",
+     "train_rows": 2853640,
+     "val_rows": 317023,
+     "iterations": 660,
+     "val_loss": 0.079212,
+     "isotonic": false
+    }
+   }
+  },
+  "P": {
+   "features": [
+    "age",
+    "level",
+    "level_rank",
+    "in_org",
+    "prev_in_org",
+    "pos",
+    "bats",
+    "throws",
+    "height",
+    "now_waa",
+    "ceiling_waa",
+    "ceiling_gap",
+    "ovr",
+    "pot",
+    "pot_minus_ovr",
+    "pot_scale",
+    "stu_mean",
+    "stu_lean",
+    "pot_stu",
+    "room_stu",
+    "hrr_mean",
+    "hrr_lean",
+    "pot_hrr",
+    "room_hrr",
+    "pbabip_mean",
+    "pbabip_lean",
+    "pot_pbabip",
+    "room_pbabip",
+    "con_mean",
+    "con_lean",
+    "pot_con",
+    "room_con",
+    "core_int",
+    "room_core",
+    "mov",
+    "pot_mov",
+    "room_mov",
+    "vel",
+    "stm",
+    "hold",
+    "gb",
+    "n_pitches45",
+    "best_pitch",
+    "best_pitch_pot",
+    "g_stu_steps",
+    "g_stu_int",
+    "g_hrr_steps",
+    "g_hrr_int",
+    "g_pbabip_steps",
+    "g_pbabip_int",
+    "g_con_steps",
+    "g_con_int",
+    "grow_steps",
+    "grow_steps_r",
+    "grow_int",
+    "d_pot",
+    "d_ovr",
+    "d_ceiling",
+    "d_now",
+    "has_prev",
+    "amateur"
+   ],
+   "categorical": {
+    "level": [
+     "none",
+     "R",
+     "A",
+     "AA",
+     "AAA",
+     "MLB"
+    ],
+    "pos": [
+     "C",
+     "1B",
+     "2B",
+     "3B",
+     "SS",
+     "LF",
+     "CF",
+     "RF",
+     "DH",
+     "SP",
+     "RP",
+     "CL"
+    ],
+    "bats": [
+     "R",
+     "L",
+     "S"
+    ],
+    "throws": [
+     "R",
+     "L"
+    ]
+   },
+   "settings": {
+    "quantile": {
+     "learning_rate": 0.1,
+     "max_leaf_nodes": 63,
+     "min_samples_leaf": 400,
+     "l2_regularization": 1.0
+    },
+    "classifier": {
+     "learning_rate": 0.05,
+     "max_leaf_nodes": 31,
+     "min_samples_leaf": 200,
+     "l2_regularization": 0.5
+    },
+    "max_iter": 2000,
+    "n_iter_no_change": 30,
+    "max_bins": 255,
+    "val_share": 0.1,
+    "monotonic_now": true,
+    "calibrate": {
+     "reach_mlb": false,
+     "reach_useful": false,
+     "reach_good": false,
+     "regular_future": false
+    },
+    "source": "tune on the fold-0 training set (folds 1-4), run 2026-09-24"
+   },
+   "train_rows": 3465230,
+   "train_players": 445110,
+   "train_rows_outside_org": 904283,
+   "train_rows_amateur": 473170,
+   "fit_seconds": 404.3,
+   "models": {
+    "gain_q10": {
+     "file": "peak_P_gain_q10.pkl",
+     "train_rows": 3122569,
+     "val_rows": 342661,
+     "iterations": 2000,
+     "val_loss": 0.053608,
+     "isotonic": false
+    },
+    "gain_q25": {
+     "file": "peak_P_gain_q25.pkl",
+     "train_rows": 3122569,
+     "val_rows": 342661,
+     "iterations": 2000,
+     "val_loss": 0.110081,
+     "isotonic": false
+    },
+    "gain_q50": {
+     "file": "peak_P_gain_q50.pkl",
+     "train_rows": 3122569,
+     "val_rows": 342661,
+     "iterations": 2000,
+     "val_loss": 0.159133,
+     "isotonic": false
+    },
+    "gain_q75": {
+     "file": "peak_P_gain_q75.pkl",
+     "train_rows": 3122569,
+     "val_rows": 342661,
+     "iterations": 2000,
+     "val_loss": 0.147037,
+     "isotonic": false
+    },
+    "gain_q90": {
+     "file": "peak_P_gain_q90.pkl",
+     "train_rows": 3122569,
+     "val_rows": 342661,
+     "iterations": 2000,
+     "val_loss": 0.094023,
+     "isotonic": false
+    },
+    "reach_mlb": {
+     "file": "peak_P_reach_mlb.pkl",
+     "train_rows": 3029144,
+     "val_rows": 332273,
+     "iterations": 939,
+     "val_loss": 0.145722,
+     "isotonic": false
+    },
+    "reach_useful": {
+     "file": "peak_P_reach_useful.pkl",
+     "train_rows": 3106243,
+     "val_rows": 340738,
+     "iterations": 836,
+     "val_loss": 0.068438,
+     "isotonic": false
+    },
+    "reach_good": {
+     "file": "peak_P_reach_good.pkl",
+     "train_rows": 3121202,
+     "val_rows": 342469,
+     "iterations": 249,
+     "val_loss": 0.013379,
+     "isotonic": false
+    },
+    "regular_future": {
+     "file": "peak_P_regular_future.pkl",
+     "train_rows": 3122569,
+     "val_rows": 342661,
+     "iterations": 1193,
+     "val_loss": 0.110144,
+     "isotonic": false
+    }
+   }
+  }
+ },
+ "quantile_backend": "xgboost 3.4.1 (trained on cuda)"
+}

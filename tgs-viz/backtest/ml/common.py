@@ -1170,7 +1170,30 @@ def save_table(df, path):
     os.replace(tmp, path)
 
 
+# GitHub keeps the ML models and training tables in Git LFS (2026-10-06). A
+# clone skips them by default (.lfsconfig), so each file is a small pointer
+# text until `git lfs pull` downloads it.
+LFS_PULL = 'git lfs pull --include="tgs-viz/backtest/.dev_cache/**" --exclude=""'
+
+
+def is_lfs_pointer(path):
+    """True when path is a Git LFS pointer file, not the real data."""
+    try:
+        with open(path, "rb") as fh:
+            return fh.read(40).startswith(b"version https://git-lfs")
+    except OSError:
+        return False
+
+
+def check_downloaded(path):
+    """Stop with the download command when path is a Git LFS pointer."""
+    if is_lfs_pointer(path):
+        raise SystemExit(f"{os.path.basename(path)} is not downloaded (Git LFS pointer). "
+                         f"From the repo folder, run: {LFS_PULL}")
+
+
 def load_table(path):
+    check_downloaded(path)
     return pd.read_pickle(path)
 
 

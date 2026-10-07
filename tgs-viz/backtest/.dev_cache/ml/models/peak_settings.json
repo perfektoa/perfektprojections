@@ -1,0 +1,56 @@
+{
+ "source": "tune on the fold-0 training set (folds 1-4), run 2026-09-24",
+ "sklearn": "1.7.2",
+ "H": {
+  "quantile": {
+   "learning_rate": 0.1,
+   "max_leaf_nodes": 63,
+   "min_samples_leaf": 400,
+   "l2_regularization": 1.0
+  },
+  "classifier": {
+   "learning_rate": 0.03,
+   "max_leaf_nodes": 63,
+   "min_samples_leaf": 200,
+   "l2_regularization": 0.5
+  },
+  "max_iter": 2000,
+  "n_iter_no_change": 30,
+  "max_bins": 255,
+  "val_share": 0.1,
+  "monotonic_now": true,
+  "calibrate": {
+   "reach_mlb": false,
+   "reach_useful": false,
+   "reach_good": false,
+   "regular_future": false
+  },
+  "source": "tune on the fold-0 training set (folds 1-4), run 2026-09-24"
+ },
+ "P": {
+  "quantile": {
+   "learning_rate": 0.1,
+   "max_leaf_nodes": 63,
+   "min_samples_leaf": 400,
+   "l2_regularization": 1.0
+  },
+  "classifier": {
+   "learning_rate": 0.05,
+   "max_leaf_nodes": 31,
+   "min_samples_leaf": 200,
+   "l2_regularization": 0.5
+  },
+  "max_iter": 2000,
+  "n_iter_no_change": 30,
+  "max_bins": 255,
+  "val_share": 0.1,
+  "monotonic_now": true,
+  "calibrate": {
+   "reach_mlb": false,
+   "reach_useful": false,
+   "reach_good": false,
+   "regular_future": false
+  },
+  "source": "tune on the fold-0 training set (folds 1-4), run 2026-09-24"
+ }
+}
