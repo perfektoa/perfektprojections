@@ -32,3 +32,5 @@ pull_id,league,real_date,real_ts,source,source_files,n_players,content_hash,inge
 572,BLM,2052-01-01,2026-10-01T10:19:20,asof,"[""tgs-viz\\ingest\\.cache\\asof\\blm\\2052-01-01.json""]",11681,fe999aad0f2a191f7ee44abc6d6caadc8ba4f155,2026-10-01T10:19:20,2052-01-01
 573,BLM,2052-07-01,2026-10-01T10:34:25,asof,"[""tgs-viz\\ingest\\.cache\\asof\\blm\\2052-07-01.json""]",11908,02c7a2b94f2227b62b61ec48db6ee9144569dba6,2026-10-01T10:34:25,2052-07-01
 574,BLM,2053-01-01,2026-10-01T10:49:30,asof,"[""tgs-viz\\ingest\\.cache\\asof\\blm\\2053-01-01.json""]",11453,d40dd3c845a5c01a068b96ed3b4b93f33f082bb8,2026-10-01T10:49:30,2053-01-01
+585,BLM,2026-10-06,2026-10-06T19:55:59,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_blm_20261006-1955.json""]",13119,f6edf04feff6c4cae8f31883d21e2e292a95ad3b,2026-10-06T19:56:00,2059-02-02
+587,BLM,2026-10-07,2026-10-07T19:50:12,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_blm_20261007-1950.json""]",13119,f6edf04feff6c4cae8f31883d21e2e292a95ad3b,2026-10-07T19:50:13,2059-02-02

@@ -112,7 +112,7 @@
  },
  "scoring": {
   "BLM": {
-   "to_pull": 585,
+   "to_pull": 587,
    "to_date": "2059-02-02",
    "from_pull": 7,
    "from_date": "2058-03-28",
@@ -137,14 +137,14 @@
      "span_game_years": 0.851
     }
    },
-   "to_source": "tgs-viz\\ingest\\.cache\\history\\statsplus_blm_20261006-1955.json",
+   "to_source": "tgs-viz\\ingest\\.cache\\history\\statsplus_blm_20261007-1950.json",
    "raw_vs_app_ratings": {
     "agree": 39357,
     "differ": 0
    },
    "waa_cache": {
     "fingerprint": "ffe4c78059",
-    "to": "2026-10-06_p585.csv.gz.ffe4c78059.json",
+    "to": "2026-10-07_p587.csv.gz.ffe4c78059.json",
     "from_H": "2026-07-20_p7.csv.gz.ffe4c78059.json",
     "from_P": "2026-07-20_p7.csv.gz.ffe4c78059.json"
    },
@@ -2706,5 +2706,5 @@
    ]
   }
  },
- "scoring_rebuilt": "2026-10-06T19:58:17"
+ "scoring_rebuilt": "2026-10-07T19:53:45"
 }

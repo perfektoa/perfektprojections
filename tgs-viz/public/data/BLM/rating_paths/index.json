@@ -1,0 +1,1809 @@
+{
+ "generated": "2026-10-08T16:59:20",
+ "league": "BLM",
+ "direct_max_age": 24,
+ "models_generated": "2026-10-08T15:48:53",
+ "quick_models": false,
+ "n_buckets": 64,
+ "max_age": 40,
+ "labels": {
+  "babip": "BABIP",
+  "gap": "Gap",
+  "pow": "Power",
+  "eye": "Eye",
+  "avk": "Avoid K",
+  "speed": "Speed",
+  "ifr": "IF range",
+  "ife": "IF error",
+  "ifa": "IF arm",
+  "tdp": "Turn DP",
+  "ofr": "OF range",
+  "ofe": "OF error",
+  "ofa": "OF arm",
+  "cblk": "C blocking",
+  "cfrm": "C framing",
+  "carm": "C arm",
+  "stu": "Stuff",
+  "hrr": "HR allowed",
+  "pbabip": "pBABIP",
+  "con": "Control",
+  "stm": "Stamina",
+  "hold": "Hold"
+ },
+ "ranged": [
+  "avk",
+  "babip",
+  "con",
+  "eye",
+  "gap",
+  "hrr",
+  "pbabip",
+  "pow",
+  "stm",
+  "stu"
+ ],
+ "quantiles": [
+  0.25,
+  0.5,
+  0.75
+ ],
+ "note": {
+  "to_pull": 587,
+  "to_date": "2059-02-02",
+  "from_pull": 7,
+  "from_date": "2058-03-28",
+  "span_game_years": 0.851,
+  "to_file": "2026-10-07_p587.csv.gz",
+  "movement": {
+   "players_with_movement": 11731,
+   "reused_id": 1,
+   "card_replaced": 1
+  }
+ },
+ "players": 13116,
+ "validation": {
+  "generated": "2026-10-08T15:48:53",
+  "quick": false,
+  "direct_max_age": 24,
+  "roles": {
+   "H": {
+    "babip": {
+     "n_val": 1196989,
+     "by_k": {
+      "1": {
+       "n": 300477,
+       "mae_model": 1.223,
+       "mae_no_change": 1.428,
+       "mae_age_average": 1.882,
+       "mean_change": 1.343,
+       "inside_25_75": 0.647
+      },
+      "2-3": {
+       "n": 458585,
+       "mae_model": 2.179,
+       "mae_no_change": 3.759,
+       "mae_age_average": 3.409,
+       "mean_change": 3.68,
+       "inside_25_75": 0.575
+      },
+      "4-6": {
+       "n": 363536,
+       "mae_model": 3.448,
+       "mae_no_change": 7.832,
+       "mae_age_average": 5.471,
+       "mean_change": 7.807,
+       "inside_25_75": 0.537
+      },
+      "7-12": {
+       "n": 74391,
+       "mae_model": 4.937,
+       "mae_no_change": 12.594,
+       "mae_age_average": 6.721,
+       "mean_change": 12.59,
+       "inside_25_75": 0.509
+      }
+     },
+     "aging_one_year": {
+      "n_val": 262735,
+      "by_band": {
+       "22-26": {
+        "n": 214652,
+        "rmse_model": 1.814,
+        "rmse_no_change": 2.056,
+        "rmse_age_average": 1.94,
+        "mean_change": 0.467,
+        "mean_predicted": 0.475
+       },
+       "27-30": {
+        "n": 33609,
+        "rmse_model": 1.672,
+        "rmse_no_change": 1.911,
+        "rmse_age_average": 1.763,
+        "mean_change": -0.706,
+        "mean_predicted": -0.7
+       },
+       "31-34": {
+        "n": 12846,
+        "rmse_model": 1.89,
+        "rmse_no_change": 2.405,
+        "rmse_age_average": 2.048,
+        "mean_change": -1.25,
+        "mean_predicted": -1.262
+       },
+       "35+": {
+        "n": 1628,
+        "rmse_model": 2.032,
+        "rmse_no_change": 2.854,
+        "rmse_age_average": 2.307,
+        "mean_change": -1.683,
+        "mean_predicted": -1.67
+       }
+      }
+     },
+     "stepped_30_to_33": {
+      "n": 3866,
+      "mae_stepped": 2.222,
+      "mae_no_change": 3.5,
+      "mean_actual_change": -3.367,
+      "mean_stepped_change": -3.402
+     }
+    },
+    "gap": {
+     "n_val": 1196989,
+     "by_k": {
+      "1": {
+       "n": 300477,
+       "mae_model": 1.246,
+       "mae_no_change": 1.429,
+       "mae_age_average": 1.87,
+       "mean_change": 1.319,
+       "inside_25_75": 0.64
+      },
+      "2-3": {
+       "n": 458585,
+       "mae_model": 2.251,
+       "mae_no_change": 3.751,
+       "mae_age_average": 3.343,
+       "mean_change": 3.634,
+       "inside_25_75": 0.565
+      },
+      "4-6": {
+       "n": 363536,
+       "mae_model": 3.447,
+       "mae_no_change": 7.7,
+       "mae_age_average": 5.144,
+       "mean_change": 7.657,
+       "inside_25_75": 0.52
+      },
+      "7-12": {
+       "n": 74391,
+       "mae_model": 4.839,
+       "mae_no_change": 12.17,
+       "mae_age_average": 6.227,
+       "mean_change": 12.166,
+       "inside_25_75": 0.499
+      }
+     },
+     "aging_one_year": {
+      "n_val": 262735,
+      "by_band": {
+       "22-26": {
+        "n": 214652,
+        "rmse_model": 1.835,
+        "rmse_no_change": 2.071,
+        "rmse_age_average": 1.971,
+        "mean_change": 0.416,
+        "mean_predicted": 0.412
+       },
+       "27-30": {
+        "n": 33609,
+        "rmse_model": 1.656,
+        "rmse_no_change": 1.781,
+        "rmse_age_average": 1.727,
+        "mean_change": -0.427,
+        "mean_predicted": -0.425
+       },
+       "31-34": {
+        "n": 12846,
+        "rmse_model": 1.885,
+        "rmse_no_change": 2.213,
+        "rmse_age_average": 1.999,
+        "mean_change": -0.932,
+        "mean_predicted": -0.954
+       },
+       "35+": {
+        "n": 1628,
+        "rmse_model": 2.035,
+        "rmse_no_change": 2.793,
+        "rmse_age_average": 2.263,
+        "mean_change": -1.64,
+        "mean_predicted": -1.626
+       }
+      }
+     },
+     "stepped_30_to_33": {
+      "n": 3866,
+      "mae_stepped": 2.268,
+      "mae_no_change": 2.615,
+      "mean_actual_change": -2.166,
+      "mean_stepped_change": -2.098
+     }
+    },
+    "pow": {
+     "n_val": 1196989,
+     "by_k": {
+      "1": {
+       "n": 300477,
+       "mae_model": 1.031,
+       "mae_no_change": 1.205,
+       "mae_age_average": 1.612,
+       "mean_change": 1.134,
+       "inside_25_75": 0.676
+      },
+      "2-3": {
+       "n": 458585,
+       "mae_model": 1.881,
+       "mae_no_change": 3.155,
+       "mae_age_average": 3.062,
+       "mean_change": 3.094,
+       "inside_25_75": 0.598
+      },
+      "4-6": {
+       "n": 363536,
+       "mae_model": 2.998,
+       "mae_no_change": 6.492,
+       "mae_age_average": 4.899,
+       "mean_change": 6.473,
+       "inside_25_75": 0.554
+      },
+      "7-12": {
+       "n": 74391,
+       "mae_model": 4.373,
+       "mae_no_change": 10.402,
+       "mae_age_average": 6.011,
+       "mean_change": 10.398,
+       "inside_25_75": 0.522
+      }
+     },
+     "aging_one_year": {
+      "n_val": 262735,
+      "by_band": {
+       "22-26": {
+        "n": 214652,
+        "rmse_model": 1.847,
+        "rmse_no_change": 2.155,
+        "rmse_age_average": 2.01,
+        "mean_change": 0.644,
+        "mean_predicted": 0.647
+       },
+       "27-30": {
+        "n": 33609,
+        "rmse_model": 1.666,
+        "rmse_no_change": 1.813,
+        "rmse_age_average": 1.735,
+        "mean_change": -0.464,
+        "mean_predicted": -0.471
+       },
+       "31-34": {
+        "n": 12846,
+        "rmse_model": 1.815,
+        "rmse_no_change": 2.351,
+        "rmse_age_average": 1.994,
+        "mean_change": -1.235,
+        "mean_predicted": -1.235
+       },
+       "35+": {
+        "n": 1628,
+        "rmse_model": 1.942,
+        "rmse_no_change": 2.696,
+        "rmse_age_average": 2.162,
+        "mean_change": -1.611,
+        "mean_predicted": -1.604
+       }
+      }
+     },
+     "stepped_30_to_33": {
+      "n": 3866,
+      "mae_stepped": 2.26,
+      "mae_no_change": 3.351,
+      "mean_actual_change": -3.125,
+      "mean_stepped_change": -2.971
+     }
+    },
+    "eye": {
+     "n_val": 1196989,
+     "by_k": {
+      "1": {
+       "n": 300477,
+       "mae_model": 1.054,
+       "mae_no_change": 1.127,
+       "mae_age_average": 1.551,
+       "mean_change": 1.007,
+       "inside_25_75": 0.659
+      },
+      "2-3": {
+       "n": 458585,
+       "mae_model": 1.95,
+       "mae_no_change": 2.878,
+       "mae_age_average": 2.736,
+       "mean_change": 2.732,
+       "inside_25_75": 0.544
+      },
+      "4-6": {
+       "n": 363536,
+       "mae_model": 2.972,
+       "mae_no_change": 5.687,
+       "mae_age_average": 3.919,
+       "mean_change": 5.593,
+       "inside_25_75": 0.504
+      },
+      "7-12": {
+       "n": 74391,
+       "mae_model": 4.295,
+       "mae_no_change": 8.703,
+       "mae_age_average": 5.304,
+       "mean_change": 8.646,
+       "inside_25_75": 0.498
+      }
+     },
+     "aging_one_year": {
+      "n_val": 262735,
+      "by_band": {
+       "22-26": {
+        "n": 214652,
+        "rmse_model": 1.775,
+        "rmse_no_change": 1.956,
+        "rmse_age_average": 1.877,
+        "mean_change": 0.467,
+        "mean_predicted": 0.467
+       },
+       "27-30": {
+        "n": 33609,
+        "rmse_model": 1.695,
+        "rmse_no_change": 1.739,
+        "rmse_age_average": 1.738,
+        "mean_change": -0.041,
+        "mean_predicted": -0.043
+       },
+       "31-34": {
+        "n": 12846,
+        "rmse_model": 2.28,
+        "rmse_no_change": 2.364,
+        "rmse_age_average": 2.333,
+        "mean_change": 0.308,
+        "mean_predicted": 0.32
+       },
+       "35+": {
+        "n": 1628,
+        "rmse_model": 2.847,
+        "rmse_no_change": 3.008,
+        "rmse_age_average": 2.957,
+        "mean_change": 0.539,
+        "mean_predicted": 0.59
+       }
+      }
+     },
+     "stepped_30_to_33": {
+      "n": 3866,
+      "mae_stepped": 2.738,
+      "mae_no_change": 2.641,
+      "mean_actual_change": 0.49,
+      "mean_stepped_change": -0.023
+     }
+    },
+    "avk": {
+     "n_val": 1196989,
+     "by_k": {
+      "1": {
+       "n": 300477,
+       "mae_model": 1.083,
+       "mae_no_change": 1.273,
+       "mae_age_average": 1.608,
+       "mean_change": 1.193,
+       "inside_25_75": 0.647
+      },
+      "2-3": {
+       "n": 458585,
+       "mae_model": 1.974,
+       "mae_no_change": 3.305,
+       "mae_age_average": 2.844,
+       "mean_change": 3.254,
+       "inside_25_75": 0.552
+      },
+      "4-6": {
+       "n": 363536,
+       "mae_model": 3.079,
+       "mae_no_change": 6.817,
+       "mae_age_average": 4.531,
+       "mean_change": 6.804,
+       "inside_25_75": 0.51
+      },
+      "7-12": {
+       "n": 74391,
+       "mae_model": 4.231,
+       "mae_no_change": 10.736,
+       "mae_age_average": 5.59,
+       "mean_change": 10.733,
+       "inside_25_75": 0.5
+      }
+     },
+     "aging_one_year": {
+      "n_val": 262735,
+      "by_band": {
+       "22-26": {
+        "n": 214652,
+        "rmse_model": 1.762,
+        "rmse_no_change": 2.088,
+        "rmse_age_average": 1.909,
+        "mean_change": 0.768,
+        "mean_predicted": 0.764
+       },
+       "27-30": {
+        "n": 33609,
+        "rmse_model": 1.701,
+        "rmse_no_change": 1.768,
+        "rmse_age_average": 1.757,
+        "mean_change": 0.026,
+        "mean_predicted": 0.047
+       },
+       "31-34": {
+        "n": 12846,
+        "rmse_model": 1.919,
+        "rmse_no_change": 2.32,
+        "rmse_age_average": 2.065,
+        "mean_change": -1.024,
+        "mean_predicted": -1.021
+       },
+       "35+": {
+        "n": 1628,
+        "rmse_model": 2.044,
+        "rmse_no_change": 2.776,
+        "rmse_age_average": 2.257,
+        "mean_change": -1.626,
+        "mean_predicted": -1.706
+       }
+      }
+     },
+     "stepped_30_to_33": {
+      "n": 3866,
+      "mae_stepped": 2.354,
+      "mae_no_change": 2.696,
+      "mean_actual_change": -2.003,
+      "mean_stepped_change": -2.084
+     }
+    },
+    "speed": {
+     "n_val": 1196995,
+     "by_k": {
+      "1": {
+       "n": 300478,
+       "mae_model": 0.58,
+       "mae_no_change": 0.582,
+       "mae_age_average": 0.838,
+       "mean_change": 0.313
+      },
+      "2-3": {
+       "n": 458587,
+       "mae_model": 1.097,
+       "mae_no_change": 1.123,
+       "mae_age_average": 1.607,
+       "mean_change": 0.826
+      },
+      "4-6": {
+       "n": 363538,
+       "mae_model": 1.761,
+       "mae_no_change": 1.923,
+       "mae_age_average": 2.372,
+       "mean_change": 1.64
+      },
+      "7-12": {
+       "n": 74392,
+       "mae_model": 2.102,
+       "mae_no_change": 2.636,
+       "mae_age_average": 2.736,
+       "mean_change": 2.357
+      }
+     },
+     "aging_one_year": {
+      "n_val": 262735,
+      "by_band": {
+       "22-26": {
+        "n": 214652,
+        "rmse_model": 1.646,
+        "rmse_no_change": 1.697,
+        "rmse_age_average": 1.675,
+        "mean_change": 0.256,
+        "mean_predicted": 0.259
+       },
+       "27-30": {
+        "n": 33609,
+        "rmse_model": 1.844,
+        "rmse_no_change": 1.915,
+        "rmse_age_average": 1.871,
+        "mean_change": -0.331,
+        "mean_predicted": -0.339
+       },
+       "31-34": {
+        "n": 12846,
+        "rmse_model": 2.3,
+        "rmse_no_change": 2.806,
+        "rmse_age_average": 2.467,
+        "mean_change": -1.321,
+        "mean_predicted": -1.356
+       },
+       "35+": {
+        "n": 1628,
+        "rmse_model": 2.114,
+        "rmse_no_change": 2.672,
+        "rmse_age_average": 2.314,
+        "mean_change": -1.33,
+        "mean_predicted": -1.329
+       }
+      }
+     },
+     "stepped_30_to_33": {
+      "n": 3866,
+      "mae_stepped": 2.763,
+      "mae_no_change": 3.16,
+      "mean_actual_change": -3.015,
+      "mean_stepped_change": -2.526
+     }
+    },
+    "ifr": {
+     "n_val": 1195269,
+     "by_k": {
+      "1": {
+       "n": 300000,
+       "mae_model": 0.341,
+       "mae_no_change": 0.34,
+       "mae_age_average": 0.625,
+       "mean_change": 0.34
+      },
+      "2-3": {
+       "n": 457831,
+       "mae_model": 0.947,
+       "mae_no_change": 0.954,
+       "mae_age_average": 1.497,
+       "mean_change": 0.954
+      },
+      "4-6": {
+       "n": 363090,
+       "mae_model": 1.617,
+       "mae_no_change": 1.951,
+       "mae_age_average": 2.358,
+       "mean_change": 1.951
+      },
+      "7-12": {
+       "n": 74348,
+       "mae_model": 1.708,
+       "mae_no_change": 2.659,
+       "mae_age_average": 2.605,
+       "mean_change": 2.659
+      }
+     },
+     "aging_one_year": {
+      "n_val": 262297,
+      "by_band": {
+       "22-26": {
+        "n": 214307,
+        "rmse_model": 1.067,
+        "rmse_no_change": 1.124,
+        "rmse_age_average": 1.099,
+        "mean_change": -0.012,
+        "mean_predicted": -0.015
+       },
+       "27-30": {
+        "n": 33538,
+        "rmse_model": 1.45,
+        "rmse_no_change": 1.577,
+        "rmse_age_average": 1.506,
+        "mean_change": -0.457,
+        "mean_predicted": -0.47
+       },
+       "31-34": {
+        "n": 12826,
+        "rmse_model": 1.832,
+        "rmse_no_change": 2.421,
+        "rmse_age_average": 2.222,
+        "mean_change": -0.961,
+        "mean_predicted": -0.994
+       },
+       "35+": {
+        "n": 1626,
+        "rmse_model": 1.289,
+        "rmse_no_change": 1.749,
+        "rmse_age_average": 1.662,
+        "mean_change": -0.538,
+        "mean_predicted": -0.555
+       }
+      }
+     },
+     "stepped_30_to_33": {
+      "n": 3857,
+      "mae_stepped": 2.122,
+      "mae_no_change": 2.449,
+      "mean_actual_change": -2.415,
+      "mean_stepped_change": -2.255
+     }
+    },
+    "ife": {
+     "n_val": 1195269,
+     "by_k": {
+      "1": {
+       "n": 300000,
+       "mae_model": 0.123,
+       "mae_no_change": 0.123,
+       "mae_age_average": 0.242,
+       "mean_change": 0.123
+      },
+      "2-3": {
+       "n": 457831,
+       "mae_model": 0.33,
+       "mae_no_change": 0.33,
+       "mae_age_average": 0.619,
+       "mean_change": 0.33
+      },
+      "4-6": {
+       "n": 363090,
+       "mae_model": 0.674,
+       "mae_no_change": 0.674,
+       "mae_age_average": 1.173,
+       "mean_change": 0.674
+      },
+      "7-12": {
+       "n": 74348,
+       "mae_model": 0.988,
+       "mae_no_change": 0.988,
+       "mae_age_average": 1.607,
+       "mean_change": 0.988
+      }
+     },
+     "aging_one_year": {
+      "n_val": 262297,
+      "by_band": {
+       "22-26": {
+        "n": 214307,
+        "rmse_model": 0.903,
+        "rmse_no_change": 0.946,
+        "rmse_age_average": 0.932,
+        "mean_change": -0.029,
+        "mean_predicted": -0.029
+       },
+       "27-30": {
+        "n": 33538,
+        "rmse_model": 0.985,
+        "rmse_no_change": 1.06,
+        "rmse_age_average": 1.042,
+        "mean_change": -0.193,
+        "mean_predicted": -0.205
+       },
+       "31-34": {
+        "n": 12826,
+        "rmse_model": 1.011,
+        "rmse_no_change": 1.045,
+        "rmse_age_average": 1.032,
+        "mean_change": -0.162,
+        "mean_predicted": -0.168
+       },
+       "35+": {
+        "n": 1626,
+        "rmse_model": 1.199,
+        "rmse_no_change": 1.277,
+        "rmse_age_average": 1.245,
+        "mean_change": -0.277,
+        "mean_predicted": -0.28
+       }
+      }
+     },
+     "stepped_30_to_33": {
+      "n": 3857,
+      "mae_stepped": 0.792,
+      "mae_no_change": 0.526,
+      "mean_actual_change": -0.461,
+      "mean_stepped_change": -0.365
+     }
+    },
+    "ifa": {
+     "n_val": 1195269,
+     "by_k": {
+      "1": {
+       "n": 300000,
+       "mae_model": 0.118,
+       "mae_no_change": 0.118,
+       "mae_age_average": 0.216,
+       "mean_change": 0.105
+      },
+      "2-3": {
+       "n": 457831,
+       "mae_model": 0.311,
+       "mae_no_change": 0.311,
+       "mae_age_average": 0.554,
+       "mean_change": 0.279
+      },
+      "4-6": {
+       "n": 363090,
+       "mae_model": 0.62,
+       "mae_no_change": 0.62,
+       "mae_age_average": 1.044,
+       "mean_change": 0.564
+      },
+      "7-12": {
+       "n": 74348,
+       "mae_model": 0.921,
+       "mae_no_change": 0.921,
+       "mae_age_average": 1.452,
+       "mean_change": 0.841
+      }
+     },
+     "aging_one_year": {
+      "n_val": 262297,
+      "by_band": {
+       "22-26": {
+        "n": 214307,
+        "rmse_model": 0.969,
+        "rmse_no_change": 1.012,
+        "rmse_age_average": 0.99,
+        "mean_change": -0.07,
+        "mean_predicted": -0.072
+       },
+       "27-30": {
+        "n": 33538,
+        "rmse_model": 1.212,
+        "rmse_no_change": 1.293,
+        "rmse_age_average": 1.255,
+        "mean_change": -0.31,
+        "mean_predicted": -0.327
+       },
+       "31-34": {
+        "n": 12826,
+        "rmse_model": 1.07,
+        "rmse_no_change": 1.11,
+        "rmse_age_average": 1.087,
+        "mean_change": -0.223,
+        "mean_predicted": -0.24
+       },
+       "35+": {
+        "n": 1626,
+        "rmse_model": 1.189,
+        "rmse_no_change": 1.258,
+        "rmse_age_average": 1.222,
+        "mean_change": -0.311,
+        "mean_predicted": -0.344
+       }
+      }
+     },
+     "stepped_30_to_33": {
+      "n": 3857,
+      "mae_stepped": 1.162,
+      "mae_no_change": 0.745,
+      "mean_actual_change": -0.701,
+      "mean_stepped_change": -0.685
+     }
+    },
+    "tdp": {
+     "n_val": 1195269,
+     "by_k": {
+      "1": {
+       "n": 300000,
+       "mae_model": 0.126,
+       "mae_no_change": 0.126,
+       "mae_age_average": 0.246,
+       "mean_change": 0.126
+      },
+      "2-3": {
+       "n": 457831,
+       "mae_model": 0.341,
+       "mae_no_change": 0.341,
+       "mae_age_average": 0.634,
+       "mean_change": 0.341
+      },
+      "4-6": {
+       "n": 363090,
+       "mae_model": 0.69,
+       "mae_no_change": 0.69,
+       "mae_age_average": 1.197,
+       "mean_change": 0.69
+      },
+      "7-12": {
+       "n": 74348,
+       "mae_model": 1.019,
+       "mae_no_change": 1.019,
+       "mae_age_average": 1.65,
+       "mean_change": 1.019
+      }
+     },
+     "aging_one_year": {
+      "n_val": 262297,
+      "by_band": {
+       "22-26": {
+        "n": 214307,
+        "rmse_model": 0.801,
+        "rmse_no_change": 0.83,
+        "rmse_age_average": 0.823,
+        "mean_change": 0.021,
+        "mean_predicted": 0.02
+       },
+       "27-30": {
+        "n": 33538,
+        "rmse_model": 0.766,
+        "rmse_no_change": 0.82,
+        "rmse_age_average": 0.814,
+        "mean_change": -0.102,
+        "mean_predicted": -0.096
+       },
+       "31-34": {
+        "n": 12826,
+        "rmse_model": 0.955,
+        "rmse_no_change": 0.983,
+        "rmse_age_average": 0.975,
+        "mean_change": -0.129,
+        "mean_predicted": -0.133
+       },
+       "35+": {
+        "n": 1626,
+        "rmse_model": 1.217,
+        "rmse_no_change": 1.295,
+        "rmse_age_average": 1.267,
+        "mean_change": -0.268,
+        "mean_predicted": -0.265
+       }
+      }
+     },
+     "stepped_30_to_33": {
+      "n": 3857,
+      "mae_stepped": 0.609,
+      "mae_no_change": 0.412,
+      "mean_actual_change": -0.321,
+      "mean_stepped_change": -0.244
+     }
+    },
+    "ofr": {
+     "n_val": 1195269,
+     "by_k": {
+      "1": {
+       "n": 300000,
+       "mae_model": 0.327,
+       "mae_no_change": 0.326,
+       "mae_age_average": 0.591,
+       "mean_change": 0.308
+      },
+      "2-3": {
+       "n": 457831,
+       "mae_model": 0.902,
+       "mae_no_change": 0.901,
+       "mae_age_average": 1.424,
+       "mean_change": 0.86
+      },
+      "4-6": {
+       "n": 363090,
+       "mae_model": 1.634,
+       "mae_no_change": 1.819,
+       "mae_age_average": 2.3,
+       "mean_change": 1.763
+      },
+      "7-12": {
+       "n": 74348,
+       "mae_model": 1.885,
+       "mae_no_change": 2.447,
+       "mae_age_average": 2.61,
+       "mean_change": 2.379
+      }
+     },
+     "aging_one_year": {
+      "n_val": 262297,
+      "by_band": {
+       "22-26": {
+        "n": 214307,
+        "rmse_model": 1.155,
+        "rmse_no_change": 1.208,
+        "rmse_age_average": 1.176,
+        "mean_change": -0.075,
+        "mean_predicted": -0.07
+       },
+       "27-30": {
+        "n": 33538,
+        "rmse_model": 1.679,
+        "rmse_no_change": 1.841,
+        "rmse_age_average": 1.727,
+        "mean_change": -0.625,
+        "mean_predicted": -0.619
+       },
+       "31-34": {
+        "n": 12826,
+        "rmse_model": 1.805,
+        "rmse_no_change": 2.367,
+        "rmse_age_average": 2.165,
+        "mean_change": -0.955,
+        "mean_predicted": -0.977
+       },
+       "35+": {
+        "n": 1626,
+        "rmse_model": 1.201,
+        "rmse_no_change": 1.714,
+        "rmse_age_average": 1.628,
+        "mean_change": -0.526,
+        "mean_predicted": -0.548
+       }
+      }
+     },
+     "stepped_30_to_33": {
+      "n": 3857,
+      "mae_stepped": 2.38,
+      "mae_no_change": 2.874,
+      "mean_actual_change": -2.796,
+      "mean_stepped_change": -2.489
+     }
+    },
+    "ofe": {
+     "n_val": 1195269,
+     "by_k": {
+      "1": {
+       "n": 300000,
+       "mae_model": 0.098,
+       "mae_no_change": 0.098,
+       "mae_age_average": 0.193,
+       "mean_change": 0.098
+      },
+      "2-3": {
+       "n": 457831,
+       "mae_model": 0.259,
+       "mae_no_change": 0.259,
+       "mae_age_average": 0.496,
+       "mean_change": 0.259
+      },
+      "4-6": {
+       "n": 363090,
+       "mae_model": 0.519,
+       "mae_no_change": 0.519,
+       "mae_age_average": 0.939,
+       "mean_change": 0.519
+      },
+      "7-12": {
+       "n": 74348,
+       "mae_model": 0.774,
+       "mae_no_change": 0.774,
+       "mae_age_average": 1.316,
+       "mean_change": 0.774
+      }
+     },
+     "aging_one_year": {
+      "n_val": 262297,
+      "by_band": {
+       "22-26": {
+        "n": 214307,
+        "rmse_model": 0.997,
+        "rmse_no_change": 1.051,
+        "rmse_age_average": 1.023,
+        "mean_change": -0.088,
+        "mean_predicted": -0.088
+       },
+       "27-30": {
+        "n": 33538,
+        "rmse_model": 1.353,
+        "rmse_no_change": 1.452,
+        "rmse_age_average": 1.402,
+        "mean_change": -0.378,
+        "mean_predicted": -0.398
+       },
+       "31-34": {
+        "n": 12826,
+        "rmse_model": 1.19,
+        "rmse_no_change": 1.233,
+        "rmse_age_average": 1.207,
+        "mean_change": -0.252,
+        "mean_predicted": -0.238
+       },
+       "35+": {
+        "n": 1626,
+        "rmse_model": 1.093,
+        "rmse_no_change": 1.143,
+        "rmse_age_average": 1.123,
+        "mean_change": -0.218,
+        "mean_predicted": -0.242
+       }
+      }
+     },
+     "stepped_30_to_33": {
+      "n": 3857,
+      "mae_stepped": 1.362,
+      "mae_no_change": 0.998,
+      "mean_actual_change": -0.9,
+      "mean_stepped_change": -0.737
+     }
+    },
+    "ofa": {
+     "n_val": 1195269,
+     "by_k": {
+      "1": {
+       "n": 300000,
+       "mae_model": 0.102,
+       "mae_no_change": 0.102,
+       "mae_age_average": 0.188,
+       "mean_change": 0.089
+      },
+      "2-3": {
+       "n": 457831,
+       "mae_model": 0.272,
+       "mae_no_change": 0.272,
+       "mae_age_average": 0.486,
+       "mean_change": 0.239
+      },
+      "4-6": {
+       "n": 363090,
+       "mae_model": 0.537,
+       "mae_no_change": 0.537,
+       "mae_age_average": 0.919,
+       "mean_change": 0.475
+      },
+      "7-12": {
+       "n": 74348,
+       "mae_model": 0.797,
+       "mae_no_change": 0.797,
+       "mae_age_average": 1.297,
+       "mean_change": 0.7
+      }
+     },
+     "aging_one_year": {
+      "n_val": 262297,
+      "by_band": {
+       "22-26": {
+        "n": 214307,
+        "rmse_model": 1.007,
+        "rmse_no_change": 1.063,
+        "rmse_age_average": 1.035,
+        "mean_change": -0.103,
+        "mean_predicted": -0.1
+       },
+       "27-30": {
+        "n": 33538,
+        "rmse_model": 1.372,
+        "rmse_no_change": 1.483,
+        "rmse_age_average": 1.425,
+        "mean_change": -0.408,
+        "mean_predicted": -0.416
+       },
+       "31-34": {
+        "n": 12826,
+        "rmse_model": 1.166,
+        "rmse_no_change": 1.213,
+        "rmse_age_average": 1.184,
+        "mean_change": -0.263,
+        "mean_predicted": -0.261
+       },
+       "35+": {
+        "n": 1626,
+        "rmse_model": 1.142,
+        "rmse_no_change": 1.228,
+        "rmse_age_average": 1.195,
+        "mean_change": -0.283,
+        "mean_predicted": -0.272
+       }
+      }
+     },
+     "stepped_30_to_33": {
+      "n": 3857,
+      "mae_stepped": 1.409,
+      "mae_no_change": 1.018,
+      "mean_actual_change": -0.955,
+      "mean_stepped_change": -0.825
+     }
+    },
+    "cblk": {
+     "n_val": 1195233,
+     "by_k": {
+      "1": {
+       "n": 299990,
+       "mae_model": 0.089,
+       "mae_no_change": 0.088,
+       "mae_age_average": 0.172,
+       "mean_change": 0.088
+      },
+      "2-3": {
+       "n": 457810,
+       "mae_model": 0.242,
+       "mae_no_change": 0.243,
+       "mae_age_average": 0.459,
+       "mean_change": 0.243
+      },
+      "4-6": {
+       "n": 363085,
+       "mae_model": 0.426,
+       "mae_no_change": 0.483,
+       "mae_age_average": 0.876,
+       "mean_change": 0.483
+      },
+      "7-12": {
+       "n": 74348,
+       "mae_model": 0.393,
+       "mae_no_change": 0.636,
+       "mae_age_average": 1.128,
+       "mean_change": 0.636
+      }
+     },
+     "aging_one_year": {
+      "n_val": 262198,
+      "by_band": {
+       "22-26": {
+        "n": 214259,
+        "rmse_model": 0.458,
+        "rmse_no_change": 0.47,
+        "rmse_age_average": 0.469,
+        "mean_change": 0.033,
+        "mean_predicted": 0.031
+       },
+       "27-30": {
+        "n": 33514,
+        "rmse_model": 0.459,
+        "rmse_no_change": 0.464,
+        "rmse_age_average": 0.464,
+        "mean_change": -0.012,
+        "mean_predicted": -0.011
+       },
+       "31-34": {
+        "n": 12805,
+        "rmse_model": 0.729,
+        "rmse_no_change": 0.765,
+        "rmse_age_average": 0.763,
+        "mean_change": -0.055,
+        "mean_predicted": -0.057
+       },
+       "35+": {
+        "n": 1620,
+        "rmse_model": 0.565,
+        "rmse_no_change": 0.621,
+        "rmse_age_average": 0.618,
+        "mean_change": -0.077,
+        "mean_predicted": -0.047
+       }
+      }
+     },
+     "stepped_30_to_33": {
+      "n": 3854,
+      "mae_stepped": 0.23,
+      "mae_no_change": 0.183,
+      "mean_actual_change": -0.139,
+      "mean_stepped_change": -0.095
+     }
+    },
+    "cfrm": {
+     "n_val": 1194431,
+     "by_k": {
+      "1": {
+       "n": 299708,
+       "mae_model": 0.088,
+       "mae_no_change": 0.088,
+       "mae_age_average": 0.172,
+       "mean_change": 0.088
+      },
+      "2-3": {
+       "n": 457439,
+       "mae_model": 0.241,
+       "mae_no_change": 0.241,
+       "mae_age_average": 0.46,
+       "mean_change": 0.241
+      },
+      "4-6": {
+       "n": 362936,
+       "mae_model": 0.417,
+       "mae_no_change": 0.485,
+       "mae_age_average": 0.882,
+       "mean_change": 0.485
+      },
+      "7-12": {
+       "n": 74348,
+       "mae_model": 0.406,
+       "mae_no_change": 0.633,
+       "mae_age_average": 1.129,
+       "mean_change": 0.633
+      }
+     },
+     "aging_one_year": {
+      "n_val": 261676,
+      "by_band": {
+       "22-26": {
+        "n": 213840,
+        "rmse_model": 0.474,
+        "rmse_no_change": 0.486,
+        "rmse_age_average": 0.485,
+        "mean_change": 0.034,
+        "mean_predicted": 0.033
+       },
+       "27-30": {
+        "n": 33443,
+        "rmse_model": 0.412,
+        "rmse_no_change": 0.417,
+        "rmse_age_average": 0.417,
+        "mean_change": -0.003,
+        "mean_predicted": -0.001
+       },
+       "31-34": {
+        "n": 12779,
+        "rmse_model": 0.746,
+        "rmse_no_change": 0.785,
+        "rmse_age_average": 0.783,
+        "mean_change": -0.054,
+        "mean_predicted": -0.055
+       },
+       "35+": {
+        "n": 1614,
+        "rmse_model": 0.524,
+        "rmse_no_change": 0.584,
+        "rmse_age_average": 0.58,
+        "mean_change": -0.068,
+        "mean_predicted": -0.043
+       }
+      }
+     },
+     "stepped_30_to_33": {
+      "n": 3846,
+      "mae_stepped": 0.218,
+      "mae_no_change": 0.177,
+      "mean_actual_change": -0.13,
+      "mean_stepped_change": -0.079
+     }
+    },
+    "carm": {
+     "n_val": 1195232,
+     "by_k": {
+      "1": {
+       "n": 299988,
+       "mae_model": 0.07,
+       "mae_no_change": 0.07,
+       "mae_age_average": 0.135,
+       "mean_change": 0.068
+      },
+      "2-3": {
+       "n": 457814,
+       "mae_model": 0.191,
+       "mae_no_change": 0.191,
+       "mae_age_average": 0.365,
+       "mean_change": 0.187
+      },
+      "4-6": {
+       "n": 363082,
+       "mae_model": 0.375,
+       "mae_no_change": 0.379,
+       "mae_age_average": 0.704,
+       "mean_change": 0.375
+      },
+      "7-12": {
+       "n": 74348,
+       "mae_model": 0.437,
+       "mae_no_change": 0.494,
+       "mae_age_average": 0.903,
+       "mean_change": 0.49
+      }
+     },
+     "aging_one_year": {
+      "n_val": 262191,
+      "by_band": {
+       "22-26": {
+        "n": 214262,
+        "rmse_model": 0.483,
+        "rmse_no_change": 0.489,
+        "rmse_age_average": 0.488,
+        "mean_change": 0.026,
+        "mean_predicted": 0.025
+       },
+       "27-30": {
+        "n": 33511,
+        "rmse_model": 0.592,
+        "rmse_no_change": 0.598,
+        "rmse_age_average": 0.598,
+        "mean_change": -0.011,
+        "mean_predicted": -0.009
+       },
+       "31-34": {
+        "n": 12803,
+        "rmse_model": 0.936,
+        "rmse_no_change": 1.014,
+        "rmse_age_average": 1.009,
+        "mean_change": -0.104,
+        "mean_predicted": -0.092
+       },
+       "35+": {
+        "n": 1615,
+        "rmse_model": 0.59,
+        "rmse_no_change": 0.67,
+        "rmse_age_average": 0.667,
+        "mean_change": -0.09,
+        "mean_predicted": -0.085
+       }
+      }
+     },
+     "stepped_30_to_33": {
+      "n": 3854,
+      "mae_stepped": 0.33,
+      "mae_no_change": 0.279,
+      "mean_actual_change": -0.235,
+      "mean_stepped_change": -0.149
+     }
+    }
+   },
+   "P": {
+    "stu": {
+     "n_val": 1196171,
+     "by_k": {
+      "1": {
+       "n": 310126,
+       "mae_model": 1.164,
+       "mae_no_change": 1.425,
+       "mae_age_average": 1.769,
+       "mean_change": 1.249,
+       "inside_25_75": 0.613
+      },
+      "2-3": {
+       "n": 464879,
+       "mae_model": 1.795,
+       "mae_no_change": 3.495,
+       "mae_age_average": 2.838,
+       "mean_change": 3.399,
+       "inside_25_75": 0.54
+      },
+      "4-6": {
+       "n": 351449,
+       "mae_model": 2.756,
+       "mae_no_change": 7.139,
+       "mae_age_average": 4.474,
+       "mean_change": 7.104,
+       "inside_25_75": 0.51
+      },
+      "7-12": {
+       "n": 69717,
+       "mae_model": 4.03,
+       "mae_no_change": 12.192,
+       "mae_age_average": 5.826,
+       "mean_change": 12.187,
+       "inside_25_75": 0.498
+      }
+     },
+     "aging_one_year": {
+      "n_val": 290663,
+      "by_band": {
+       "22-26": {
+        "n": 226677,
+        "rmse_model": 2.167,
+        "rmse_no_change": 2.678,
+        "rmse_age_average": 2.486,
+        "mean_change": 0.84,
+        "mean_predicted": 0.843
+       },
+       "27-30": {
+        "n": 39355,
+        "rmse_model": 2.205,
+        "rmse_no_change": 2.5,
+        "rmse_age_average": 2.474,
+        "mean_change": -0.341,
+        "mean_predicted": -0.336
+       },
+       "31-34": {
+        "n": 20013,
+        "rmse_model": 2.333,
+        "rmse_no_change": 2.824,
+        "rmse_age_average": 2.618,
+        "mean_change": -1.027,
+        "mean_predicted": -1.016
+       },
+       "35+": {
+        "n": 4618,
+        "rmse_model": 2.193,
+        "rmse_no_change": 3.218,
+        "rmse_age_average": 2.656,
+        "mean_change": -1.816,
+        "mean_predicted": -1.846
+       }
+      }
+     },
+     "stepped_30_to_33": {
+      "n": 5717,
+      "mae_stepped": 2.726,
+      "mae_no_change": 3.062,
+      "mean_actual_change": -2.033,
+      "mean_stepped_change": -1.616
+     }
+    },
+    "hrr": {
+     "n_val": 1196171,
+     "by_k": {
+      "1": {
+       "n": 310126,
+       "mae_model": 0.991,
+       "mae_no_change": 1.076,
+       "mae_age_average": 1.42,
+       "mean_change": 0.872,
+       "inside_25_75": 0.72
+      },
+      "2-3": {
+       "n": 464879,
+       "mae_model": 1.755,
+       "mae_no_change": 2.531,
+       "mae_age_average": 2.636,
+       "mean_change": 2.365,
+       "inside_25_75": 0.654
+      },
+      "4-6": {
+       "n": 351449,
+       "mae_model": 2.943,
+       "mae_no_change": 5.182,
+       "mae_age_average": 4.35,
+       "mean_change": 5.079,
+       "inside_25_75": 0.571
+      },
+      "7-12": {
+       "n": 69717,
+       "mae_model": 4.281,
+       "mae_no_change": 9.061,
+       "mae_age_average": 5.464,
+       "mean_change": 9.01,
+       "inside_25_75": 0.507
+      }
+     },
+     "aging_one_year": {
+      "n_val": 290663,
+      "by_band": {
+       "22-26": {
+        "n": 226677,
+        "rmse_model": 2.289,
+        "rmse_no_change": 2.623,
+        "rmse_age_average": 2.401,
+        "mean_change": 0.985,
+        "mean_predicted": 0.991
+       },
+       "27-30": {
+        "n": 39355,
+        "rmse_model": 2.378,
+        "rmse_no_change": 2.435,
+        "rmse_age_average": 2.43,
+        "mean_change": -0.125,
+        "mean_predicted": -0.135
+       },
+       "31-34": {
+        "n": 20013,
+        "rmse_model": 2.485,
+        "rmse_no_change": 2.698,
+        "rmse_age_average": 2.591,
+        "mean_change": -0.707,
+        "mean_predicted": -0.685
+       },
+       "35+": {
+        "n": 4618,
+        "rmse_model": 2.504,
+        "rmse_no_change": 3.144,
+        "rmse_age_average": 2.704,
+        "mean_change": -1.605,
+        "mean_predicted": -1.55
+       }
+      }
+     },
+     "stepped_30_to_33": {
+      "n": 5717,
+      "mae_stepped": 3.063,
+      "mae_no_change": 3.132,
+      "mean_actual_change": -1.217,
+      "mean_stepped_change": -1.426
+     }
+    },
+    "pbabip": {
+     "n_val": 1196171,
+     "by_k": {
+      "1": {
+       "n": 310126,
+       "mae_model": 0.371,
+       "mae_no_change": 0.38,
+       "mae_age_average": 0.614,
+       "mean_change": 0.329,
+       "inside_25_75": 0.797
+      },
+      "2-3": {
+       "n": 464879,
+       "mae_model": 0.697,
+       "mae_no_change": 0.921,
+       "mae_age_average": 1.232,
+       "mean_change": 0.877,
+       "inside_25_75": 0.714
+      },
+      "4-6": {
+       "n": 351449,
+       "mae_model": 0.979,
+       "mae_no_change": 1.826,
+       "mae_age_average": 1.74,
+       "mean_change": 1.797,
+       "inside_25_75": 0.623
+      },
+      "7-12": {
+       "n": 69717,
+       "mae_model": 1.137,
+       "mae_no_change": 3.076,
+       "mae_age_average": 1.871,
+       "mean_change": 3.065,
+       "inside_25_75": 0.548
+      }
+     },
+     "aging_one_year": {
+      "n_val": 290663,
+      "by_band": {
+       "22-26": {
+        "n": 226677,
+        "rmse_model": 1.002,
+        "rmse_no_change": 1.176,
+        "rmse_age_average": 1.109,
+        "mean_change": 0.378,
+        "mean_predicted": 0.378
+       },
+       "27-30": {
+        "n": 39355,
+        "rmse_model": 0.977,
+        "rmse_no_change": 1.049,
+        "rmse_age_average": 1.013,
+        "mean_change": 0.27,
+        "mean_predicted": 0.271
+       },
+       "31-34": {
+        "n": 20013,
+        "rmse_model": 1.15,
+        "rmse_no_change": 1.294,
+        "rmse_age_average": 1.213,
+        "mean_change": 0.445,
+        "mean_predicted": 0.463
+       },
+       "35+": {
+        "n": 4618,
+        "rmse_model": 1.309,
+        "rmse_no_change": 1.502,
+        "rmse_age_average": 1.371,
+        "mean_change": 0.613,
+        "mean_predicted": 0.637
+       }
+      }
+     },
+     "stepped_30_to_33": {
+      "n": 5717,
+      "mae_stepped": 1.246,
+      "mae_no_change": 1.258,
+      "mean_actual_change": 1.137,
+      "mean_stepped_change": 0.869
+     }
+    },
+    "con": {
+     "n_val": 1196171,
+     "by_k": {
+      "1": {
+       "n": 310126,
+       "mae_model": 0.837,
+       "mae_no_change": 0.981,
+       "mae_age_average": 1.409,
+       "mean_change": 0.944,
+       "inside_25_75": 0.722
+      },
+      "2-3": {
+       "n": 464879,
+       "mae_model": 1.447,
+       "mae_no_change": 2.587,
+       "mae_age_average": 2.641,
+       "mean_change": 2.554,
+       "inside_25_75": 0.647
+      },
+      "4-6": {
+       "n": 351449,
+       "mae_model": 2.374,
+       "mae_no_change": 5.526,
+       "mae_age_average": 4.201,
+       "mean_change": 5.511,
+       "inside_25_75": 0.578
+      },
+      "7-12": {
+       "n": 69717,
+       "mae_model": 3.659,
+       "mae_no_change": 9.709,
+       "mae_age_average": 5.298,
+       "mean_change": 9.702,
+       "inside_25_75": 0.525
+      }
+     },
+     "aging_one_year": {
+      "n_val": 290663,
+      "by_band": {
+       "22-26": {
+        "n": 226677,
+        "rmse_model": 1.936,
+        "rmse_no_change": 2.33,
+        "rmse_age_average": 2.082,
+        "mean_change": 0.99,
+        "mean_predicted": 0.994
+       },
+       "27-30": {
+        "n": 39355,
+        "rmse_model": 1.819,
+        "rmse_no_change": 1.864,
+        "rmse_age_average": 1.862,
+        "mean_change": 0.072,
+        "mean_predicted": 0.089
+       },
+       "31-34": {
+        "n": 20013,
+        "rmse_model": 1.766,
+        "rmse_no_change": 1.795,
+        "rmse_age_average": 1.794,
+        "mean_change": 0.035,
+        "mean_predicted": 0.027
+       },
+       "35+": {
+        "n": 4618,
+        "rmse_model": 2.03,
+        "rmse_no_change": 2.072,
+        "rmse_age_average": 2.071,
+        "mean_change": 0.082,
+        "mean_predicted": 0.095
+       }
+      }
+     },
+     "stepped_30_to_33": {
+      "n": 5717,
+      "mae_stepped": 1.893,
+      "mae_no_change": 1.768,
+      "mean_actual_change": -0.055,
+      "mean_stepped_change": -0.343
+     }
+    },
+    "stm": {
+     "n_val": 1196171,
+     "by_k": {
+      "1": {
+       "n": 310126,
+       "mae_model": 2.826,
+       "mae_no_change": 2.81,
+       "mae_age_average": 3.334,
+       "mean_change": -1.293,
+       "inside_25_75": 0.596
+      },
+      "2-3": {
+       "n": 464879,
+       "mae_model": 4.895,
+       "mae_no_change": 5.256,
+       "mae_age_average": 5.364,
+       "mean_change": -3.12,
+       "inside_25_75": 0.526
+      },
+      "4-6": {
+       "n": 351449,
+       "mae_model": 6.545,
+       "mae_no_change": 8.023,
+       "mae_age_average": 7.259,
+       "mean_change": -5.513,
+       "inside_25_75": 0.506
+      },
+      "7-12": {
+       "n": 69717,
+       "mae_model": 7.575,
+       "mae_no_change": 10.153,
+       "mae_age_average": 8.671,
+       "mean_change": -7.513,
+       "inside_25_75": 0.503
+      }
+     },
+     "aging_one_year": {
+      "n_val": 290663,
+      "by_band": {
+       "22-26": {
+        "n": 226677,
+        "rmse_model": 3.789,
+        "rmse_no_change": 3.955,
+        "rmse_age_average": 3.882,
+        "mean_change": -0.75,
+        "mean_predicted": -0.761
+       },
+       "27-30": {
+        "n": 39355,
+        "rmse_model": 3.124,
+        "rmse_no_change": 3.256,
+        "rmse_age_average": 3.207,
+        "mean_change": -0.562,
+        "mean_predicted": -0.546
+       },
+       "31-34": {
+        "n": 20013,
+        "rmse_model": 3.17,
+        "rmse_no_change": 3.338,
+        "rmse_age_average": 3.276,
+        "mean_change": -0.636,
+        "mean_predicted": -0.617
+       },
+       "35+": {
+        "n": 4618,
+        "rmse_model": 3.264,
+        "rmse_no_change": 3.454,
+        "rmse_age_average": 3.41,
+        "mean_change": -0.557,
+        "mean_predicted": -0.558
+       }
+      }
+     },
+     "stepped_30_to_33": {
+      "n": 5717,
+      "mae_stepped": 3.562,
+      "mae_no_change": 3.397,
+      "mean_actual_change": -2.01,
+      "mean_stepped_change": -0.998
+     }
+    },
+    "hold": {
+     "n_val": 1196171,
+     "by_k": {
+      "1": {
+       "n": 310126,
+       "mae_model": 0.922,
+       "mae_no_change": 0.919,
+       "mae_age_average": 1.341,
+       "mean_change": 0.62
+      },
+      "2-3": {
+       "n": 464879,
+       "mae_model": 1.895,
+       "mae_no_change": 1.948,
+       "mae_age_average": 2.416,
+       "mean_change": 1.666
+      },
+      "4-6": {
+       "n": 351449,
+       "mae_model": 2.596,
+       "mae_no_change": 3.539,
+       "mae_age_average": 2.99,
+       "mean_change": 3.356
+      },
+      "7-12": {
+       "n": 69717,
+       "mae_model": 2.752,
+       "mae_no_change": 5.059,
+       "mae_age_average": 2.956,
+       "mean_change": 4.943
+      }
+     },
+     "aging_one_year": {
+      "n_val": 290663,
+      "by_band": {
+       "22-26": {
+        "n": 226677,
+        "rmse_model": 1.948,
+        "rmse_no_change": 2.027,
+        "rmse_age_average": 1.962,
+        "mean_change": 0.478,
+        "mean_predicted": 0.476
+       },
+       "27-30": {
+        "n": 39355,
+        "rmse_model": 1.494,
+        "rmse_no_change": 1.499,
+        "rmse_age_average": 1.498,
+        "mean_change": 0.024,
+        "mean_predicted": 0.028
+       },
+       "31-34": {
+        "n": 20013,
+        "rmse_model": 1.506,
+        "rmse_no_change": 1.511,
+        "rmse_age_average": 1.511,
+        "mean_change": 0.016,
+        "mean_predicted": 0.012
+       },
+       "35+": {
+        "n": 4618,
+        "rmse_model": 1.485,
+        "rmse_no_change": 1.49,
+        "rmse_age_average": 1.49,
+        "mean_change": 0.019,
+        "mean_predicted": 0.004
+       }
+      }
+     },
+     "stepped_30_to_33": {
+      "n": 5717,
+      "mae_stepped": 0.874,
+      "mae_no_change": 0.783,
+      "mean_actual_change": 0.031,
+      "mean_stepped_change": 0.066
+     }
+    }
+   }
+  }
+ }
+}

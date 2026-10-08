@@ -112,48 +112,48 @@
  },
  "scoring": {
   "TGS": {
-   "to_pull": 584,
-   "to_date": "2045-08-28",
-   "from_pull": 25,
-   "from_date": "2044-08-29",
+   "to_pull": 586,
+   "to_date": "2045-09-04",
+   "from_pull": 26,
+   "from_date": "2044-09-05",
    "span_game_years": 0.997,
    "pull_rule": "dev_signals.choose_clean_pulls: the pull nearest one game-year back whose pair with the latest pull ratings_db.pair_guard does not flag; growth / span",
-   "unguarded_from_pull": 25,
+   "unguarded_from_pull": 26,
    "dates": "in-game",
    "choose_notes": [],
    "from_by_role": {
     "P": {
-     "pull": 25,
-     "date": "2044-08-29",
+     "pull": 26,
+     "date": "2044-09-05",
      "span_game_years": 0.997
     },
     "H": {
-     "pull": 25,
-     "date": "2044-08-29",
+     "pull": 26,
+     "date": "2044-09-05",
      "span_game_years": 0.997
     }
    },
-   "to_source": "tgs-viz\\ingest\\.cache\\history\\statsplus_tgs_20261006-1955.json",
+   "to_source": "tgs-viz\\ingest\\.cache\\history\\statsplus_tgs_20261007-1948.json",
    "raw_vs_app_ratings": {
-    "agree": 43152,
+    "agree": 43143,
     "differ": 0
    },
    "waa_cache": {
     "fingerprint": "608cdff64c",
-    "to": "2026-10-06_p584.csv.gz.608cdff64c.json",
-    "from_H": "2026-07-23_p25.csv.gz.608cdff64c.json",
-    "from_P": "2026-07-23_p25.csv.gz.608cdff64c.json"
+    "to": "2026-10-07_p586.csv.gz.608cdff64c.json",
+    "from_H": "2026-07-28_p26.csv.gz.608cdff64c.json",
+    "from_P": "2026-07-28_p26.csv.gz.608cdff64c.json"
    },
-   "wl_read_as_R": 923,
+   "wl_read_as_R": 899,
    "app_now_vs_cache_now": {
-    "n": 14384,
+    "n": 14381,
     "mean_app_minus_cache": 0.0,
     "corr": 1.0,
     "why": "the app's now must match the neutral-park engine the DEV cache used; a gap here would mean a park or calibration layer in the app numbers"
    },
    "from_source": {
-    "H": "vintages/TGS/2026-07-23_p25.csv.gz",
-    "P": "vintages/TGS/2026-07-23_p25.csv.gz"
+    "H": "vintages/TGS/2026-07-28_p26.csv.gz",
+    "P": "vintages/TGS/2026-07-28_p26.csv.gz"
    },
    "reused_id": {
     "H": 1088,
@@ -161,25 +161,25 @@
    },
    "earlier_card": {
     "H": {
-     "ages_16_26": 5837,
-     "out_of_org_a_year_back_card_read": 1531,
-     "in_org_a_year_back": 3055,
+     "ages_16_26": 5838,
+     "out_of_org_a_year_back_card_read": 1538,
+     "in_org_a_year_back": 3043,
      "card_replaced": 0,
      "card_replaced_all_ages": 0,
-     "no_earlier_card": 1251
+     "no_earlier_card": 1257
     },
     "P": {
-     "ages_16_26": 5369,
+     "ages_16_26": 5363,
      "out_of_org_a_year_back_card_read": 1642,
-     "in_org_a_year_back": 2622,
+     "in_org_a_year_back": 2611,
      "card_replaced": 0,
      "card_replaced_all_ages": 0,
-     "no_earlier_card": 1105
+     "no_earlier_card": 1110
     }
    },
    "players": {
-    "H": 7473,
-    "P": 6911
+    "H": 7472,
+    "P": 6909
    }
   }
  },
@@ -2702,5 +2702,5 @@
    ]
   }
  },
- "scoring_rebuilt": "2026-10-06T19:58:11"
+ "scoring_rebuilt": "2026-10-07T19:53:37"
 }

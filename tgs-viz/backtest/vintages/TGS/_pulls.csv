@@ -56,3 +56,5 @@ pull_id,league,real_date,real_ts,source,source_files,n_players,content_hash,inge
 579,TGS,2044-06-27,2026-10-04T22:13:35,asof,"[""tgs-viz\\ingest\\.cache\\asof\\tgs\\2044-06-27.json""]",13624,96508fc2d180a6e95c7c0d16d14f9b3d097117d2,2026-10-04T22:13:36,2044-06-27
 580,TGS,2044-12-26,2026-10-04T22:28:41,asof,"[""tgs-viz\\ingest\\.cache\\asof\\tgs\\2044-12-26.json""]",13764,847e00fa27a2d479d1f5d2593f9e5b34ce7d16f1,2026-10-04T22:28:42,2044-12-26
 581,TGS,2045-06-05,2026-10-04T22:44:02,asof,"[""tgs-viz\\ingest\\.cache\\asof\\tgs\\2045-06-05.json""]",16596,f2784b86e2476bd3de8414bc0239ea84b86cf98a,2026-10-04T22:44:03,2045-06-05
+584,TGS,2026-10-06,2026-10-06T19:55:12,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_tgs_20261006-1955.json""]",16574,c8daff00ce0970fad17e040132c14b8e8e2d3cd3,2026-10-06T19:55:13,2045-08-28
+586,TGS,2026-10-07,2026-10-07T19:48:55,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_tgs_20261007-1948.json""]",16574,9d1786da5587cbb53cfe2aa0e130ae89bc2c30c9,2026-10-07T19:48:56,2045-09-04
