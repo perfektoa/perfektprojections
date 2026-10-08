@@ -38,6 +38,12 @@ for (const lg of ['TGS', 'BLM', 'RG', 'XY_1', 'a-b']) {
 check('DEV age_curve is league null', () => assert.deepEqual(mapDataFile('DEV/age_curve.json'), { league: null, key: 'age_curve', file: 'DEV/age_curve.json' }))
 check('DEV rating_trends is DEV', () => assert.deepEqual(mapDataFile('DEV/rating_trends.json'), { league: 'DEV', key: 'trends', file: 'DEV/rating_trends.json' }))
 
+// Rating paths: the index marks the change, the buckets are ignored
+check('TGS rating_paths index', () => assert.deepEqual(mapDataFile('TGS/rating_paths/index.json'), { league: 'TGS', key: 'rating_paths', file: 'TGS/rating_paths/index.json' }))
+check('BLM rating_paths index backslash', () => assert.deepEqual(mapDataFile('BLM\\rating_paths\\index.json'), { league: 'BLM', key: 'rating_paths', file: 'BLM/rating_paths/index.json' }))
+check('rating_paths bucket ignored', () => assert.equal(mapDataFile('TGS/rating_paths/b07.json'), null))
+check('rating_paths tmp ignored', () => assert.equal(mapDataFile('TGS/rating_paths/index.json.tmp'), null))
+
 // Ignored
 const IGNORED = [
   'BLM - Copy/hitters.json', 'TGS - Copy/rating_trends.json',

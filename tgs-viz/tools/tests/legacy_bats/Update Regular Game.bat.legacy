@@ -34,6 +34,8 @@ py -3.14 "tgs-viz\backtest\ml\dataset.py" --basis RG --score-only --write
 if errorlevel 1 set "FAILS=%FAILS% ml-rows"
 py -3.14 "tgs-viz\backtest\ml\score.py" --league RG --write
 if errorlevel 1 set "FAILS=%FAILS% ml-score"
+py -3.14 "tgs-viz\backtest\ml\rating_path.py" score --league RG --write
+if errorlevel 1 set "FAILS=%FAILS% rating-paths"
 echo.
 if defined FAILS (
   echo   Steps that did not finish:%FAILS%

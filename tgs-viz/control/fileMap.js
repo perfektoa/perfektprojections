@@ -46,6 +46,10 @@ export function mapDataFile(rel) {
     const key = ROOT_FILES[parts[0]]
     return key ? { league: null, key, file } : null
   }
+  // rating_path.py writes 64 bucket files, then index.json: the index alone marks the change.
+  if (parts.length === 3 && parts[1] === 'rating_paths' && parts[2] === 'index.json' && LEAGUE_RE.test(parts[0])) {
+    return { league: parts[0], key: 'rating_paths', file }
+  }
   if (parts.length !== 2) return null
   const [lg, name] = parts
   if (!LEAGUE_RE.test(lg)) return null

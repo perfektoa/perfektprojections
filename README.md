@@ -175,8 +175,8 @@ shown.
 
 ### Download the ML files
 
-The trained models (TGS and BLM) and the four DEV training tables are stored with Git LFS,
-7.6 GB in all. A clone skips them, because every download counts against the repo owner's
+The trained models (TGS, BLM and the rating paths) and the four DEV training tables are stored
+with Git LFS, 8 GB in all. A clone skips them, because every download counts against the repo owner's
 monthly LFS allowance. To get them:
 
 1. Install Git LFS once: `git lfs install` (on a Mac, first `brew install git-lfs`).
@@ -192,6 +192,7 @@ What you get:
 |---|---|---|
 | `ml/models/TGS`, `ml/models/BLM` | The trained models (XGBoost, saved for CPU scoring) and their manifests | Score players after a pull |
 | `ml/models/*_settings.json` | The tuned model settings | Retraining |
+| `ml/models/ratings` | The rating-path models and their manifest (one set for every league) | Project each rating year by year after a pull |
 | `ml/data/dev_H_*.pkl`, `dev_P_*.pkl` | The DEV training tables for each league basis, with their schema and parity files | Retrain or change the models without the DEV league |
 
 Not included: the DEV league dumps and vintages, the re-priced WAA caches, the history tables
@@ -519,9 +520,9 @@ The same model drives Proj Potential (current plus median gain), the "Year by ye
   known. The 5-year path uses ages 16 to 38. The live models were fit on 483 seasons (about 3.2
   million hitter rows and 3.5 million pitcher rows). The features are every rating, potential,
   last year's growth, level and current value.
-- Models: gradient boosting, one set per role. The five gain quantiles use XGBoost, on an NVIDIA
-  GPU when CUDA works, else the CPU. The reach classifiers and the 5-year path use scikit-learn.
-  TGS moved its gain models to XGBoost on 2026-10-02; BLM moves at its next retrain.
+- Models: gradient boosting with XGBoost, one set per role, trained on an NVIDIA GPU when CUDA
+  works, else the CPU, with one CPU thread. Saved models score on the CPU. Every model moved to
+  XGBoost by 2026-10-06; scikit-learn stays as the fallback when xgboost is not installed.
   - Gain quantiles (10th, 25th, 50th, 75th, 90th percentile), sorted so they never cross. With
     scikit-learn the low marks never learned: every in-org TGS pitcher aged 16 to 26 read +0 at
     his 10th and 25th percentile (2,898 of 2,898). With XGBoost, 406 of them still do.
@@ -557,9 +558,80 @@ signals; otherwise it shows the cell method. Unsigned international amateurs are
 outside training range", because DEV has none.
 
 **Cost.** Retraining takes hours and about 13 GB of memory (measured at 295 seasons). It runs
-under the ML Python. The gain quantiles train on the GPU when CUDA works. **Bank Dev Seasons**
-and the **Retrain** tasks retrain; the Retrain tasks re-price DEV for their basis first.
+under the ML Python and trains on the GPU when CUDA works. **Bank Dev Seasons** and the
+**Retrain** tasks retrain; the Retrain tasks re-price DEV for their basis first.
 **Rescore dev signals and ML** only rescores.
+
+### Rating paths
+
+A second, separate set of models projects each rating year by year, from the player's current
+age to 40. It adds to the ML dev model and changes none of its numbers.
+
+| Role | Ratings projected |
+|---|---|
+| Hitters | BABIP, Gap, Power, Eye, Avoid K (the mean of vR and vL), Speed, and the fielding of his position group: infield range, error, arm and turn DP; outfield range, error and arm; catcher blocking, framing and arm |
+| Pitchers | Stuff, HR allowed, pBABIP, Control (mean of vR and vL), Stamina, Hold |
+
+**What goes in.** His age, every current rating, each potential and the room below it, OVR and
+POT, level, position, bats, throws, height, and how much each rating and each potential moved over
+the last year (a potential OOTP keeps raising is a sign of a player who will keep growing).
+Potential is an input, not a cap: the DEV data decides how much of the gap players like him close.
+
+**How it is trained.** Two kinds of XGBoost models, from DEV player-seasons:
+
+- **To age 24:** one model per rating and percentile learns "this rating k years from now, minus
+  now". k is an input, so one model covers every year ahead. The batting ratings, the four
+  pitching ratings and Stamina get a 25th, 50th and 75th percentile. Speed, fielding and Hold get
+  the 50th only, because they barely move (DEV: fielding is mostly set by 21).
+- **After 24:** the path steps one season at a time with an aging model per rating (the average
+  one-year change for his age, ratings, potentials and position), trained on every player present
+  in two seasons in a row. The range widens each season by the aging model's typical miss.
+
+Why the switch at 24: DEV cuts players fast after that. Of a cohort first seen at 18, 95% are
+still in the league at 24, but only 53% of hitters at 27 and 33% at 28, and the ones left are the
+ones who kept improving. A direct jump past 24 learns from those survivors: from 26 the cohort's
+average Gap still "rises" about +1 to +2 a year, while the same players tracked season to season
+are flat or falling. Stepped from 30, the aging model matches what DEV players actually did over
+three seasons (hitters: BABIP -3.4 against -3.4, Power -3.0 against -3.1, Speed -2.5 against
+-3.0). From 30 every potential follows the projected rating, because OOTP sets potential equal to
+current at 30.
+
+**How accurate it is** (DEV players the models never saw, full models of 2026-10-08). Four to six
+years ahead, the direct models miss the main ratings by 2.4 to 3.5 points on average, against 3.9
+to 5.5 for the plain age average and 5.2 to 7.8 for "no change"; Stamina misses by 6.5 (7.3 and
+8.0). About half the actual values land inside the 25th-75th range (50% to 62%), as a correct range
+should. A potential that rose last year is a real signal: among players 18 to 21 and 10 to 20
+points below a potential, those whose potential just rose grew BABIP +7.6 over three years against
++5.2 (unchanged) and +3.6 (dropped); the models reproduce that order (+6.6, +4.5, +2.8).
+
+**Do the two WAA routes agree?** Yes, closely. The ratings route (project the ratings, then run
+them through the engine) and the ML WAA path were trained separately, one on rating outcomes and
+one on WAA outcomes. Over years 1 to 5, the typical gap is 0.10 to 0.25 WAA, and 2% of TGS players
+and 4% of BLM players differ by 1 WAA or more in some year. Both learned from the DEV league, so the
+agreement shows the two are consistent with each other, not that DEV develops players the way TGS or
+BLM does.
+
+The models read no WAA, so one set serves every league. A path assumes the player is still in
+the league that year, like the WAA path models. DEV pairs
+need the same name and an age step within a year of k; a league's movement uses the dev signals'
+earlier pull, with the reused-ID and card-replaced guards.
+
+**The cross-check.** For each future year, the 50th-percentile ratings line is priced with the
+league's own engine (neutral park) and shown as a WAA change from today, next to the ML WAA path.
+A gap of 1 WAA or more at the peak is flagged in the player panel. Pricing a middle ratings line
+is not exactly the middle WAA, so a small gap is noise.
+
+**Where to see it.** The player panel's "Projected Ratings, Year by Year" table: one row per
+rating, one column per age, green above today and red below, the best year boxed, "Turns down"
+where the path first drops 2 points below its best. Stamina under 35 (no starter value in the
+engine) shows in amber.
+
+**Running it.** **Train the rating-path models** (DEV group) rebuilds the DEV ratings table,
+trains on the GPU and projects every league: about 1.5 hours and 20 GB of memory. Run it after Bank
+Dev Seasons adds seasons. **Get StatsPlus Ratings**, **Get StatsPlus History**, the Retrain tasks
+and **Rescore dev signals and ML** rerun the projections and the pricing for their leagues; that
+step's failure never stops the rest of the job. Files: `ml/rating_path.py`;
+`public/data/<LEAGUE>/rating_paths/` (an index and 64 buckets by player ID).
 
 ---
 

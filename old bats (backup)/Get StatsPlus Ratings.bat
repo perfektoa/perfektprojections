@@ -124,6 +124,12 @@ if errorlevel 1 set "FAILS=%FAILS% TGS-ml-score"
 py -3.14 "tgs-viz\backtest\ml\score.py" --league BLM --write
 if errorlevel 1 set "FAILS=%FAILS% BLM-ml-score"
 echo.
+echo  --- Rating paths (year-by-year rating projections; no retraining) ---
+py -3.14 "tgs-viz\backtest\ml\rating_path.py" score --league TGS --write
+if errorlevel 1 set "FAILS=%FAILS% TGS-rating-paths"
+py -3.14 "tgs-viz\backtest\ml\rating_path.py" score --league BLM --write
+if errorlevel 1 set "FAILS=%FAILS% BLM-rating-paths"
+echo.
 if defined FAILS (
   echo   Steps that did not update:%FAILS%
   echo   ^(each one said why above - a league with no token and no login this run is normal^)

@@ -5,6 +5,7 @@ import { controlWindow, formatControl } from '../lib/serviceTime';
 import { formatCellValue, getCellColorClass } from '../lib/columns';
 import { loadRatingTrends, playerHistory } from '../lib/ratingTrends';
 import { loadAgeCurve } from '../lib/ageCurve';
+import { loadRatingPath, pathBands, bestOf, fallOffYear } from '../lib/ratingPaths';
 import { useDataVersion } from '../lib/dataVersion';
 import { devSummary, devPeakText, devBasisText, devIsMl, devMlWords, fmtWaa } from '../lib/devSignals';
 import { getWorkEthicModifier, getIntelligenceModifier } from '../lib/draftFV';
@@ -235,6 +236,219 @@ function RatingHistory({ player }) {
           )}
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * Year-by-year projection of each rating (backtest/ml/rating_path.py; user,
+ * 2026-10-08: "what we also project each individual rating to be ... and our
+ * expected growth rates"). One row per rating, one column per age from now to
+ * 40: the 50th percentile, with the 25th to 75th range on hover or with
+ * "Ranges" on. Hitters show his position group's fielding; pitchers show
+ * Stamina (under 35 = no starter value in the engine) and Hold.
+ *
+ * The two WAA rows are the cross-check (user: "it would help me see ok this ML
+ * is full of shit or not"): "From these ratings" prices each year's projected
+ * ratings with the league's engine; "ML WAA path" is the WAA model's own
+ * median change (5 years). A big gap between them is worth a look.
+ * Informational only: nothing here feeds a projection.
+ */
+const STARTER_MIN_STM = 35;   // engine/pitchers.py STARTER_MIN_STM
+const PATH_ORDER = {
+  H: ['babip', 'gap', 'pow', 'eye', 'avk', 'speed', 'ifr', 'ife', 'ifa', 'tdp', 'ofr', 'ofe', 'ofa', 'cblk', 'cfrm', 'carm'],
+  P: ['stu', 'hrr', 'pbabip', 'con', 'stm', 'hold'],
+};
+
+function pathCellClass(diff) {
+  if (diff >= 5) return 'text-green-300 bg-green-900/40';
+  if (diff >= 2) return 'text-green-400';
+  if (diff <= -5) return 'text-red-300 bg-red-900/40';
+  if (diff <= -2) return 'text-red-400';
+  return 'text-slate-300';
+}
+
+const fmtW = v => (v === null || v === undefined || !Number.isFinite(v) ? '' : `${v > 0 ? '+' : ''}${v.toFixed(1)}`);
+
+function RatingPath({ player }) {
+  const lg = player._appLeague || null;
+  const version = useDataVersion(lg, 'rating_paths');
+  const [data, setData] = useState(undefined);
+  const [ranges, setRanges] = useState(false);
+  useEffect(() => {
+    let on = true;
+    loadRatingPath(lg, player.ID).then(d => { if (on) setData(d); });
+    return () => { on = false; };
+  }, [lg, player.ID, version]);
+  if (!data) return null;
+  const { index, path } = data;
+  const labels = index.labels || {};
+  const order = (PATH_ORDER[path.r] || []).filter(r => path.p[r] && path.now[r] !== undefined);
+  if (!order.length) return null;
+  const K = Math.max(...order.map(r => pathBands(path.p[r]).mid.length));
+  const ages = Array.from({ length: K }, (_, i) => path.age + i + 1);
+
+  // Stale guard: the paths must come from the pull the rest of the card uses (dev_signals' pull).
+  const pathPull = index.note?.to_pull ?? null;
+  const cardPull = player.Dev_Basis?.to_pull_id ?? null;
+  const stale = pathPull !== null && cardPull !== null && pathPull !== cardPull;
+  const isMl = devIsMl(player);
+  const mlD = !stale && isMl && Array.isArray(player.Dev_MlD) ? player.Dev_MlD : null;
+  const w = Array.isArray(path.w) ? path.w : [];
+  const wKnown = w.filter(v => v !== null && Number.isFinite(v));
+  const pricedPeak = wKnown.length ? Math.max(0, ...wKnown) : null;
+  const pricedPeakAge = pricedPeak !== null && pricedPeak > 0 ? ages[w.indexOf(pricedPeak)] : null;
+  const expGain = !stale && Number.isFinite(player.Dev_PeakGainP50) ? player.Dev_PeakGainP50 : null;
+  // The flag compares like with like (review 2026-10-08): the priced row and the ML WAA path are
+  // both the middle change from today for a player who stays in the league. Exp peak is not:
+  // it counts the players who wash out, so it reads lower for young players.
+  let pathGap = null;
+  if (mlD) {
+    mlD.forEach((d, i) => {
+      const v = w[i];
+      if (Number.isFinite(d) && v !== null && Number.isFinite(v) && (pathGap === null || Math.abs(v - d) > Math.abs(pathGap.gap))) {
+        pathGap = { gap: v - d, age: ages[i] };
+      }
+    });
+  }
+
+  // Accuracy line. The 4-6 year check covers the direct models (players 20 and under, whose
+  // 4-6 years ahead end by the hand-over age); an older player's path is the stepped aging model.
+  let valLine = null;
+  const handover = index.direct_max_age ?? 24;
+  const vr = index.validation?.roles?.[path.r];
+  if (vr) {
+    const ranged = Object.entries(vr).filter(([r]) => (index.ranged || []).includes(r)).map(([, v]) => v);
+    const avg = (rows, k) => rows.reduce((t, e) => t + e[k], 0) / rows.length;
+    if (path.age + 4 <= handover) {
+      const rows = ranged.map(v => v.by_k?.['4-6']).filter(Boolean);
+      if (rows.length) {
+        const inside = rows.filter(e => e.inside_25_75 !== undefined);
+        const insidePct = inside.length ? Math.round(100 * avg(inside, 'inside_25_75')) : null;
+        valLine = `Checked on DEV players 20 and under that the models never saw, 4-6 years out: typical miss ${avg(rows, 'mae_model').toFixed(1)} points, against ${avg(rows, 'mae_age_average').toFixed(1)} for the plain age average and ${avg(rows, 'mae_no_change').toFixed(1)} for "no change"`
+          + (insidePct !== null ? `; ${insidePct}% land inside the 25th-75th range (50% is right).` : '.');
+      }
+    } else {
+      const rows = ranged.map(v => v.stepped_30_to_33).filter(Boolean);
+      if (rows.length) {
+        valLine = `After ${handover} the path steps one season at a time. Stepping DEV 30-year-olds the models never saw three seasons ahead missed by ${avg(rows, 'mae_stepped').toFixed(1)} points on average, against ${avg(rows, 'mae_no_change').toFixed(1)} for "no change". The 25th-75th range past ${handover} is an estimate; it was not checked.`;
+      }
+    }
+  }
+
+  return (
+    <div className="mx-4 mb-4 bg-slate-800/50 rounded-lg p-3">
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <h3 className="text-xs font-semibold text-slate-400 uppercase">Projected Ratings, Year by Year</h3>
+        <button
+          onClick={() => setRanges(r => !r)}
+          className={`text-[10px] px-2 py-0.5 rounded border ${ranges ? 'border-blue-500 text-blue-300' : 'border-slate-600 text-slate-400'} hover:text-white`}
+        >
+          {ranges ? 'Hide ranges' : 'Ranges'}
+        </button>
+      </div>
+      {index.quick_models && (
+        <div className="text-[10px] text-amber-400 mb-1">Test models (quick run): numbers are rough until the full overnight training.</div>
+      )}
+      {stale && (
+        <div className="text-[10px] text-amber-400 mb-1">
+          These paths come from pull {pathPull}; the rest of this card is from pull {cardPull}. Run Rescore dev signals and ML to bring them up to date. The ML rows are hidden until then.
+        </div>
+      )}
+      <div className="text-[10px] text-slate-500 mb-2">
+        Up to age {index.direct_max_age ?? 24}, each cell is the middle projection (50th percentile) from DEV players with his age, ratings, potentials and last-year movement.
+        After that the path steps one season at a time with the average aging of DEV players his age and ratings, so the players who retire don't bend it upward.
+        Hover for the 25th-75th range. Green = above today, red = below; the boxed cell is the rating's best. It assumes he stays in the league.
+        {path.r === 'P' ? ` Stamina under ${STARTER_MIN_STM} (amber) gets no starter value in the engine.` : ''}
+      </div>
+      <div className="overflow-x-auto">
+        <table className="text-[11px] font-mono border-collapse">
+          <thead>
+            <tr className="text-slate-500">
+              <th className="text-left font-normal pr-2 sticky left-0 bg-slate-900">Rating</th>
+              <th className="font-normal px-1.5 text-slate-400">Now {path.age}</th>
+              {ages.map(a => <th key={a} className="font-normal px-1.5">{a}</th>)}
+              <th className="font-normal px-2 text-left">Best</th>
+              <th className="font-normal px-2 text-left">Turns down</th>
+            </tr>
+          </thead>
+          <tbody>
+            {order.map(r => {
+              const { lo, mid, hi } = pathBands(path.p[r]);
+              const now = path.now[r];
+              const { best, at } = bestOf(now, mid);
+              const down = fallOffYear(now, mid);
+              return (
+                <tr key={r} className="border-t border-slate-800">
+                  <td className="text-left text-slate-400 pr-2 font-sans whitespace-nowrap sticky left-0 bg-slate-900">{labels[r] || r}</td>
+                  <td className="px-1.5 text-center text-slate-200">{Math.round(now)}</td>
+                  {ages.map((a, i) => {
+                    const v = mid[i];
+                    if (v === undefined) return <td key={a} />;
+                    const low = r === 'stm' && v < STARTER_MIN_STM;
+                    const range = lo ? `${lo[i]}-${hi[i]}` : null;
+                    return (
+                      <td
+                        key={a}
+                        title={`${labels[r] || r} at ${a}: ${v}${range ? ` (25th-75th: ${range})` : ''}`}
+                        className={`px-1.5 text-center ${low ? 'text-amber-400 underline' : pathCellClass(v - now)} ${i + 1 === at ? 'ring-1 ring-slate-300 rounded' : ''}`}
+                      >
+                        {v}
+                        {ranges && range && <div className="text-[9px] text-slate-500 leading-tight">{range}</div>}
+                      </td>
+                    );
+                  })}
+                  <td className="px-2 text-left text-slate-300 whitespace-nowrap font-sans">
+                    {at ? `${best} at ${path.age + at}` : `${Math.round(now)} now`}
+                  </td>
+                  <td className="px-2 text-left text-slate-400 whitespace-nowrap font-sans">
+                    {down ? `at ${path.age + down}` : '-'}
+                  </td>
+                </tr>
+              );
+            })}
+            {w.length > 0 && (
+              <tr className="border-t-2 border-slate-700">
+                <td
+                  className="text-left text-blue-300 pr-2 font-sans whitespace-nowrap sticky left-0 bg-slate-900"
+                  title="Each year's projected ratings priced with the league's engine (neutral park), as a WAA change from today"
+                >
+                  From these ratings
+                </td>
+                <td className="px-1.5 text-center text-slate-400">{fmtW(path.w0)}</td>
+                {ages.map((a, i) => <td key={a} className="px-1.5 text-center text-blue-300">{fmtW(w[i])}</td>)}
+                <td colSpan={2} />
+              </tr>
+            )}
+            {mlD && (
+              <tr className="border-t border-slate-800">
+                <td
+                  className="text-left text-purple-300 pr-2 font-sans whitespace-nowrap sticky left-0 bg-slate-900"
+                  title="The ML WAA path: median WAA change from today, 1-5 years out"
+                >
+                  ML WAA path
+                </td>
+                <td />
+                {ages.map((a, i) => <td key={a} className="px-1.5 text-center text-purple-300">{i < mlD.length ? fmtW(mlD[i]) : ''}</td>)}
+                <td colSpan={2} />
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      {pathGap && Math.abs(pathGap.gap) >= 1 && (
+        <div className="text-[11px] text-amber-400 mt-2">
+          His projected ratings and the ML WAA path differ by {Math.abs(pathGap.gap).toFixed(1)} WAA at {pathGap.age}: worth a look.
+        </div>
+      )}
+      {(pricedPeak !== null || expGain !== null) && (
+        <div className="text-[11px] text-slate-400 mt-2">
+          Peak gain from today: <span className="text-blue-300">{fmtW(pricedPeak)}{pricedPeakAge ? ` at ${pricedPeakAge}` : ''}</span> from these ratings, if he stays in the league
+          {expGain !== null && <>; <span className="text-purple-300">{fmtW(expGain)}</span> Exp peak from the {isMl ? 'ML' : 'cell method'}, which also counts the players who wash out, so it reads lower for young players</>}
+          . Pricing the middle ratings line is not exactly the middle WAA, so treat a small gap as noise.
+        </div>
+      )}
+      {valLine && <div className="text-[10px] text-slate-500 mt-1">{valLine}</div>}
     </div>
   );
 }
@@ -694,6 +908,8 @@ export default function PlayerDetail({ player, onClose, type = 'hitter' }) {
             <RatingHistory player={player} />
           </div>
         </div>
+
+        <RatingPath player={player} />
       </div>
     </div>
   );

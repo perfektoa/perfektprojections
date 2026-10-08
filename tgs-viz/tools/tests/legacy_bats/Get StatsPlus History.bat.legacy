@@ -101,6 +101,10 @@ if errorlevel 1 set "FAILS=%FAILS% %LG%-ml-rows"
 py -3.14 "tgs-viz\backtest\ml\score.py" --league %LG% --write
 if errorlevel 1 set "FAILS=%FAILS% %LG%-ml-score"
 echo.
+echo  --- %LG% rating paths (year-by-year rating projections; no retraining) ---
+py -3.14 "tgs-viz\backtest\ml\rating_path.py" score --league %LG% --write
+if errorlevel 1 set "FAILS=%FAILS% %LG%-rating-paths"
+echo.
 if defined FAILS (
   echo   Steps that did not finish:%FAILS%
   echo   ^(each one said why above^)

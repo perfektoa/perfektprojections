@@ -118,6 +118,10 @@ T = {
         '',
         ' --- ML dev scores (one model set per league, on the new pulls; no retraining) ---',
     ],
+    'ratings.rating_paths': [
+        '',
+        ' --- Rating paths (year-by-year rating projections; no retraining) ---',
+    ],
     'ratings.report': [
         '',
     ],
@@ -194,6 +198,10 @@ T = {
     'history.ml': [
         '',
         ' --- {league} ML dev scores (scoring rows, then the score; no retraining) ---',
+    ],
+    'history.rating_paths': [
+        '',
+        ' --- {league} rating paths (year-by-year rating projections; no retraining) ---',
     ],
     'history.fails': [
         '  Steps that did not finish:{fails}',
@@ -1162,6 +1170,7 @@ DEV_SIGNALS = r"tgs-viz\backtest\dev_signals.py"
 DEV_ODDS, DEV_RATING_ODDS = r"tgs-viz\backtest\dev_odds.py", r"tgs-viz\backtest\dev_rating_odds.py"
 ML_DATASET, ML_SCORE = r"tgs-viz\backtest\ml\dataset.py", r"tgs-viz\backtest\ml\score.py"
 REPRICE = r"tgs-viz\backtest\ml\reprice.py"
+RATING_PATH = r"tgs-viz\backtest\ml\rating_path.py"
 TOKEN = r"tgs-viz\ingest\statsplus_token.py"
 PULL_REPORT = r"tgs-viz\ingest\pull_report.py"
 CALIBRATE = r"tgs-viz\engine\calibrate.py"
@@ -1212,12 +1221,14 @@ def t_get_ratings():
              "collect", "TGS-ml-score", app=True, env=c),
         step("blm_ml_score", "BLM ML scores", ml(ML_SCORE, "--league", "BLM", "--write"),
              "collect", "BLM-ml-score", app=True, env=c),
+        rating_path_step("TGS", T["ratings.rating_paths"], env=c),
+        rating_path_step("BLM", env=c),
         step("pull_report", "Data date report", py(PULL_REPORT), "report", None,
              T["ratings.report"] + [{"if_fails": T["ratings.fails"]}], env=c),
     ]
     return task("get_ratings", "Get StatsPlus Ratings",
                 "Pulls current ratings for TGS and BLM from StatsPlus, then rebuilds the draft boards, "
-                "Rule 5 pools, age curves, rating trends, dev signals and ML dev scores. "
+                "Rule 5 pools, age curves, rating trends, dev signals, ML dev scores and rating paths. "
                 "A league with no saved token needs your browser cookies.",
                 "everyday", steps, leagues=["TGS", "BLM"], bat="Get StatsPlus Ratings.bat",
                 requires=["TGS", "BLM"],
@@ -1282,6 +1293,8 @@ def t_get_history(ST):
              "collect", "{league}-ml-rows", T["history.ml"], env=unset),
         step("ml_score", "ML scores", ml(ML_SCORE, "--league", "{league}", "--write"),
              "collect", "{league}-ml-score", app=True, env=unset),
+        rating_path_step("{league}", T["history.rating_paths"], sid="rating_paths", title="Rating paths",
+                         env=unset),
     ]
     return task("get_history", "Get StatsPlus History",
                 "Pulls past ratings (one snapshot every 6 game months) for one league into the ratings "
@@ -1419,6 +1432,25 @@ def ml_retrain_steps(bases=("TGS", "BLM")):
     out += [step(f"{b.lower()}_ml_score", f"{b} ML scores", ml(ML_SCORE, "--league", b, "--write"), app=True)
             for b in bases]
     return out
+
+
+def rating_path_step(lg, echo=None, sid=None, title=None, tag=None, **kw):
+    """The year-by-year rating projections of one league (ml/rating_path.py
+    score: the rating models, then each future year priced with the league's
+    engine). Added on top of the ML scores (user, 2026-10-08): it reads no
+    other output and nothing reads it but the player panel, so a failure is
+    collected and never stops the job."""
+    return step(sid or f"{lg.lower()}_rating_paths", title or f"{lg} rating paths",
+                ml(RATING_PATH, "score", "--league", lg, "--write"), "collect", tag or f"{lg}-rating-paths", echo,
+                app=True, **kw)
+
+
+def rating_path_train_steps():
+    """Rebuild the DEV ratings table from every banked DEV season, then train
+    the rating-path models (GPU). One model set for every league: the models
+    read ratings only, no WAA."""
+    return [step("rating_path_build", "DEV ratings table (rating paths)", ml(RATING_PATH, "build")),
+            step("rating_path_train", "Rating-path models", ml(RATING_PATH, "train"))]
 
 
 def calibrate_argv(lg, dumps):
@@ -1760,6 +1792,7 @@ def t_update_statsplus(ST, lg):
              f"{lid}-ml-rows", env=c),
         step("ml_score", f"{lid} ML scores", ml(ML_SCORE, "--league", lid, "--write"), "collect", f"{lid}-ml-score",
              app=True, env=c),
+        rating_path_step(lid, sid="rating_paths", env=c),
         step("pull_report", "Data date report", py(PULL_REPORT, "--leagues", lid), "report", env=c),
     ]
     headers(steps)
@@ -1790,11 +1823,13 @@ def t_update_local(ST, lg):
         step("ml_rows", "ML rows", ml(ML_DATASET, "--basis", lid, "--score-only", "--write"), "collect", "ml-rows",
              T["rg.ml"]),
         step("ml_score", "ML scores", ml(ML_SCORE, "--league", lid, "--write"), "collect", "ml-score", app=True),
+        rating_path_step(lid, sid="rating_paths", title="Rating paths", tag="rating-paths"),
     ]
     ok = [T["rg.fails"][0], f'  Done. {NO_RELOAD} Pick "{name}" in the league menu.', T["rg.fails"][-1]]
     return task(f"update.{lid}", f"Update {name}",
                 f"Reads the CSV export of the {vals['ootp_save']} save (OOTP {vals['ootp_version']}), prices every "
-                f"player with {vals['basis']}'s settings, then rebuilds the dev signals and ML dev scores. "
+                f"player with {vals['basis']}'s settings, then rebuilds the dev signals, ML dev scores and "
+                "rating paths. "
                 "Export the database to CSV in OOTP first.",
                 "leagues", steps, leagues=[lid], bat="Update Regular Game.bat" if lid == "RG" else None,
                 requires=[lid], fl=flags(writes_app_data=True, needs_archive=True), time="1 to 3 minutes",
@@ -1889,7 +1924,8 @@ def t_ml_tasks(ST):
     dumps.DEV like Bank Dev Seasons and never runs while Sim Dev League sims."""
     extras = ST.extra_leagues()
     out = []
-    steps = dev_price_steps(ST, ("TGS", "BLM")) + ml_retrain_steps() + ml_extra_steps(extras)
+    steps = (dev_price_steps(ST, ("TGS", "BLM")) + ml_retrain_steps() + ml_extra_steps(extras)
+             + [rating_path_step(lg) for lg in ["TGS", "BLM"] + list(extras)])
     out.append(task("retrain_ml", "Retrain the ML dev models",
                     "Values the DEV seasons with the current TGS and BLM engines, then rebuilds the DEV age curve, "
                     "odds and dev signals. Retrains the ML dev models for TGS and BLM on every banked DEV season and "
@@ -1907,7 +1943,7 @@ def t_ml_tasks(ST):
             step("ml_path", f"{b} ML path model", ml(path, "fit-final", "--basis", b)),
             step("ml_check", f"{b} ML model check", ml(r"tgs-viz\backtest\ml\predict.py", "check", "--basis", b)),
             step("ml_score", f"{b} ML scores", ml(ML_SCORE, "--league", b, "--write"), app=True),
-        ] + ml_extra_steps(xs)
+        ] + ml_extra_steps(xs) + [rating_path_step(lg, sid=f"{lg.lower()}_rating_paths") for lg in [b] + xs]
         rescored = f"{b}" + (" and " + ", ".join(xs) if xs else "")
         if b == "BLM":
             desc = ("Values the DEV seasons with the current BLM engine, then rebuilds the DEV age curve, odds and "
@@ -1932,9 +1968,19 @@ def t_ml_tasks(ST):
                  "collect", f"{lg}-ml-rows"),
             step(f"{lg.lower()}_ml_score", f"{lg} ML scores", ml(ML_SCORE, "--league", lg, "--write"), "collect",
                  f"{lg}-ml-score", app=True),
+            rating_path_step(lg),
         ]
+    rp = rating_path_train_steps() + [rating_path_step(lg) for lg in ["TGS", "BLM"] + list(extras)]
+    out.append(task("rating_paths_train", "Train the rating-path models",
+                    "Rebuilds the DEV ratings table from every banked DEV season and trains the year-by-year "
+                    "rating models on the GPU, then projects every league's players. Run it after Bank Dev "
+                    "Seasons adds seasons. It does not touch the ML dev models or any WAA.",
+                    "dev", headers(rp), leagues=["DEV", "TGS", "BLM"] + list(extras), requires=["TGS", "BLM"],
+                    fl=flags(heavy=True, long=True, writes_app_data=True, needs_archive=True),
+                    locks=["dumps.DEV"], time="About 1.5 hours; about 20 GB of memory",
+                    finish=fin("fails", exit_ok=0, exit_fail=1)))
     out.append(task("dev_rescore", "Rescore dev signals and ML",
-                    "Reruns the dev signals and ML dev scores for every league with the current models. "
+                    "Reruns the dev signals, ML dev scores and rating paths for every league with the current models. "
                     "No retraining.",
                     "dev", headers(rescore), leagues=["TGS", "BLM"] + list(extras), requires=["TGS", "BLM"],
                     fl=flags(writes_app_data=True, needs_archive=True), time="No retraining; a few minutes"))

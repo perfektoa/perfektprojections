@@ -25,7 +25,7 @@ INPUT_TYPES = ("choice", "text", "secret", "confirm")
 BAT_TASKS = ["get_ratings", "get_history", "bank_season", "bank_dev", "grind_tgs", "grind_blm", "recalibrate_tgs",
              "recalibrate_blm", "sim_dev", "sync_metadata", "dispersal_board", "draft_board", "update.RG",
              "ootp_check_26", "ootp_grab_menu_26", "sim_tgs_preview", "sim_tgs", "ootp_test_year_26"]
-NO_BAT_TASKS = ["retrain_ml", "retrain_ml.TGS", "retrain_ml.BLM", "dev_rescore", "bank_market_fit", "iafa_board",
+NO_BAT_TASKS = ["retrain_ml", "retrain_ml.TGS", "retrain_ml.BLM", "dev_rescore", "rating_paths_train", "bank_market_fit", "iafa_board",
                 "parks_update", "pull_report", "cleanup_clones.TGS", "cleanup_clones.BLM", "sim_blm_preview",
                 "token_check", "token_set", "restore_ratings_db", "doctor", "winsim_games", "dev_test_load",
                 "dev_test_year", "new_league", "new_league_cleanup"]
@@ -79,10 +79,10 @@ class CatalogTest(unittest.TestCase):
             if t["flags"]["endless"]:
                 self.assertIn("after_cycle", t["stop_modes"])
         self.assertFalse(any(i.startswith("selftest.") for i in ids))
-        # 18 bat tasks, update.TGS/BLM/DEV and the 4.6 tasks: 41 (16 step 2)
+        # 18 bat tasks, update.TGS/BLM/DEV and the 4.6 tasks: 42 (16 step 2; rating_paths_train 2026-10-08)
         want = BAT_TASKS + ["update.TGS", "update.BLM", "update.DEV"] + NO_BAT_TASKS
         self.assertEqual(sorted(ids), sorted(want))
-        self.assertEqual(len(ids), 41)
+        self.assertEqual(len(ids), 42)
         by = {t["id"]: t for t in cat["tasks"]}
         for tid in ("new_league", "new_league_cleanup"):
             self.assertTrue(by[tid]["flags"]["hidden"], tid)
@@ -102,8 +102,10 @@ class CatalogTest(unittest.TestCase):
             ("bank_season", "sync_metadata", "dispersal_board", "draft_board", "iafa_board", "bank_market_fit"):
                 ([], first, False, False),
             ("parks_update", "dev_rescore", "retrain_ml.TGS"): ([], first, False, True),
-            # retrain_ml and retrain_ml.BLM rerun dev_odds, which reads the DEV dump folder
-            ("bank_dev", "update.DEV", "retrain_ml", "retrain_ml.BLM"): (["dumps.DEV"], first, False, True),
+            # retrain_ml and retrain_ml.BLM rerun dev_odds, which reads the DEV dump folder;
+            # rating_paths_train reads the DEV vintages Sim Dev League writes
+            ("bank_dev", "update.DEV", "retrain_ml", "retrain_ml.BLM", "rating_paths_train"):
+                (["dumps.DEV"], first, False, True),
             ("grind_tgs",): (["clones.TGS", "ootp"], cycle, False, True),
             ("grind_blm",): (["clones.BLM", "ootp"], cycle, False, True),
             ("recalibrate_tgs",): (["clones.TGS"], first, False, True),

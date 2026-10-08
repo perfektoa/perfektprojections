@@ -13,6 +13,7 @@
 import { useSyncExternalStore } from 'react';
 import { invalidateRatingTrends } from './ratingTrends';
 import { invalidateAgeCurves } from './ageCurve';
+import { invalidateRatingPaths } from './ratingPaths';
 
 const versions = {};          // league -> key -> count
 const globalV = {};           // key -> count (league null events)
@@ -98,6 +99,7 @@ function invalidate(league, key) {
   try {
     if (key === 'trends') invalidateRatingTrends(league || undefined);
     if (key === 'age_curve') invalidateAgeCurves();
+    if (key === 'rating_paths') invalidateRatingPaths(league || undefined);
   } catch (e) {
     console.warn('[tgs-data] cache reset failed:', e);
   }
