@@ -1,0 +1,860 @@
+{
+ "generated": "2026-10-08T15:48:53",
+ "library": "xgboost 3.4.1",
+ "device": "cuda",
+ "quick": false,
+ "settings": {
+  "learning_rate": 0.08,
+  "max_iter": 2000,
+  "max_leaf_nodes": 63,
+  "min_samples_leaf": 200,
+  "l2_regularization": 1.0,
+  "max_bins": 255,
+  "n_iter_no_change": 50
+ },
+ "max_age": 40,
+ "max_k": 26,
+ "direct_max_age": 24,
+ "aging_min_age": 22,
+ "roles": {
+  "H": {
+   "bounds": {
+    "babip": [
+     20.0,
+     90.0
+    ],
+    "gap": [
+     20.0,
+     85.0
+    ],
+    "pow": [
+     20.0,
+     85.0
+    ],
+    "eye": [
+     20.0,
+     85.0
+    ],
+    "avk": [
+     20.0,
+     87.5
+    ],
+    "speed": [
+     20.0,
+     95.0
+    ],
+    "ifr": [
+     20.0,
+     85.0
+    ],
+    "ife": [
+     20.0,
+     85.0
+    ],
+    "ifa": [
+     20.0,
+     90.0
+    ],
+    "tdp": [
+     20.0,
+     80.0
+    ],
+    "ofr": [
+     20.0,
+     80.0
+    ],
+    "ofe": [
+     20.0,
+     85.0
+    ],
+    "ofa": [
+     20.0,
+     95.0
+    ],
+    "cblk": [
+     20.0,
+     80.0
+    ],
+    "cfrm": [
+     20.0,
+     80.0
+    ],
+    "carm": [
+     20.0,
+     80.0
+    ]
+   },
+   "features": [
+    "age",
+    "k",
+    "age_t",
+    "level_rank",
+    "in_org",
+    "pos_code",
+    "bats_code",
+    "throws_code",
+    "height",
+    "ovr",
+    "pot",
+    "pot_minus_ovr",
+    "pot_scale",
+    "d1_ovr",
+    "d1_pot",
+    "has_prev",
+    "babip",
+    "babip_lean",
+    "pot_babip",
+    "room_babip",
+    "d1_babip",
+    "d1_pot_babip",
+    "gap",
+    "gap_lean",
+    "pot_gap",
+    "room_gap",
+    "d1_gap",
+    "d1_pot_gap",
+    "pow",
+    "pow_lean",
+    "pot_pow",
+    "room_pow",
+    "d1_pow",
+    "d1_pot_pow",
+    "eye",
+    "eye_lean",
+    "pot_eye",
+    "room_eye",
+    "d1_eye",
+    "d1_pot_eye",
+    "avk",
+    "avk_lean",
+    "pot_avk",
+    "room_avk",
+    "d1_avk",
+    "d1_pot_avk",
+    "speed",
+    "d1_speed",
+    "ifr",
+    "d1_ifr",
+    "ife",
+    "d1_ife",
+    "ifa",
+    "d1_ifa",
+    "tdp",
+    "d1_tdp",
+    "ofr",
+    "d1_ofr",
+    "ofe",
+    "d1_ofe",
+    "ofa",
+    "d1_ofa",
+    "cblk",
+    "d1_cblk",
+    "cfrm",
+    "d1_cfrm",
+    "carm",
+    "d1_carm",
+    "sr",
+    "ste",
+    "run"
+   ],
+   "models": {
+    "babip_q25": {
+     "file": "H_babip_q25.pkl",
+     "rating": "babip",
+     "quantile": 0.25,
+     "n_iter": 2000,
+     "n_train": 4802996
+    },
+    "babip_q50": {
+     "file": "H_babip_q50.pkl",
+     "rating": "babip",
+     "quantile": 0.5,
+     "n_iter": 2000,
+     "n_train": 4802996
+    },
+    "babip_q75": {
+     "file": "H_babip_q75.pkl",
+     "rating": "babip",
+     "quantile": 0.75,
+     "n_iter": 2000,
+     "n_train": 4802996
+    },
+    "gap_q25": {
+     "file": "H_gap_q25.pkl",
+     "rating": "gap",
+     "quantile": 0.25,
+     "n_iter": 2000,
+     "n_train": 4802988
+    },
+    "gap_q50": {
+     "file": "H_gap_q50.pkl",
+     "rating": "gap",
+     "quantile": 0.5,
+     "n_iter": 2000,
+     "n_train": 4802988
+    },
+    "gap_q75": {
+     "file": "H_gap_q75.pkl",
+     "rating": "gap",
+     "quantile": 0.75,
+     "n_iter": 2000,
+     "n_train": 4802988
+    },
+    "pow_q25": {
+     "file": "H_pow_q25.pkl",
+     "rating": "pow",
+     "quantile": 0.25,
+     "n_iter": 2000,
+     "n_train": 4802986
+    },
+    "pow_q50": {
+     "file": "H_pow_q50.pkl",
+     "rating": "pow",
+     "quantile": 0.5,
+     "n_iter": 2000,
+     "n_train": 4802986
+    },
+    "pow_q75": {
+     "file": "H_pow_q75.pkl",
+     "rating": "pow",
+     "quantile": 0.75,
+     "n_iter": 2000,
+     "n_train": 4802986
+    },
+    "eye_q25": {
+     "file": "H_eye_q25.pkl",
+     "rating": "eye",
+     "quantile": 0.25,
+     "n_iter": 2000,
+     "n_train": 4802992
+    },
+    "eye_q50": {
+     "file": "H_eye_q50.pkl",
+     "rating": "eye",
+     "quantile": 0.5,
+     "n_iter": 2000,
+     "n_train": 4802992
+    },
+    "eye_q75": {
+     "file": "H_eye_q75.pkl",
+     "rating": "eye",
+     "quantile": 0.75,
+     "n_iter": 2000,
+     "n_train": 4802992
+    },
+    "avk_q25": {
+     "file": "H_avk_q25.pkl",
+     "rating": "avk",
+     "quantile": 0.25,
+     "n_iter": 2000,
+     "n_train": 4802997
+    },
+    "avk_q50": {
+     "file": "H_avk_q50.pkl",
+     "rating": "avk",
+     "quantile": 0.5,
+     "n_iter": 2000,
+     "n_train": 4802997
+    },
+    "avk_q75": {
+     "file": "H_avk_q75.pkl",
+     "rating": "avk",
+     "quantile": 0.75,
+     "n_iter": 2000,
+     "n_train": 4802997
+    },
+    "speed_q50": {
+     "file": "H_speed_q50.pkl",
+     "rating": "speed",
+     "quantile": 0.5,
+     "n_iter": 2000,
+     "n_train": 4803005
+    },
+    "ifr_q50": {
+     "file": "H_ifr_q50.pkl",
+     "rating": "ifr",
+     "quantile": 0.5,
+     "n_iter": 2000,
+     "n_train": 4796736
+    },
+    "ife_q50": {
+     "file": "H_ife_q50.pkl",
+     "rating": "ife",
+     "quantile": 0.5,
+     "n_iter": 1,
+     "n_train": 4796733
+    },
+    "ifa_q50": {
+     "file": "H_ifa_q50.pkl",
+     "rating": "ifa",
+     "quantile": 0.5,
+     "n_iter": 1,
+     "n_train": 4796733
+    },
+    "tdp_q50": {
+     "file": "H_tdp_q50.pkl",
+     "rating": "tdp",
+     "quantile": 0.5,
+     "n_iter": 1,
+     "n_train": 4796733
+    },
+    "ofr_q50": {
+     "file": "H_ofr_q50.pkl",
+     "rating": "ofr",
+     "quantile": 0.5,
+     "n_iter": 2000,
+     "n_train": 4796733
+    },
+    "ofe_q50": {
+     "file": "H_ofe_q50.pkl",
+     "rating": "ofe",
+     "quantile": 0.5,
+     "n_iter": 1,
+     "n_train": 4796733
+    },
+    "ofa_q50": {
+     "file": "H_ofa_q50.pkl",
+     "rating": "ofa",
+     "quantile": 0.5,
+     "n_iter": 1,
+     "n_train": 4796733
+    },
+    "cblk_q50": {
+     "file": "H_cblk_q50.pkl",
+     "rating": "cblk",
+     "quantile": 0.5,
+     "n_iter": 2000,
+     "n_train": 4796617
+    },
+    "cfrm_q50": {
+     "file": "H_cfrm_q50.pkl",
+     "rating": "cfrm",
+     "quantile": 0.5,
+     "n_iter": 2000,
+     "n_train": 4793987
+    },
+    "carm_q50": {
+     "file": "H_carm_q50.pkl",
+     "rating": "carm",
+     "quantile": 0.5,
+     "n_iter": 2000,
+     "n_train": 4796663
+    }
+   },
+   "aging": {
+    "features": [
+     "age",
+     "pos_code",
+     "bats_code",
+     "throws_code",
+     "height",
+     "babip",
+     "babip_lean",
+     "pot_babip",
+     "room_babip",
+     "gap",
+     "gap_lean",
+     "pot_gap",
+     "room_gap",
+     "pow",
+     "pow_lean",
+     "pot_pow",
+     "room_pow",
+     "eye",
+     "eye_lean",
+     "pot_eye",
+     "room_eye",
+     "avk",
+     "avk_lean",
+     "pot_avk",
+     "room_avk",
+     "speed",
+     "ifr",
+     "ife",
+     "ifa",
+     "tdp",
+     "ofr",
+     "ofe",
+     "ofa",
+     "cblk",
+     "cfrm",
+     "carm",
+     "sr",
+     "ste",
+     "run"
+    ],
+    "models": {
+     "babip": {
+      "file": "H_babip_aging.pkl",
+      "n_iter": 349,
+      "n_train": 1057176
+     },
+     "gap": {
+      "file": "H_gap_aging.pkl",
+      "n_iter": 338,
+      "n_train": 1057176
+     },
+     "pow": {
+      "file": "H_pow_aging.pkl",
+      "n_iter": 352,
+      "n_train": 1057176
+     },
+     "eye": {
+      "file": "H_eye_aging.pkl",
+      "n_iter": 264,
+      "n_train": 1057176
+     },
+     "avk": {
+      "file": "H_avk_aging.pkl",
+      "n_iter": 317,
+      "n_train": 1057176
+     },
+     "speed": {
+      "file": "H_speed_aging.pkl",
+      "n_iter": 142,
+      "n_train": 1057176
+     },
+     "ifr": {
+      "file": "H_ifr_aging.pkl",
+      "n_iter": 264,
+      "n_train": 1055358
+     },
+     "ife": {
+      "file": "H_ife_aging.pkl",
+      "n_iter": 341,
+      "n_train": 1055354
+     },
+     "ifa": {
+      "file": "H_ifa_aging.pkl",
+      "n_iter": 181,
+      "n_train": 1055354
+     },
+     "tdp": {
+      "file": "H_tdp_aging.pkl",
+      "n_iter": 169,
+      "n_train": 1055350
+     },
+     "ofr": {
+      "file": "H_ofr_aging.pkl",
+      "n_iter": 203,
+      "n_train": 1055354
+     },
+     "ofe": {
+      "file": "H_ofe_aging.pkl",
+      "n_iter": 290,
+      "n_train": 1055354
+     },
+     "ofa": {
+      "file": "H_ofa_aging.pkl",
+      "n_iter": 315,
+      "n_train": 1055354
+     },
+     "cblk": {
+      "file": "H_cblk_aging.pkl",
+      "n_iter": 79,
+      "n_train": 1054984
+     },
+     "cfrm": {
+      "file": "H_cfrm_aging.pkl",
+      "n_iter": 114,
+      "n_train": 1053213
+     },
+     "carm": {
+      "file": "H_carm_aging.pkl",
+      "n_iter": 66,
+      "n_train": 1055080
+     }
+    },
+    "spread": {
+     "babip": {
+      "22-26": 0.494,
+      "27-30": 0.533,
+      "31-34": 1.037,
+      "35+": 1.217
+     },
+     "gap": {
+      "22-26": 0.486,
+      "27-30": 0.385,
+      "31-34": 0.93,
+      "35+": 1.339
+     },
+     "pow": {
+      "22-26": 0.501,
+      "27-30": 0.395,
+      "31-34": 0.956,
+      "35+": 1.136
+     },
+     "eye": {
+      "22-26": 0.448,
+      "27-30": 0.283,
+      "31-34": 0.349,
+      "35+": 1.2
+     },
+     "avk": {
+      "22-26": 0.531,
+      "27-30": 0.371,
+      "31-34": 1.032,
+      "35+": 1.237
+     },
+     "speed": {
+      "22-26": 0.235,
+      "27-30": 0.276,
+      "31-34": 1.488,
+      "35+": 1.069
+     },
+     "ifr": {
+      "22-26": 0.145,
+      "27-30": 0.294,
+      "31-34": 0.162,
+      "35+": 0.105
+     },
+     "ife": {
+      "22-26": 0.077,
+      "27-30": 0.103,
+      "31-34": 0.127,
+      "35+": 0.227
+     },
+     "ifa": {
+      "22-26": 0.109,
+      "27-30": 0.24,
+      "31-34": 0.113,
+      "35+": 0.189
+     },
+     "tdp": {
+      "22-26": 0.051,
+      "27-30": 0.04,
+      "31-34": 0.11,
+      "35+": 0.218
+     },
+     "ofr": {
+      "22-26": 0.179,
+      "27-30": 0.294,
+      "31-34": 0.183,
+      "35+": 0.072
+     },
+     "ofe": {
+      "22-26": 0.119,
+      "27-30": 0.284,
+      "31-34": 0.129,
+      "35+": 0.208
+     },
+     "ofa": {
+      "22-26": 0.113,
+      "27-30": 0.282,
+      "31-34": 0.127,
+      "35+": 0.206
+     },
+     "cblk": {
+      "22-26": 0.001,
+      "27-30": 0.009,
+      "31-34": 0.009,
+      "35+": 0.006
+     },
+     "cfrm": {
+      "22-26": 0.001,
+      "27-30": 0.001,
+      "31-34": 0.001,
+      "35+": 0.005
+     },
+     "carm": {
+      "22-26": 0.001,
+      "27-30": 0.001,
+      "31-34": 0.001,
+      "35+": 0.004
+     }
+    }
+   }
+  },
+  "P": {
+   "bounds": {
+    "stu": [
+     20.0,
+     92.5
+    ],
+    "hrr": [
+     20.0,
+     85.0
+    ],
+    "pbabip": [
+     20.0,
+     80.0
+    ],
+    "con": [
+     20.0,
+     85.0
+    ],
+    "stm": [
+     20.0,
+     95.0
+    ],
+    "hold": [
+     20.0,
+     95.0
+    ]
+   },
+   "features": [
+    "age",
+    "k",
+    "age_t",
+    "level_rank",
+    "in_org",
+    "pos_code",
+    "bats_code",
+    "throws_code",
+    "height",
+    "ovr",
+    "pot",
+    "pot_minus_ovr",
+    "pot_scale",
+    "d1_ovr",
+    "d1_pot",
+    "has_prev",
+    "stu",
+    "stu_lean",
+    "pot_stu",
+    "room_stu",
+    "d1_stu",
+    "d1_pot_stu",
+    "hrr",
+    "hrr_lean",
+    "pot_hrr",
+    "room_hrr",
+    "d1_hrr",
+    "d1_pot_hrr",
+    "pbabip",
+    "pbabip_lean",
+    "pot_pbabip",
+    "room_pbabip",
+    "d1_pbabip",
+    "d1_pot_pbabip",
+    "con",
+    "con_lean",
+    "pot_con",
+    "room_con",
+    "d1_con",
+    "d1_pot_con",
+    "stm",
+    "d1_stm",
+    "hold",
+    "d1_hold",
+    "n_pitches45",
+    "best_pitch",
+    "best_pitch_pot"
+   ],
+   "models": {
+    "stu_q25": {
+     "file": "P_stu_q25.pkl",
+     "rating": "stu",
+     "quantile": 0.25,
+     "n_iter": 2000,
+     "n_train": 4803829
+    },
+    "stu_q50": {
+     "file": "P_stu_q50.pkl",
+     "rating": "stu",
+     "quantile": 0.5,
+     "n_iter": 2000,
+     "n_train": 4803829
+    },
+    "stu_q75": {
+     "file": "P_stu_q75.pkl",
+     "rating": "stu",
+     "quantile": 0.75,
+     "n_iter": 2000,
+     "n_train": 4803829
+    },
+    "hrr_q25": {
+     "file": "P_hrr_q25.pkl",
+     "rating": "hrr",
+     "quantile": 0.25,
+     "n_iter": 2000,
+     "n_train": 4803829
+    },
+    "hrr_q50": {
+     "file": "P_hrr_q50.pkl",
+     "rating": "hrr",
+     "quantile": 0.5,
+     "n_iter": 2000,
+     "n_train": 4803829
+    },
+    "hrr_q75": {
+     "file": "P_hrr_q75.pkl",
+     "rating": "hrr",
+     "quantile": 0.75,
+     "n_iter": 2000,
+     "n_train": 4803829
+    },
+    "pbabip_q25": {
+     "file": "P_pbabip_q25.pkl",
+     "rating": "pbabip",
+     "quantile": 0.25,
+     "n_iter": 2000,
+     "n_train": 4803829
+    },
+    "pbabip_q50": {
+     "file": "P_pbabip_q50.pkl",
+     "rating": "pbabip",
+     "quantile": 0.5,
+     "n_iter": 2000,
+     "n_train": 4803829
+    },
+    "pbabip_q75": {
+     "file": "P_pbabip_q75.pkl",
+     "rating": "pbabip",
+     "quantile": 0.75,
+     "n_iter": 2000,
+     "n_train": 4803829
+    },
+    "con_q25": {
+     "file": "P_con_q25.pkl",
+     "rating": "con",
+     "quantile": 0.25,
+     "n_iter": 2000,
+     "n_train": 4803829
+    },
+    "con_q50": {
+     "file": "P_con_q50.pkl",
+     "rating": "con",
+     "quantile": 0.5,
+     "n_iter": 2000,
+     "n_train": 4803829
+    },
+    "con_q75": {
+     "file": "P_con_q75.pkl",
+     "rating": "con",
+     "quantile": 0.75,
+     "n_iter": 2000,
+     "n_train": 4803829
+    },
+    "stm_q25": {
+     "file": "P_stm_q25.pkl",
+     "rating": "stm",
+     "quantile": 0.25,
+     "n_iter": 1999,
+     "n_train": 4803829
+    },
+    "stm_q50": {
+     "file": "P_stm_q50.pkl",
+     "rating": "stm",
+     "quantile": 0.5,
+     "n_iter": 1997,
+     "n_train": 4803829
+    },
+    "stm_q75": {
+     "file": "P_stm_q75.pkl",
+     "rating": "stm",
+     "quantile": 0.75,
+     "n_iter": 2000,
+     "n_train": 4803829
+    },
+    "hold_q50": {
+     "file": "P_hold_q50.pkl",
+     "rating": "hold",
+     "quantile": 0.5,
+     "n_iter": 2000,
+     "n_train": 4803829
+    }
+   },
+   "aging": {
+    "features": [
+     "age",
+     "pos_code",
+     "bats_code",
+     "throws_code",
+     "height",
+     "stu",
+     "stu_lean",
+     "pot_stu",
+     "room_stu",
+     "hrr",
+     "hrr_lean",
+     "pot_hrr",
+     "room_hrr",
+     "pbabip",
+     "pbabip_lean",
+     "pot_pbabip",
+     "room_pbabip",
+     "con",
+     "con_lean",
+     "pot_con",
+     "room_con",
+     "stm",
+     "hold",
+     "n_pitches45",
+     "best_pitch",
+     "best_pitch_pot"
+    ],
+    "models": {
+     "stu": {
+      "file": "P_stu_aging.pkl",
+      "n_iter": 687,
+      "n_train": 1170182
+     },
+     "hrr": {
+      "file": "P_hrr_aging.pkl",
+      "n_iter": 239,
+      "n_train": 1170182
+     },
+     "pbabip": {
+      "file": "P_pbabip_aging.pkl",
+      "n_iter": 585,
+      "n_train": 1170182
+     },
+     "con": {
+      "file": "P_con_aging.pkl",
+      "n_iter": 286,
+      "n_train": 1170182
+     },
+     "stm": {
+      "file": "P_stm_aging.pkl",
+      "n_iter": 101,
+      "n_train": 1170182
+     },
+     "hold": {
+      "file": "P_hold_aging.pkl",
+      "n_iter": 86,
+      "n_train": 1170182
+     }
+    },
+    "spread": {
+     "stu": {
+      "22-26": 1.025,
+      "27-30": 1.023,
+      "31-34": 1.29,
+      "35+": 1.38
+     },
+     "hrr": {
+      "22-26": 1.213,
+      "27-30": 0.611,
+      "31-34": 1.336,
+      "35+": 1.622
+     },
+     "pbabip": {
+      "22-26": 0.234,
+      "27-30": 0.204,
+      "31-34": 0.289,
+      "35+": 0.384
+     },
+     "con": {
+      "22-26": 0.782,
+      "27-30": 0.334,
+      "31-34": 0.297,
+      "35+": 0.396
+     },
+     "stm": {
+      "22-26": 1.007,
+      "27-30": 0.819,
+      "31-34": 0.91,
+      "35+": 1.114
+     },
+     "hold": {
+      "22-26": 0.267,
+      "27-30": 0.031,
+      "31-34": 0.021,
+      "35+": 0.019
+     }
+    }
+   }
+  }
+ }
+}

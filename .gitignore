@@ -43,6 +43,8 @@ tgs-viz/backtest/.dev_cache/ml/models/*
 !tgs-viz/backtest/.dev_cache/ml/models/*_settings.json
 !tgs-viz/backtest/.dev_cache/ml/models/TGS/
 !tgs-viz/backtest/.dev_cache/ml/models/BLM/
+# rating-path models (ml/rating_path.py, 2026-10-08): one set for every league
+!tgs-viz/backtest/.dev_cache/ml/models/ratings/
 !tgs-viz/backtest/.dev_cache/ml/data/
 tgs-viz/backtest/.dev_cache/ml/data/*
 !tgs-viz/backtest/.dev_cache/ml/data/dev_H_TGS.pkl
