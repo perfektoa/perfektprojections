@@ -1,6 +1,15 @@
 # TGS Projections — current state (handoff)
 
-## ⏵ RATING PATHS: each rating projected year by year (2026-10-08, newest)
+## ⏵ TGS METADATA FROM STATSPLUS (2026-10-15, newest)
+
+- **What (user, 2026-10-15):** the season-end metadata update had no TGS button. The StatsPlus flow (2026-09-16) was built for BLM only; TGS still read `The Sheets TGS\25 Metadata.xlsx`. New card **Update TGS Metadata** (group Season end, `Update TGS Metadata.bat`, task `metadata_tgs`): StatsPlus builds 7 of 9 tabs, the user pastes only SP Data / RP Data.
+- **Japan filter:** the TGS stat feeds (no `lid`) hold the JPBO season next to MLB (2045: bat 494 MLB + 229 JPBO rows, pit 532 + 205, fld 1696 + 653). `metadata_inputs.mlb_only()` drops `statsplus.foreign_ids(league)` rows on every read (saved feeds stay raw), also in the paste-season check. BLM has no foreign leagues, so nothing changes there.
+- **Steps:** Recalibrate BLM's, with TGS paths and no clone cleanup. The calibrate step stays because the pitching intercepts are stated at the metadata's league-average ratings (`calibrate.pitch_anchors`).
+- **Sync guard:** `sync_datapoints.py` now uses `calib/<LG>/metadata-latest.json` when `--metadata-calib` is not given. Without this, Recalibrate TGS, Grind TGS/BLM and Sync Metadata would push the old 25 Metadata.xlsx over the StatsPlus metadata.
+- **Dry run (2045, in-game 2045-10-07, `--stage auto` into a temp folder):** league_ids ["100"], Hitting 474, Pitching 500, Fielding [73, 167, 151, 152, 125, 174, 121, 168], Batter Ratings 473/471, Fielding Ratings 473; ratings from the 2045-09-18 pull. `--stage roles` STOPS on the workbook's SP/RP paste: it is from **2043** (582 of 582 pitchers match the 2043 MLB totals). So the live TGS metadata is two seasons old until the user runs the card.
+- **Not done:** the card has not run for real (`calib/TGS/metadata-latest.json` does not exist yet; The Sheets TGS untouched). WHICH BUTTON.docx not updated on purpose (the user never reads it). Tests: test_metadata_paste (2 new), test_catalog (43 tasks), test_bat_equivalence (rule 11 for the Sync Metadata banner).
+
+## ⏵ RATING PATHS: each rating projected year by year (2026-10-08)
 
 - **What (user, 2026-10-08):** "along with what we project the waa to be what we also project each individual rating to be ... and our expected growth rates"; "it would help me see ok this ML is full of shit or not"; no fixed age ("why specify any age at all"); driven by the player's own rating movement ("why not predictive based on ratings movement"); stamina is crucial (TGS has seen a lot of stamina downturn); pitchers: no fielding, but stamina and hold.
 - **Code:** `tgs-viz/backtest/ml/rating_path.py` (`build`, `train [--quick]`, `score --league LG [--write]`). Reads only the vintage format (`vintages/DEV/*.csv.gz` for training, the league's latest and `choose_clean_pulls` earlier vintage for scoring), so training and scoring see identical inputs. No WAA inputs: one model set for every league. Adds to the ML dev model; changes none of its numbers. Inputs include last year's change in every rating and in each rating's potential (user: a rising potential "can absolutely help predict how high a guy might fly").

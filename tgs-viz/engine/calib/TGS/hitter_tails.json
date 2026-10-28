@@ -1,6 +1,6 @@
 {
  "league": "TGS",
- "fitted_at": "2026-08-18T14:56:43",
+ "fitted_at": "2026-10-15T19:44:41",
  "source": "engine/hitter_tails_fit.py over calib/TGS archive (pivot1 pools, PA-weighted bucket means, anchored PAVA)",
  "support": [
   20.0,

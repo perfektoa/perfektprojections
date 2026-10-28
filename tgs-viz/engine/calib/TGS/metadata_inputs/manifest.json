@@ -1,0 +1,40 @@
+{
+ "league": "TGS",
+ "slug": "tgs",
+ "season": 2045,
+ "in_game_date": "2045-10-07",
+ "league_ids": [
+  "100"
+ ],
+ "pull": "C:\\Users\\perfe\\Desktop\\TGS Projections\\tgs-viz\\ingest\\.cache\\history\\statsplus_tgs_20261012-0322.json",
+ "counts": {
+  "Hitting_Data": 474,
+  "Pitching_Data": 500,
+  "Fielding_Data": [
+   73,
+   167,
+   151,
+   152,
+   125,
+   174,
+   121,
+   168
+  ],
+  "Batter_Ratings_vR": 473,
+  "Batter_Ratings_vL": 471,
+  "hitters_not_in_pull": 0,
+  "Fielding_Ratings": 473,
+  "fielders_not_in_pull": 0,
+  "SP_Ratings_vR": 250,
+  "SP_Ratings_vL": 250,
+  "RP_Ratings_vR": 360,
+  "RP_Ratings_vL": 360,
+  "SP_Data": 252,
+  "RP_Data": 361
+ },
+ "paste_check": {
+  "exact": 499,
+  "partial": 0,
+  "absent": 0
+ }
+}

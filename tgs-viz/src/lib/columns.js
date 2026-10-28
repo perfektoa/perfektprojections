@@ -165,6 +165,11 @@ export const HITTER_COLUMN_GROUPS = {
     // From the in-game international export only — StatsPlus carries neither.
     columns: ['_iafaDem', '_iafaSign'],
   },
+  faDemand: {
+    label: 'Demand',
+    // From the in-game Free Agents export (ingest/fa_demands.py). Fair - Demand > 0 = he asks less than he is worth.
+    columns: ['_faDem', '_offerMid', '_faDemDiff', '_faSign'],
+  },
   marketCurrent: {
     label: '$ Current',
     columns: ['Price', '_perWAA', '_annualValue', '_surplus', '_mktPrice', '_mktSurplus', '_mktTier', '_offerFloor', '_offerMid', '_offerCeiling', '_ctrYears', '_ctrSurplus'],
@@ -261,6 +266,11 @@ export const PITCHER_COLUMN_GROUPS = {
     label: 'Signing',
     // From the in-game international export only — StatsPlus carries neither.
     columns: ['_iafaDem', '_iafaSign'],
+  },
+  faDemand: {
+    label: 'Demand',
+    // From the in-game Free Agents export (ingest/fa_demands.py). Fair - Demand > 0 = he asks less than he is worth.
+    columns: ['_faDem', '_offerMid', '_faDemDiff', '_faSign'],
   },
   marketCurrent: {
     label: '$ Current',
@@ -393,7 +403,7 @@ export function formatCellValue(value, columnName) {
 
   // Money columns — format as $12.5M / $750K
   const moneyCols = ['Price', '_owed', '_perWAA', '_marketValue', '_offerFloor', '_offerMid', '_offerCeiling', '_annualValue', '_surplus',
-    '_mktPrice', '_mktSurplus',
+    '_mktPrice', '_mktSurplus', '_faDem', '_faDemDiff',
     '_ctrSurplus', '_futureAAV', '_futureOfferLow', '_futureOfferMid', '_futureOfferHigh'];
   if (moneyCols.includes(columnName) && !isNaN(num)) {
     return formatMoney(num);
@@ -600,7 +610,7 @@ export function getCellColorClass(value, columnName, row) {
   }
 
   // Surplus: green = underpaid/good deal, red = overpaid
-  if (columnName === '_surplus' || columnName === '_ctrSurplus' || columnName === '_mktSurplus') {
+  if (columnName === '_surplus' || columnName === '_ctrSurplus' || columnName === '_mktSurplus' || columnName === '_faDemDiff') {
     if (num > 10_000_000) return 'text-green-400 font-bold';
     if (num > 0) return 'text-green-400';
     if (num > -5_000_000) return 'text-orange-400';
@@ -844,6 +854,9 @@ export const COLUMN_LABELS = {
   // board's above/below-zero sort tier reads _draftCeiling.
   '_iafaDem': 'Demand',
   '_iafaSign': 'Signability',
+  '_faDem': 'Demand',
+  '_faDemDiff': 'Fair − Demand',
+  '_faSign': 'Signability',
   '_draftCeiling': 'Ceiling',
   '_draftCeilingWAA': 'Ceiling',
   '_ceilingScore': 'Ceil Score',

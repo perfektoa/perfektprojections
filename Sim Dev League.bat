@@ -1,5 +1,5 @@
 @echo off
-title DEV TESTS - sim seasons + bank the dumps (OOTP 27)
+title DEV TESTS - sim seasons + save the dumps (OOTP 27)
 cd /d "%~dp0"
 set "TGS_PY=python"
 python -c "" >nul 2>nul && goto tgs_run

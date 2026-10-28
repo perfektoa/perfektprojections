@@ -381,7 +381,7 @@ def plan(f):
     if typ == "dev":
         return first + [
             {"title": "Read the yearly dumps", "writes": f"The ratings archive; tgs-viz/backtest/vintages/{lid}."},
-            {"title": "Rating trends", "writes": f"{d}/rating_trends.json (once a season is banked)."},
+            {"title": "Rating trends", "writes": f"{d}/rating_trends.json (once a season is saved)."},
             {"title": "Add the league to the app", "writes": "tgs-viz/public/data/leagues.json (once trends exist); "
                                                              "settings.local.json."}]
     if typ == "clone":
@@ -727,7 +727,7 @@ def cmd_register(a):
         if register_manifest(lid, a.manifest):
             print(f"  Added {lid} to the app's league list (Rating Trends).")
         else:
-            print(f"  {lid} has no banked season yet. It appears in the app after its first banked season.")
+            print(f"  {lid} has no saved season yet. It appears in the app after its first saved season.")
     else:
         print(f"  {lid} is a clone profile: it has no app league.")
     # 2. clear pending last: from here on the league is added and is never rolled back

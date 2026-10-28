@@ -145,7 +145,7 @@ command at another install on the Setup page.
    vintages in the repo. From a terminal: `python tgs-viz\backtest\vintage_backup.py --restore`.
    Every task that reads the archive refuses to run until it exists: Get StatsPlus Ratings, Get
    StatsPlus History, the league Update cards, Update park factors, Grind, Recalibrate, Sim Dev
-   League, Bank Dev Seasons, the Retrain and Rescore cards, and the New league wizard.
+   League, Add Dev Seasons, the Retrain and Rescore cards, and the New league wizard.
 
 8. **Make it yours** on the Setup check tab. Turn off the leagues you do not play in, set your
    OOTP saved_games folders, your team (the park home club) and your org (the org the Org Builder
@@ -261,7 +261,7 @@ result. Job folders live in `.control/` in the repo folder; the newest 50 finish
 | Two tasks that drive OOTP | Never together: they share your mouse |
 | Tasks that write app data | Take turns. The second one waits, and its button reads "Start (waits for ...)". Only one task can wait at a time |
 | Recalibrate and Clean up clones for a league | Refused while that league's Grind or Sim runs |
-| Bank Dev Seasons and Update DEV | Refused while Sim Dev League runs |
+| Add Dev Seasons and Update DEV | Refused while Sim Dev League runs |
 
 A Grind holds the app-data turn only during its few minutes of recalibrate steps per cycle, so Get
 StatsPlus Ratings and the other everyday tasks can run while a Grind sims.
@@ -296,9 +296,8 @@ come from the task cards.
 |---|---|---|---|
 | Get StatsPlus Ratings | `Get StatsPlus Ratings.bat` | Pulls TGS and BLM ratings, then rebuilds draft boards, Rule 5 pools, age curves, rating trends, dev signals and ML scores. Ends with the data date report | 5 to 15 minutes |
 | Update Draft Board | `Update Draft Board.bat` | TGS and BLM draft boards from your OOTP draft-pool export | 1 to 2 minutes |
-| Update Dispersal Board | `Update Dispersal Board.bat` | TGS dispersal board: every player in the folding orgs | Under a minute |
 | Update international board | | IAFA board from your OOTP export | Under a minute |
-| Bank market fit | | Refits each league's market value model | A minute or two |
+| Save market fit | | Refits each league's market value model | A minute or two |
 | Data date report | | The date of the data the app serves, per league | Seconds |
 
 **Your leagues** (one card per enabled league)
@@ -314,7 +313,7 @@ come from the task cards.
 | Task | Bat | What it does | Time |
 |---|---|---|---|
 | Get StatsPlus History | `Get StatsPlus History.bat` | Past rating snapshots for one league into the ratings archive | About an hour per run (5 dates, 15 minutes apart; StatsPlus allows 5 past-date requests a day) |
-| Bank Season | `Bank Season.bat` | Saves finished season stats and a dated snapshot of the projections | 1 to 3 minutes |
+| Save Season | `Save Season.bat` | Saves finished season stats and a dated snapshot of the projections | 1 to 3 minutes |
 | Recalibrate BLM | `Recalibrate BLM.bat` | BLM metadata from StatsPlus and your SP/RP paste, then the regressions and the pitching curve per block. Refuses in game months 4 to 9, and stops on a paste from the wrong season | A few minutes plus the paste |
 | Sync Metadata | `Sync Metadata.bat` | Copies the metadata constants into the TGS and BLM sheets; shows each change and asks | Under a minute |
 | Update park factors | | Rebuilds park factors from your team, then both leagues' app data. Run it after you change your team | A few minutes |
@@ -333,10 +332,10 @@ come from the task cards.
 
 | Task | Bat | What it does | Time |
 |---|---|---|---|
-| Sim Dev League | `Sim Dev League.bat` | Sims DEV TESTS in OOTP 27, banks the yearly dumps, rebuilds DEV trends | Depends on OOTP |
-| Bank Dev Seasons | `Bank Dev Seasons.bat` | Banks hand-simmed DEV seasons, prices DEV with each league's current calibration, rebuilds DEV trends and odds, retrains the ML models, rescores TGS and BLM | Hours; about 13 GB of memory (measured at 295 seasons) |
-| Update DEV | | Banks new DEV dumps and rebuilds the trends file. No simming | About 20 seconds per season |
-| Retrain the ML dev models (also Retrain the TGS ML models, Retrain the BLM ML models) | | Re-prices DEV for each basis it trains (TGS: `reprice.py`; BLM: the DEV age-curve refit with BLM's calibration, which also rewrites the DEV age curve), rebuilds the dev odds and signals where needed, retrains on every banked DEV season, checks the models, then rescores every league that uses them (BLM's: BLM and Regular Game) | Hours; about 13 GB of memory (measured at 295 seasons) |
+| Sim Dev League | `Sim Dev League.bat` | Sims DEV TESTS in OOTP 27, saves the yearly dumps, rebuilds DEV trends | Depends on OOTP |
+| Add Dev Seasons | `Add Dev Seasons.bat` | Adds hand-simmed DEV seasons, prices DEV with each league's current calibration, rebuilds DEV trends and odds, retrains the ML models, rescores TGS and BLM | Hours; about 13 GB of memory (measured at 295 seasons) |
+| Update DEV | | Saves new DEV dumps and rebuilds the trends file. No simming | About 20 seconds per season |
+| Retrain the ML dev models (also Retrain the TGS ML models, Retrain the BLM ML models) | | Re-prices DEV for each basis it trains (TGS: `reprice.py`; BLM: the DEV age-curve refit with BLM's calibration, which also rewrites the DEV age curve), rebuilds the dev odds and signals where needed, retrains on every saved DEV season, checks the models, then rescores every league that uses them (BLM's: BLM and Regular Game) | Hours; about 13 GB of memory (measured at 295 seasons) |
 | Rescore dev signals and ML | | Reruns dev signals and ML scores with the current models | A few minutes |
 | Test DEV loading, Test the DEV year picker | | First-run checks of the DEV sim. They never sim | Under a minute |
 
@@ -348,6 +347,12 @@ come from the task cards.
 | Grab a menu (26) | `ootp\2 - Grab a menu (26).bat` | Screenshot of a menu you open in the next 6 seconds | About 10 seconds |
 | Test the year picker (26) | `ootp\TEST year picker.bat` | Tries the year picker in OOTP 26. Never sims | Under a minute |
 | List OOTP installs | | The OOTP versions and saved_games folders found on this PC | Seconds |
+
+**Rarely used**
+
+| Task | Bat | What it does | Time |
+|---|---|---|---|
+| Update Dispersal Board | `Update Dispersal Board.bat` | TGS dispersal board: every player in the folding orgs (a one-time draft so far) | Under a minute |
 
 **Setup and checks**
 
@@ -469,7 +474,7 @@ yearly dumps (game years 2026 to 2508).
 The pipeline:
 
 1. **Sim Dev League** sims the league in OOTP 27, or you sim it by hand. Sim Dev League and
-   **Update DEV** then run steps 2 and 3. **Bank Dev Seasons** runs steps 2 to 6.
+   **Update DEV** then run steps 2 and 3. **Add Dev Seasons** runs steps 2 to 6.
 2. `dump_vintages.py` turns each yearly dump into a ratings vintage in the archive.
 3. `ratings_db.py --export` builds DEV's Rating Trends page.
 4. `agecurve_fit.py` measures the age curve from the true ratings (priced with BLM's calibration).
@@ -558,7 +563,7 @@ signals; otherwise it shows the cell method. Unsigned international amateurs are
 outside training range", because DEV has none.
 
 **Cost.** Retraining takes hours and about 13 GB of memory (measured at 295 seasons). It runs
-under the ML Python and trains on the GPU when CUDA works. **Bank Dev Seasons** and the
+under the ML Python and trains on the GPU when CUDA works. **Add Dev Seasons** and the
 **Retrain** tasks retrain; the Retrain tasks re-price DEV for their basis first.
 **Rescore dev signals and ML** only rescores.
 
@@ -627,7 +632,7 @@ where the path first drops 2 points below its best. Stamina under 35 (no starter
 engine) shows in amber.
 
 **Running it.** **Train the rating-path models** (DEV group) rebuilds the DEV ratings table,
-trains on the GPU and projects every league: about 1.5 hours and 20 GB of memory. Run it after Bank
+trains on the GPU and projects every league: about 1.5 hours and 20 GB of memory. Run it after Save
 Dev Seasons adds seasons. **Get StatsPlus Ratings**, **Get StatsPlus History**, the Retrain tasks
 and **Rescore dev signals and ML** rerun the projections and the pricing for their leagues; that
 step's failure never stops the rest of the job. Files: `ml/rating_path.py`;
@@ -688,7 +693,7 @@ Wherever a constant could be measured from the game instead of guessed, it was.
  OOTP league (online)                 OOTP client (local clones, DEV league)
         |                                       |
         | ratings + API (token)                 | ootp/winsim.py: screen automation,
-        v                                       | clone, auto-play, bank the dumps
+        v                                       | clone, auto-play, save the dumps
  StatsPlus --> tgs-viz/ingest/refresh.py        v
                         |              tgs-viz/engine/calibrate.py and the fits:
                         |              rate lines, S-curves, fielding curves,

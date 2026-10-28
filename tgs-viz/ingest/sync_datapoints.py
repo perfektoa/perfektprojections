@@ -26,6 +26,11 @@ Usage:
     # JSON instead of the 25 Regressions.xlsx values (the workbook is still read,
     # but only for its LABEL LAYOUT; every regression value comes from the JSON):
     python tgs-viz/ingest/sync_datapoints.py --league TGS --calib tgs-viz/engine/calib/TGS/constants-260seasons.json
+
+    # Metadata: when tgs-viz/engine/calib/<LG>/metadata-latest.json exists (built
+    # from StatsPlus by Recalibrate BLM / Update TGS Metadata), the metadata Data
+    # Points come from it and 25 Metadata.xlsx is not opened. --metadata-calib
+    # names another JSON.
 """
 import openpyxl, zipfile, re, sys, os, json, shutil, datetime, argparse
 from collections import defaultdict, deque
@@ -397,6 +402,21 @@ def sync_league(league_dir, write=False, yes=False, calib=None, metadata=None):
         print('  (dry-run - re-run with --write to apply)')
 
 
+def live_metadata(league):
+    """calib/<LG>/metadata-latest.json when it exists, else None (25 Metadata.xlsx).
+    Once the StatsPlus metadata is built it is the live metadata, so a sync
+    without --metadata-calib (Recalibrate TGS, Grind, Sync Metadata) never pushes
+    the old workbook values over it."""
+    p = os.path.join(REPO, 'tgs-viz', 'engine', 'calib', league, 'metadata-latest.json')
+    if not os.path.exists(p):
+        return None
+    md = json.load(open(p, encoding='utf-8'))
+    if 'cells' not in md:
+        sys.exit(f'{p} has no "cells" map (write it with metadata_calibrate.py --json)')
+    print(f'  [{league}] metadata from {os.path.relpath(p, REPO)}')
+    return md
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--league', default='both', choices=['BLM', 'TGS', 'both'])
@@ -414,10 +434,13 @@ def main():
     if metadata and 'cells' not in metadata:
         ap.error('--metadata-calib JSON has no "cells" map (write it with metadata_calibrate.py --json)')
     leagues = ['BLM', 'TGS'] if a.league == 'both' else [a.league]
+    used_json = False
     for lg in leagues:
-        sync_league(LEAGUE_DIRS[lg], write=a.write, yes=a.yes, calib=calib, metadata=metadata)
+        md = metadata if metadata is not None else live_metadata(lg)
+        used_json = used_json or md is not None
+        sync_league(LEAGUE_DIRS[lg], write=a.write, yes=a.yes, calib=calib, metadata=md)
     if not a.write:
-        if metadata:
+        if used_json:
             print('\nDry-run only. Re-run with --write to apply (metadata from the JSON, no Excel step).')
         else:
             print('\nDry-run only. Recalculate 25 Regressions.xlsx + 25 Metadata.xlsx in Excel first,')

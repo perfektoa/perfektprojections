@@ -112,74 +112,77 @@
  },
  "scoring": {
   "TGS": {
-   "to_pull": 586,
-   "to_date": "2045-09-04",
-   "from_pull": 26,
-   "from_date": "2044-09-05",
-   "span_game_years": 0.997,
+   "to_pull": 604,
+   "to_date": "2046-01-01",
+   "from_pull": 580,
+   "from_date": "2044-12-26",
+   "span_game_years": 1.016,
    "pull_rule": "dev_signals.choose_clean_pulls: the pull nearest one game-year back whose pair with the latest pull ratings_db.pair_guard does not flag; growth / span",
-   "unguarded_from_pull": 26,
+   "unguarded_from_pull": 41,
    "dates": "in-game",
-   "choose_notes": [],
+   "choose_notes": [
+    "pull 41 (2044-12-26) skipped, rating scale event between it and the latest pull: pitchers: rating scale event: median STU shift -5.0 points across 4067 pitchers (bar 2); hitters: rating scale event: median EYE P shift -5.0 points across 4581 hitters (bar 2)",
+    "earlier pull moved from 41 to 580 by the scale-event guard"
+   ],
    "from_by_role": {
     "P": {
-     "pull": 26,
-     "date": "2044-09-05",
-     "span_game_years": 0.997
+     "pull": 580,
+     "date": "2044-12-26",
+     "span_game_years": 1.016
     },
     "H": {
-     "pull": 26,
-     "date": "2044-09-05",
-     "span_game_years": 0.997
+     "pull": 580,
+     "date": "2044-12-26",
+     "span_game_years": 1.016
     }
    },
-   "to_source": "tgs-viz\\ingest\\.cache\\history\\statsplus_tgs_20261007-1948.json",
+   "to_source": "tgs-viz\\ingest\\.cache\\history\\statsplus_tgs_20261027-1908.json",
    "raw_vs_app_ratings": {
-    "agree": 43143,
+    "agree": 39819,
     "differ": 0
    },
    "waa_cache": {
-    "fingerprint": "608cdff64c",
-    "to": "2026-10-07_p586.csv.gz.608cdff64c.json",
-    "from_H": "2026-07-28_p26.csv.gz.608cdff64c.json",
-    "from_P": "2026-07-28_p26.csv.gz.608cdff64c.json"
+    "fingerprint": "e56fccf69e",
+    "to": "2026-10-27_p604.csv.gz.e56fccf69e.json",
+    "from_H": "2044-12-26_p580.csv.gz.e56fccf69e.json",
+    "from_P": "2044-12-26_p580.csv.gz.e56fccf69e.json"
    },
-   "wl_read_as_R": 899,
+   "wl_read_as_R": 919,
    "app_now_vs_cache_now": {
-    "n": 14381,
+    "n": 13273,
     "mean_app_minus_cache": 0.0,
     "corr": 1.0,
     "why": "the app's now must match the neutral-park engine the DEV cache used; a gap here would mean a park or calibration layer in the app numbers"
    },
    "from_source": {
-    "H": "vintages/TGS/2026-07-28_p26.csv.gz",
-    "P": "vintages/TGS/2026-07-28_p26.csv.gz"
+    "H": "vintages/TGS/2044-12-26_p580.csv.gz",
+    "P": "vintages/TGS/2044-12-26_p580.csv.gz"
    },
    "reused_id": {
-    "H": 1088,
-    "P": 1044
+    "H": 9,
+    "P": 2
    },
    "earlier_card": {
     "H": {
-     "ages_16_26": 5838,
-     "out_of_org_a_year_back_card_read": 1538,
-     "in_org_a_year_back": 3043,
-     "card_replaced": 0,
-     "card_replaced_all_ages": 0,
-     "no_earlier_card": 1257
+     "ages_16_26": 5603,
+     "out_of_org_a_year_back_card_read": 4297,
+     "in_org_a_year_back": 0,
+     "card_replaced": 7,
+     "card_replaced_all_ages": 7,
+     "no_earlier_card": 1299
     },
     "P": {
-     "ages_16_26": 5363,
-     "out_of_org_a_year_back_card_read": 1642,
-     "in_org_a_year_back": 2611,
-     "card_replaced": 0,
-     "card_replaced_all_ages": 0,
-     "no_earlier_card": 1110
+     "ages_16_26": 5095,
+     "out_of_org_a_year_back_card_read": 3896,
+     "in_org_a_year_back": 0,
+     "card_replaced": 9,
+     "card_replaced_all_ages": 9,
+     "no_earlier_card": 1190
     }
    },
    "players": {
-    "H": 7472,
-    "P": 6909
+    "H": 6920,
+    "P": 6353
    }
   }
  },
@@ -2702,5 +2705,5 @@
    ]
   }
  },
- "scoring_rebuilt": "2026-10-07T19:53:37"
+ "scoring_rebuilt": "2026-10-27T19:13:23"
 }

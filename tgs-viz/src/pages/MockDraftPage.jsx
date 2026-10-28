@@ -3,6 +3,8 @@ import { usePlayersWithFV, usePlayersWithDraftFV } from '../hooks/usePlayerData'
 import PlayerDetail from '../components/PlayerDetail';
 import { useSelectedById } from '../hooks/useSelectedById';
 import { formatCellValue, getCellColorClass } from '../lib/columns';
+import { boardScores, boardWords } from '../lib/draftValue';
+import { useBoardWeights } from '../hooks/useBoardWeights';
 
 /**
  * Mock Draft — the FULL class from the beginning (nobody removed), slotted into picks
@@ -48,13 +50,27 @@ export default function MockDraftPage({ hitters, pitchers, fullHitters, fullPitc
   const rowsByKind = useMemo(() => ({ hitter: hittersWithDraftFV, pitcher: pitchersWithDraftFV }), [hittersWithDraftFV, pitchersWithDraftFV]);
   const { selected: selectedPlayer, kind: playerType, select, clear } = useSelectedById(rowsByKind);
 
+  // The Board score weights the user set on the Draft Board (saved in the browser).
+  const [weights] = useBoardWeights();
+  const words = boardWords(weights);
+
   const slotted = useMemo(() => {
     const players = [
       ...hittersWithDraftFV.map(p => ({ ...p, _type: 'H' })),
       ...pitchersWithDraftFV.map(p => ({ ...p, _type: 'P' })),
     ].filter(p => p.Name);
 
+    // The board score (Ctrl wins 40% + Upside 20% + Draft FV 20% + Ceiling 20%;
+    // draftValue.js) orders the board when the league has draft_value.json, the
+    // same as the Draft Board page; Draft FV breaks ties and stands in for a
+    // league without the file.
+    const scores = boardScores(players, weights);
+    for (const p of players) p._boardScore = scores.get(String(p.ID)) ?? null;
     players.sort((a, b) => {
+      if (scores.size) {
+        const w = (b._boardScore ?? -99) - (a._boardScore ?? -99);
+        if (w !== 0) return w;
+      }
       const d = (parseFloat(b._draftRawFV) || 0) - (parseFloat(a._draftRawFV) || 0);
       if (d !== 0) return d;
       const c = (b._draftCeilingWAA ?? -99) - (a._draftCeilingWAA ?? -99);
@@ -96,11 +112,11 @@ export default function MockDraftPage({ hitters, pitchers, fullHitters, fullPitc
         : 'UND',
       _mockTeam: null,
     }));
-  }, [hittersWithDraftFV, pitchersWithDraftFV, picksPerRound, rounds, hasReal, realPicks]);
+  }, [hittersWithDraftFV, pitchersWithDraftFV, picksPerRound, rounds, hasReal, realPicks, weights]);
 
   // Column sort — reorders the VIEW only; every player keeps his mock slot.
   const [sort, setSort] = useState({ key: '_overall', dir: 'asc' });
-  const NUMERIC = new Set(['_overall', 'Age', '_draftRawFV', '_draftCeilingWAA', '_potentialWAA', 'DraftedOverall', '_twPeak']);
+  const NUMERIC = new Set(['_overall', 'Age', '_boardScore', 'Dev_CtrlWins', 'Dev_CtrlQ90', '_draftRawFV', '_draftCeilingWAA', '_potentialWAA', 'DraftedOverall', '_twPeak']);
   const clickSort = (key) => {
     setSort(s => s.key === key
       ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' }
@@ -319,6 +335,9 @@ export default function MockDraftPage({ hitters, pitchers, fullHitters, fullPitc
                   ['Name', 'Name', null],
                   ['POS', 'POS', null],
                   ['Age', 'Age', null],
+                  ['Board', '_boardScore', `${words}. Orders the board.`],
+                  ['Ctrl wins', 'Dev_CtrlWins', 'Expected wins above a replacement-level player over his first six MLB-level seasons, from the DEV league\'s real careers.'],
+                  ['Upside', 'Dev_CtrlQ90', 'The 90th percentile of Ctrl wins'],
                   ['Draft FV', '_draftRawFV', 'Age percentile 30% + ceiling 60% + projected peak 10%, red flags multiply'],
                   ['Ceiling', '_draftCeilingWAA', 'Best-case peak, WAA — no risk haircut'],
                   ['Proj Peak', '_potentialWAA', 'Proj Potential: where we project him to top out, from the ML model when the row has it, else the DEV cell gain or the measured curve'],
@@ -348,6 +367,15 @@ export default function MockDraftPage({ hitters, pitchers, fullHitters, fullPitc
                   <td className="font-medium text-white">{player.Name}</td>
                   <td>{player.POS}</td>
                   <td>{Math.round(parseFloat(player.Age) || 0)}</td>
+                  <td className="font-bold text-sm" title={words}>
+                    {Number.isFinite(player._boardScore) ? player._boardScore.toFixed(1) : <span className="text-slate-600">—</span>}
+                  </td>
+                  <td className="text-slate-300" title={player.Dev_CtrlWords || 'no draft value for this row'}>
+                    {Number.isFinite(player.Dev_CtrlWins) ? player.Dev_CtrlWins.toFixed(1) : ''}
+                  </td>
+                  <td className="text-slate-300">
+                    {Number.isFinite(player.Dev_CtrlQ90) ? player.Dev_CtrlQ90.toFixed(1) : ''}
+                  </td>
                   <td>
                     <span className="px-1.5 rounded font-bold text-xs"
                       style={{ color: fvColor(player._draftFV), background: `${fvColor(player._draftFV)}15` }}>

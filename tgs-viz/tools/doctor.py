@@ -422,7 +422,7 @@ def check_models(d):
         d.add("ml_models", "ML dev models", "ok", "trained models are there")
     else:
         d.add("ml_models", "ML dev models", "warn", "no trained models",
-              "The app uses the older cell method until Bank Dev Seasons trains the models.")
+              "The app uses the older cell method until Add Dev Seasons trains the models.")
 
 
 def check_git(d):

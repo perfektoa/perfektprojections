@@ -13,6 +13,7 @@ export const OBJECT_FILES = {
   'market_fit.json': 'marketBank',
   'dev_signals.json': 'devSignals',
   'dev_ml.json': 'devMl',
+  'draft_value.json': 'draftValue',
 };
 export const OBJECT_KEYS = Object.values(OBJECT_FILES);
 

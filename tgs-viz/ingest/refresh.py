@@ -527,8 +527,10 @@ def main():
         elif overwrite and hrecs:
             try:
                 import park_values as PV
-                rep = PV.build(league, records=hrecs, write=True, quiet=True)
-                print(f"park lineup values: {rep['hitters']} hitters x {rep['parks']} parks -> "
+                rep = PV.build(league, records=hrecs, write=True, quiet=True,
+                               pitcher_records=precs or None)
+                print(f"park lineup values: {rep['hitters']} hitters, {rep['pitchers']} starters "
+                      f"x {rep['parks']} parks -> "
                       f"{os.path.relpath(rep['written'], REPO)} ({rep['bytes'] / 1e6:.1f} MB)")
             except (Exception, SystemExit) as e:
                 print(f"  park lineup values not rebuilt this run ({type(e).__name__}: "

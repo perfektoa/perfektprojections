@@ -993,7 +993,7 @@ export function fitFAMarket(hitters, pitchers, opts) {
     ...banked.fit,
     provenance,
     notes: [
-      `BANKED FIT IN USE — measured ${banked.bankedAt || 'earlier'} on `
+      `SAVED FIT IN USE — measured ${banked.bankedAt || 'earlier'} on `
       + `${bankedN} open-market signings. Today's live sample is only ${liveN} `
       + '(free agency reset ContractYr across the league). The live fit takes over '
       + 'again as soon as it rests on at least as many signings.',

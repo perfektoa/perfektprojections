@@ -147,8 +147,10 @@ function armGroups(teamPitchers, lens, repl) {
     };
   });
 
+  // Rotation eligibility = has an SP line (the engine's Starter rule); the
+  // SP/RP label is not read, same as rosterOptimizer.
   const spSorted = scored
-    .filter(x => (x.isStarter || !x.isReliever) && x.sp !== null)
+    .filter(x => x.sp !== null)
     .sort((a, b) => b.sp - a.sp);
   const spIds = new Set(spSorted.slice(0, 5).map(x => _idOf(x.p)));
   const rpSorted = scored

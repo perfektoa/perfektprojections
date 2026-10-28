@@ -38,7 +38,7 @@ export default function HittersPage({ players, isDraft = false, isFA = false, is
   const defaultGroups = isIAFA
     ? ['info', 'signing', 'value', 'draftValue']
     : isFA
-    ? ['info', 'value', 'marketCurrent']
+    ? ['info', 'value', 'faDemand', 'marketCurrent']
     : isDraft
     ? ['info', 'value', 'draftValue', 'runsSplit']
     : ['info', 'value', 'runsSplit', 'offense'];
@@ -65,7 +65,7 @@ export default function HittersPage({ players, isDraft = false, isFA = false, is
               {lowConfidence && <p className="text-[10px] text-orange-400">Low data — few FA signings in sample</p>}
               {banked && (
                 <p className="text-[10px] text-amber-400">
-                  BANKED {banked.bankedAt} — live sample only n={banked.liveN}
+                  SAVED {banked.bankedAt} — live sample only n={banked.liveN}
                 </p>
               )}
             </div>

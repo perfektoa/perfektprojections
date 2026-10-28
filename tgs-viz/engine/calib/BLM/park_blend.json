@@ -5,6 +5,33 @@
  "n_road": 29,
  "n_excluded": 0,
  "blend": {
+  "avg_rhb": 0.992294,
+  "avg_lhb": 0.982692,
+  "avg": 0.989038,
+  "doubles": 0.969508,
+  "triples": 1.106571,
+  "hr_rhb": 0.974731,
+  "hr_lhb": 0.950321,
+  "hr": 0.966199
+ },
+ "league_mean": {
+  "avg_rhb": 0.995033,
+  "avg_lhb": 0.996267,
+  "avg": 0.995733,
+  "hr_rhb": 0.9985,
+  "hr_lhb": 0.995133,
+  "hr": 0.997567,
+  "doubles": 1.012867,
+  "triples": 1.018133
+ },
+ "pass_through": {
+  "hr": 0.87,
+  "avg": 0.62,
+  "doubles": 0.75,
+  "triples": 0.77,
+  "triples_per_doubles": -0.84
+ },
+ "raw_blend": {
   "avg_rhb": 0.982948,
   "avg_lhb": 0.969103,
   "avg": 0.978483,

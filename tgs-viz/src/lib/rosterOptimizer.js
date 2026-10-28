@@ -1401,8 +1401,12 @@ export function optimizeRoster(hitters, pitchers, options = {}) {
     };
   });
 
+  // Rotation eligibility is only "can he start?": the engine's Starter rule
+  // (repertoire + stamina) gives him an SP line. OOTP's SP/RP label is not
+  // read here — a listed reliever who can start competes on his SP line, which
+  // already carries the reliever-to-starter stuff drop.
   const spCandidates = scoredPitchers
-    .filter(p => p._canStart && (p._isStarter || !p._isReliever))
+    .filter(p => p._canStart)
     .sort((a, b) => b._spWAA - a._spWAA);
 
   const startingPitchers = spCandidates.slice(0, numStartingPitchers);

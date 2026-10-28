@@ -1344,7 +1344,7 @@ class Engine:
         if outcome == "stopafter":
             self.echo(fin.get("stopped_echo"))
             return {"status": "failed", "exit": fin.get("exit_stopped", 1),
-                    "message": "Stopped after a sim problem. Everything that finished is banked."}
+                    "message": "Stopped after a sim problem. Everything that finished is saved."}
         if outcome == "history_stop":
             return {"status": "failed", "exit": self.last_exit,
                     "message": "StatsPlus stopped the history pull. The steps after it were skipped."}

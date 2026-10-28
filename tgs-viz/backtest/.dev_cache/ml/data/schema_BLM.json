@@ -112,52 +112,48 @@
  },
  "scoring": {
   "BLM": {
-   "to_pull": 587,
-   "to_date": "2059-02-02",
-   "from_pull": 7,
-   "from_date": "2058-03-28",
-   "span_game_years": 0.851,
+   "to_pull": 605,
+   "to_date": "2059-05-19",
+   "from_pull": 30,
+   "from_date": "2058-05-27",
+   "span_game_years": 0.977,
    "pull_rule": "dev_signals.choose_clean_pulls: the pull nearest one game-year back whose pair with the latest pull ratings_db.pair_guard does not flag; growth / span",
-   "unguarded_from_pull": 6,
+   "unguarded_from_pull": 30,
    "dates": "in-game",
-   "choose_notes": [
-    "pull 6 (2058-01-20) skipped, rating scale event between it and the latest pull: hitters: rating scale event: median K P shift -5.0 points across 4151 hitters (bar 2)",
-    "pull 5 (2057-12-31) skipped, rating scale event between it and the latest pull: pitchers: rating scale event: median STU P shift -5.0 points across 3680 pitchers (bar 2); hitters: rating scale event: median K P shift -5.0 points across 3898 hitters (bar 2)",
-    "earlier pull moved from 6 to 7 by the scale-event guard"
-   ],
+   "choose_notes": [],
    "from_by_role": {
     "P": {
-     "pull": 7,
-     "date": "2058-03-28",
-     "span_game_years": 0.851
+     "pull": 30,
+     "date": "2058-05-27",
+     "span_game_years": 0.977
     },
     "H": {
-     "pull": 7,
-     "date": "2058-03-28",
-     "span_game_years": 0.851
+     "pull": 30,
+     "date": "2058-05-27",
+     "span_game_years": 0.977
     }
    },
-   "to_source": "tgs-viz\\ingest\\.cache\\history\\statsplus_blm_20261007-1950.json",
+   "to_source": "tgs-viz\\ingest\\.cache\\history\\statsplus_blm_20261027-1909.json",
    "raw_vs_app_ratings": {
-    "agree": 39357,
+    "agree": 42237,
     "differ": 0
    },
    "waa_cache": {
     "fingerprint": "ffe4c78059",
-    "to": "2026-10-07_p587.csv.gz.ffe4c78059.json",
-    "from_H": "2026-07-20_p7.csv.gz.ffe4c78059.json",
-    "from_P": "2026-07-20_p7.csv.gz.ffe4c78059.json"
+    "to": "2026-10-27_p605.csv.gz.ffe4c78059.json",
+    "from_H": "2026-08-07_p30.csv.gz.ffe4c78059.json",
+    "from_P": "2026-08-07_p30.csv.gz.ffe4c78059.json"
    },
    "wl_read_as_R": 0,
    "app_now_vs_cache_now": {
-    "n": 13119,
+    "n": 14079,
     "mean_app_minus_cache": 0.0,
     "corr": 1.0,
     "why": "the app's now must match the neutral-park engine the DEV cache used; a gap here would mean a park or calibration layer in the app numbers"
    },
    "from_source": {
-    "H": "vintages/BLM/2026-07-20_p7.csv.gz",
-    "P": "vintages/BLM/2026-07-20_p7.csv.gz"
+    "H": "vintages/BLM/2026-08-07_p30.csv.gz",
+    "P": "vintages/BLM/2026-08-07_p30.csv.gz"
    },
    "reused_id": {
     "H": 1,
@@ -165,25 +161,25 @@
    },
    "earlier_card": {
     "H": {
-     "ages_16_26": 5782,
-     "out_of_org_a_year_back_card_read": 1372,
-     "in_org_a_year_back": 3816,
-     "card_replaced": 0,
-     "card_replaced_all_ages": 0,
-     "no_earlier_card": 594
-    },
-    "P": {
-     "ages_16_26": 5858,
-     "out_of_org_a_year_back_card_read": 1566,
-     "in_org_a_year_back": 3644,
+     "ages_16_26": 6028,
+     "out_of_org_a_year_back_card_read": 1749,
+     "in_org_a_year_back": 3715,
      "card_replaced": 1,
      "card_replaced_all_ages": 1,
-     "no_earlier_card": 648
+     "no_earlier_card": 564
+    },
+    "P": {
+     "ages_16_26": 6199,
+     "out_of_org_a_year_back_card_read": 2075,
+     "in_org_a_year_back": 3478,
+     "card_replaced": 1,
+     "card_replaced_all_ages": 1,
+     "no_earlier_card": 646
     }
    },
    "players": {
-    "H": 6567,
-    "P": 6552
+    "H": 7001,
+    "P": 7078
    }
   }
  },
@@ -2706,5 +2702,5 @@
    ]
   }
  },
- "scoring_rebuilt": "2026-10-07T19:53:45"
+ "scoring_rebuilt": "2026-10-27T19:13:32"
 }

@@ -1,5 +1,5 @@
 @echo off
-title DEV TESTS - bank the seasons already simmed (no simming)
+title TGS - Update metadata (real season from StatsPlus, then regressions on it)
 cd /d "%~dp0"
 set "TGS_PY=python"
 python -c "" >nul 2>nul && goto tgs_run
@@ -12,7 +12,7 @@ echo   Then start this again.
 pause
 exit /b 9009
 :tgs_run
-%TGS_PY% "tgs-viz\tools\run_task.py" bank_dev %*
+%TGS_PY% "tgs-viz\tools\run_task.py" metadata_tgs %*
 set "RC=%errorlevel%"
 pause
 exit /b %RC%

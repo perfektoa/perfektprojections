@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-08T16:59:20",
+ "generated": "2026-10-27T19:20:12",
  "league": "BLM",
  "direct_max_age": 24,
  "models_generated": "2026-10-08T15:48:53",
@@ -48,19 +48,19 @@
   0.75
  ],
  "note": {
-  "to_pull": 587,
-  "to_date": "2059-02-02",
-  "from_pull": 7,
-  "from_date": "2058-03-28",
-  "span_game_years": 0.851,
-  "to_file": "2026-10-07_p587.csv.gz",
+  "to_pull": 605,
+  "to_date": "2059-05-19",
+  "from_pull": 30,
+  "from_date": "2058-05-27",
+  "span_game_years": 0.977,
+  "to_file": "2026-10-27_p605.csv.gz",
   "movement": {
-   "players_with_movement": 11731,
+   "players_with_movement": 12563,
    "reused_id": 1,
-   "card_replaced": 1
+   "card_replaced": 2
   }
  },
- "players": 13116,
+ "players": 14075,
  "validation": {
   "generated": "2026-10-08T15:48:53",
   "quick": false,

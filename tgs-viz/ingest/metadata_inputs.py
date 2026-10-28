@@ -5,7 +5,8 @@ league's metadata Data Points (the constants Sync Metadata pushes into The Sheet
 Hitters / Pitchers). Sources, per tab:
 
   public stats API (playerbatstatsv2 / playerpitchstatsv2 / playerfieldstatsv2,
-  splits 1 overall, 2 vs L, 3 vs R; rows summed per player across team stints):
+  splits 1 overall, 2 vs L, 3 vs R; rows summed per player across team stints;
+  foreign-league rows dropped, so TGS is MLB only, not MLB + JPBO):
       Hitting_Data.csv    every player with a PA in the season
       Pitching_Data.csv   every pitcher with a BF in the season
       Fielding_Data.csv   one table per position C..RF, one row per player-position
@@ -326,6 +327,16 @@ def fetch_season(base, season, cache_dir, refresh):
     return out
 
 
+def mlb_only(rows, league):
+    """The feed rows without the league's foreign leagues. The TGS feeds carry
+    the JPBO season next to MLB (2045: 229 of 723 hitters); BLM has none. The
+    saved feeds stay as StatsPlus sent them; this runs on every read."""
+    foreign = S.foreign_ids(league) if league else set()
+    if not foreign:
+        return rows
+    return [r for r in rows if str(r.get("league_id")) not in foreign]
+
+
 def stop_refused(e, league):
     """Print why StatsPlus refused, then exit EXIT_REFUSED."""
     print(f"  {e.user_message(league)}")
@@ -586,11 +597,12 @@ def wrong_season_text(season, found, rec, others):
     return "\n".join(lines)
 
 
-def season_pitching(base, slug, year, refresh=False):
-    """{pid: totals} of one season's MLB pitching (the overall feed), from the
-    saved feed .cache/metadata_<slug>_<year>/pit1.json, else from StatsPlus
-    (saved there the way fetch_season saves it). None when it can not be read:
-    this only names the season of a wrong paste, so it never stops the run."""
+def season_pitching(base, slug, year, refresh=False, league=None):
+    """{pid: totals} of one season's MLB pitching (the overall feed, foreign
+    leagues dropped), from the saved feed .cache/metadata_<slug>_<year>/pit1.json,
+    else from StatsPlus (saved there the way fetch_season saves it). None when it
+    can not be read: this only names the season of a wrong paste, so it never
+    stops the run."""
     cache_dir = os.path.join(HERE, ".cache", f"metadata_{slug}_{year}")
     p = os.path.join(cache_dir, "pit1.json")
     rows = None
@@ -611,17 +623,17 @@ def season_pitching(base, slug, year, refresh=False):
             return None
         os.makedirs(cache_dir, exist_ok=True)
         _save_json(p, rows)
-    return aggregate(rows, lambda r: r["player_id"], PIT_SUM)
+    return aggregate(mlb_only(rows, league), lambda r: r["player_id"], PIT_SUM)
 
 
-def find_paste_season(base, slug, season, date, rec, sp, rp, refresh=False):
+def find_paste_season(base, slug, season, date, rec, sp, rp, refresh=False, league=None):
     """(paste_season(), {year: reconcile result}). The other seasons are read
     only when the paste does not match `season`. sp / rp = (rows, header)."""
     if exact_share(rec) >= SEASON_MATCH:
         return season, {}
     others = {}
     for y in other_seasons(season, date):
-        totals = season_pitching(base, slug, y, refresh)
+        totals = season_pitching(base, slug, y, refresh, league=league)
         if totals is not None:
             others[y] = reconcile_roles({"P": totals}, sp[0], sp[1], rp[0], rp[1])
     return paste_season(season, rec, others), others
@@ -714,6 +726,13 @@ def main():
         feeds = fetch_season(base, season, cache_dir, a.refresh)
     except S.StatsPlusRefused as e:
         stop_refused(e, a.league)
+    dropped = {}
+    for name, rows in feeds.items():
+        feeds[name] = mlb_only(rows, a.league)
+        if len(rows) > len(feeds[name]):
+            dropped[name] = len(rows) - len(feeds[name])
+    if dropped:
+        print("  foreign-league rows dropped: " + ", ".join(f"{k} {v}" for k, v in dropped.items()))
     teams = {}
     for t in team_rows:
         teams[str(t.get("ID"))] = f"{t.get('Name', '')} {t.get('Nickname', '')}".strip()
@@ -780,7 +799,7 @@ def main():
     # counts playoff games), pitchers left out of both tabs and a few IDs with
     # no MLB pitching are the user's call: --accept-paste takes them as they are.
     found, others = find_paste_season(base, slug, season, date, rec, (sp_rows, sp_hdr), (rp_rows, rp_hdr),
-                                      a.refresh)
+                                      a.refresh, league=a.league)
     decision = paste_decision(season, found, rec, a.accept_paste)
     if decision == "wrong season":
         sys.exit(wrong_season_text(season, found, rec, others))

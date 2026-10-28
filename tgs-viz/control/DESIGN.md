@@ -57,6 +57,7 @@ No file has two owners. "New" means it does not exist at `ef23800`.
 | `tgs-viz/tools/tests/fixtures/conditions_cases.json` | New | Shared condition cases (4.4). C's `inputConditions.test.mjs` reads this file too |
 | `tgs-viz/tools/tests/legacy_bats/*.bat.legacy` | New | Byte copies of the 18 bats at `ef23800` (`git show ef23800:<path>`); ootp ones under `legacy_bats/ootp/` |
 | `Get StatsPlus Ratings.bat`, `Get StatsPlus History.bat`, `Bank Season.bat`, `Bank Dev Seasons.bat`, `Grind TGS.bat`, `Grind BLM.bat`, `Recalibrate TGS.bat`, `Recalibrate BLM.bat`, `Sim Dev League.bat`, `Sync Metadata.bat`, `Update Dispersal Board.bat`, `Update Draft Board.bat`, `Update Regular Game.bat` | Mod | Thin wrappers (section 6.5) |
+| `Update TGS Metadata.bat` | New (2026-10-15) | Thin wrapper (section 6.5) for `metadata_tgs`; no legacy bat |
 | `ootp/1 - Check OOTP (26).bat`, `ootp/2 - Grab a menu (26).bat`, `ootp/3 - Sim TGS (preview).bat`, `ootp/4 - Sim TGS.bat`, `ootp/TEST year picker.bat` | Mod | Thin wrappers |
 | `old bats (backup)/*.bat`, `old bats (backup)/ootp/*.bat` | New | Runnable copies of the 18 legacy bats for one release, a fallback if run_task breaks (6.7) |
 | `Launch TGS.bat` | Mod | Node check, node_modules check, `--strictPort`, pause on error (section 6.6) |
@@ -604,6 +605,24 @@ excel_check "The Sheets BLM"
 ```
 The bat expands `%INPUTS%`, `%META%`, `%CONST%` (:28-30); the registry writes the expanded paths.
 
+#### metadata_tgs (Update TGS Metadata.bat, new 2026-10-15), group season, flags network, needs_excel_closed, writes_app_data, needs_archive; time "A few minutes plus your SP/RP paste"
+
+recalibrate_blm for TGS, with no legacy bat and no clone cleanup (Recalibrate TGS owns the clone saves). The calibrate step stays: the pitching intercepts are stated at the metadata's league-average ratings (calibrate.py pitch_anchors). `metadata_inputs.py` drops the foreign-league rows (TGS: JPBO 117 and KBO, `statsplus.foreign_ids`), so the stats are MLB only.
+
+```
+gate (console: pause)
+@py "tgs-viz\ingest\metadata_inputs.py" --league TGS --out "tgs-viz\engine\calib\TGS\metadata_inputs" --stage auto   [fail]
+gate paste_reminder (job text "Paste the MLB pitchers' 'SP Data' (as starter) and 'RP Data' (as reliever) into The Sheets TGS\25 Metadata.xlsx, save, and close Excel. No JPBO or KBO rows.")
+@py "tgs-viz\ingest\metadata_inputs.py" --league TGS --out "tgs-viz\engine\calib\TGS\metadata_inputs" --stage roles --accept-paste   [fail]
+@py "tgs-viz\engine\metadata_calibrate.py" --inputs-dir "tgs-viz\engine\calib\TGS\metadata_inputs" --json "tgs-viz\engine\calib\TGS\metadata-latest.json"   [fail]
+@py "tgs-viz\engine\calibrate.py" --csv-dir "tgs-viz\engine\calib\TGS" --dumps "{saved_games:26}/*tgs*.lg" --ratings-dir "tgs-viz\engine\calib\TGS" --json "tgs-viz\engine\calib\TGS\constants-latest.json" --archive-dir "tgs-viz\engine\calib\TGS"   [fail]
+excel_check "The Sheets TGS"
+@py "tgs-viz\ingest\sync_datapoints.py" --league TGS --calib "tgs-viz\engine\calib\TGS\constants-latest.json" --metadata-calib "tgs-viz\engine\calib\TGS\metadata-latest.json" --write --yes   [fail]
+fit_steps TGS, export_calibration TGS {app}, extract_sheet / extract_pitchers TGS [ignore]
+@py "tgs-viz\ingest\refresh.py" --statsplus --from-cache --league TGS --write   [fail] {app}
+```
+Once `calib/<LG>/metadata-latest.json` exists, `sync_datapoints.py` uses it whenever `--metadata-calib` is not given, so Recalibrate TGS, Grind and Sync Metadata never push the old 25 Metadata.xlsx over it.
+
 #### sim_dev (Sim Dev League.bat), group dev, flags drives_ootp, long, writes_app_data; time "Depends on OOTP sim speed"
 
 Inputs: `years` text int, default "5", `from_argv: 1` (the bat's `%~1`; console passes it through unvalidated, as the bat did; job mode validates 1 to 50). `ootp_ready` confirm (job): "OOTP 27 is open inside a league (any league; the main menu is not enough). In DEV TESTS, Export CSV files after each simulated season is on."
@@ -635,7 +654,7 @@ else:
 @py "tgs-viz\engine\extract_pitchers.py" BLM   [ignore]
 ```
 
-#### dispersal_board (Update Dispersal Board.bat), group everyday, flags network, writes_app_data; time "Under a minute"
+#### dispersal_board (Update Dispersal Board.bat), group rare ("Rarely used", since 2026-10-09: the TGS dispersal was a one-time event), flags network, writes_app_data; time "Under a minute"
 
 Input: `orgs` text, no console prompt. Default = the entries of `leagues.TGS.dispersal_orgs` joined with `,` and no spaces between entries, which renders exactly `Atlanta Hammers,Detroit Tigers,San Francisco Giants,Seattle Mariners` (Update Dispersal Board.bat:19).
 ```
@@ -824,7 +843,7 @@ Lock names and rules are in 7.5. Every task that is not `read_only` also holds `
 | `retrain_ml`, `retrain_ml.BLM`, `rating_paths_train` | `dumps.DEV` (2026-10-02: they rerun dev_odds, which reads the DEV dump folder; 2026-10-08: rating_paths_train reads the DEV vintages) | from the first step | no | yes |
 | `bank_dev`, `update.DEV`, `update.<dev ID>` | `dumps.<dev ID>` (DEV for bank_dev) | from the first step | no | yes |
 | `grind_tgs`, `grind_blm` | `ootp`, `clones.TGS` / `clones.BLM` | each cycle, from calibrate to the cycle end | no | yes |
-| `recalibrate_tgs`, `recalibrate_blm` | `clones.TGS` / `clones.BLM` | from the first step | no | yes |
+| `recalibrate_tgs`, `recalibrate_blm`, `metadata_tgs` | `clones.TGS` / `clones.BLM` / `clones.TGS` | from the first step | no | yes |
 | `cleanup_clones.TGS`, `cleanup_clones.BLM`, `cleanup_clones.<ID>` | `clones.<L>` | never (`data: False` steps) | no | no |
 | `sim_tgs` | `ootp`, `clones.TGS` | never | no | no |
 | `sim_clones.<ID>` | `ootp`, `clones.<ID>` | never | no | no |
@@ -960,7 +979,8 @@ Console mode prints the banner and echo lines from the legacy bat, at the same p
 8. (2026-10-02) Get StatsPlus History: "one 5-minute check job" becomes "one extra check job" (there is no fixed wait).
 9. (2026-10-02) Bank Dev Seasons step 2b also says it rebuilds the DEV age curve.
 10. (2026-10-02) Recalibrate TGS lists all five steps and "Takes 1 to 3 minutes plus your answers".
-Rules 7 to 10 are spelled out in tools/tests/test_bat_equivalence.py (ALLOWED).
+11. (2026-10-15) Sync Metadata's banner says both leagues re-push metadata-latest.json once Recalibrate BLM or Update TGS Metadata built it, and a league without one still uses its 25 Metadata.xlsx (sync_datapoints.py now reads that JSON on its own).
+Rules 7 to 11 are spelled out in tools/tests/test_bat_equivalence.py (ALLOWED).
 
 New lines that print only when another task holds a lock (7.5), the archive is missing (7.3) or the user presses Ctrl+C (6.4) are not text changes: they never print on a plain run.
 

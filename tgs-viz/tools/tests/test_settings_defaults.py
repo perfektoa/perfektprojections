@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 TESTS = os.path.dirname(os.path.abspath(__file__))
 TOOLS = os.path.dirname(TESTS)
@@ -55,28 +56,26 @@ OLD_SLUGS = {"TGS": "tgs", "BLM": "blm"}
 OLD_OOTP26 = r"C:\OOTP 26\data\saved_games"
 OLD_OOTP27 = os.path.join(os.path.expanduser("~"), "Documents", "Out of the Park Developments",
                           "OOTP Baseball 27", "saved_games")
-OLD_DRAFT_CSV = {
-    "TGS": [[r"C:\OOTP 26\data\saved_games\TheGrandestSalami.lg\import_export\major_league_baseball_draft_pool_-_draft_pool_default.csv"]],
-    "BLM": [[os.path.join(OLD_OOTP27, "BLM.lg", "import_export",
-                          "major_league_baseball_draft_pool_-_draft_pool_default.csv")],
-            [os.path.join(OLD_OOTP27, "BLM.lg", "import_export",
-                          "major_league_baseball_draft_pool_-_draft_pool_hitter_export.csv"),
-             os.path.join(OLD_OOTP27, "BLM.lg", "import_export",
-                          "major_league_baseball_draft_pool_-_draft_pool_pitcher_export.csv")]],
+# TGS plays out of OOTP 27 since 2026-10-26 (save "The Grandest Salami").
+OLD_TGS_SAVE = os.path.join(OLD_OOTP27, "The Grandest Salami.lg")
+# draft.py reads every major_league_baseball_draft_*.csv in this folder, newest first.
+OLD_DRAFT_DIR = {
+    "TGS": os.path.join(OLD_TGS_SAVE, "import_export"),
+    "BLM": os.path.join(OLD_OOTP27, "BLM.lg", "import_export"),
 }
 OLD_R5_CSV = {
-    "TGS": os.path.join(OLD_OOTP26, "TheGrandestSalami.lg", "import_export",
+    "TGS": os.path.join(OLD_TGS_SAVE, "import_export",
                         "major_league_baseball_draft_pool_-_draft_pool_fa_screen.csv"),
     "BLM": os.path.join(OLD_OOTP27, "BLM.lg", "import_export",
                         "major_league_baseball_draft_pool_-_draft_pool_fa_screen.csv"),
 }
 OLD_IAFA_CSV = {
-    "TGS": os.path.join(OLD_OOTP26, "TheGrandestSalami.lg", "import_export",
+    "TGS": os.path.join(OLD_TGS_SAVE, "import_export",
                         "mlb_transactions_free_agents_-_international_amateur_fa_fa_screen.csv"),
     "BLM": os.path.join(OLD_OOTP27, "BLM.lg", "import_export",
                         "mlb_transactions_free_agents_-_international_amateur_fa_fa_screen.csv"),
 }
-OLD_PROTECTED = {"blm", "thegrandestsalami", "new game", "regular game"}
+OLD_PROTECTED = {"blm", "the grandest salami", "new game", "regular game"}
 OLD_ALLOW = {
     "TGS": [r"0tgs\d+", r"tgs-run\d+"],
     "BLM": [r"0blm\d+", r"blm-run\d+", r"[1-5]", r"baseline02"],
@@ -164,13 +163,42 @@ class Defaults(unittest.TestCase):
 
     def test_draft_r5_iafa_csv(self):
         import draft, r5, iafa
-        self.assertEqual(set(draft.DEFAULT_CSV), set(OLD_DRAFT_CSV))
-        for lg, groups in OLD_DRAFT_CSV.items():
-            self.assertEqual([[norm(p) for p in g] for g in draft.DEFAULT_CSV[lg]],
-                             [[norm(p) for p in g] for g in groups], lg)
+        for lg, d in OLD_DRAFT_DIR.items():
+            self.assertEqual(norm(draft._pool_dir(lg)), norm(d), lg)
+            for g in draft._pool_groups(lg) or []:
+                for p in g:
+                    self.assertEqual(norm(os.path.dirname(p)), norm(d), lg)
         for mod, old in ((r5, OLD_R5_CSV), (iafa, OLD_IAFA_CSV)):
             self.assertEqual({k: norm(v) for k, v in mod.DEFAULT_CSV.items()},
                              {k: norm(v) for k, v in old.items()}, mod.__name__)
+
+    def test_draft_export_groups(self):
+        """Any major_league_baseball_draft_*.csv counts, newest first; a hitter
+        export and its pitcher partner form one group; the Rule 5 export and
+        other files are left out."""
+        import draft
+        d = tempfile.mkdtemp()
+        try:
+            names = ["major_league_baseball_draft_pool_-_draft_pool_hitter_export.csv",
+                     "major_league_baseball_draft_pool_-_draft_pool_pitcher_export.csv",
+                     "major_league_baseball_draft_pool_-_draft_pool_default.csv",
+                     "major_league_baseball_draft_list_fa_screen.csv",
+                     draft._r5.FNAME, "other.csv"]
+            for i, n in enumerate(names):
+                p = os.path.join(d, n)
+                open(p, "w").close()
+                os.utime(p, (1_700_000_000 + i * 100, 1_700_000_000 + i * 100))
+            with mock.patch.object(draft, "_pool_dir", return_value=d):
+                groups = draft._pool_groups("BLM")
+            self.assertEqual([[os.path.basename(p) for p in g] for g in groups],
+                             [[names[3]], [names[2]], [names[1], names[0]]])
+            self.assertEqual([os.path.basename(p) for p in draft._pick_group(groups)], [names[3]])
+            with mock.patch.object(draft, "_pool_dir", return_value=os.path.join(d, "missing")):
+                self.assertEqual(draft._pool_groups("BLM"), [])
+            with mock.patch.object(draft, "_pool_dir", return_value=None):
+                self.assertIsNone(draft._pool_groups("BLM"))
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
 
     def test_saved_games_raw(self):
         self.assertEqual(ST.saved_games_raw("26"), "C:/OOTP 26/data/saved_games")
@@ -190,14 +218,14 @@ class Defaults(unittest.TestCase):
         self.assertEqual(ST.online_leagues(), ["TGS", "BLM"])
         self.assertEqual(ST.extra_leagues(), {"RG": "BLM"})
         self.assertEqual(ST.protected_saves(), OLD_PROTECTED)
-        self.assertEqual(ST.league_saves(), {"thegrandestsalami", "blm", "regular game", "dev tests"})
+        self.assertEqual(ST.league_saves(), {"the grandest salami", "blm", "regular game", "dev tests"})
         self.assertEqual(list(ST.leagues()), ["TGS", "BLM", "RG", "DEV"])
         self.assertEqual(ST.slug("RG"), "rg")
         self.assertEqual(ST.app_config()["leagues"]["BLM"], {"name": "BLM", "my_org": "Chicago (N) Cubs"})
         self.assertEqual(ST.app_config()["leagues"]["TGS"]["my_org"], "Chicago Cubs")
         self.assertEqual(ST.league("TGS")["dispersal_orgs"],
                          ["Atlanta Hammers", "Detroit Tigers", "San Francisco Giants", "Seattle Mariners"])
-        self.assertEqual(norm(ST.ootp_save_dir("TGS")), norm(os.path.join(OLD_OOTP26, "TheGrandestSalami.lg")))
+        self.assertEqual(norm(ST.ootp_save_dir("TGS")), norm(OLD_TGS_SAVE))
         self.assertEqual(norm(ST.ootp_save_dir("DEV")), norm(os.path.join(OLD_OOTP27, "DEV TESTS.lg")))
         self.assertEqual(ST.load()["app"]["port"], 3000)
 
@@ -313,7 +341,7 @@ class LocalFile(unittest.TestCase):
                      "'masters': sorted(str(p['master']).lower() for p in winsim.load_profiles().values() "
                      "if p.get('master'))}))",
                      local={"leagues": {"TGS": {"enabled": False}}})
-        self.assertIn("thegrandestsalami", out["prot"])
+        self.assertIn("the grandest salami", out["prot"])
         self.assertEqual(out["map"], {"BLM": "blm"})
         for name in out["saves"] + out["masters"]:
             self.assertIn(name, out["keep"])

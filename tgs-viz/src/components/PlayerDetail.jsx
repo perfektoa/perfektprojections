@@ -488,6 +488,57 @@ function TrainingLine({ player }) {
   );
 }
 
+// Fair AAV for each contract length (marketValue offerByLength, attached as
+// _offerByLength by the market value hooks), with the free agent's ask when
+// the FA export has one. Same numbers as the Market Value page's table.
+function FairAAVByLength({ player }) {
+  const rows = Array.isArray(player._offerByLength) ? player._offerByLength.slice(0, 6) : [];
+  if (!rows.length) return null;
+  const money = (v) => formatCellValue(v, '_offerMid');
+  const ask = Number.isFinite(player._faDem) ? player._faDem : null;
+  return (
+    <div className="bg-slate-800/50 rounded-lg p-3">
+      <h3 className="text-xs font-semibold text-slate-400 uppercase mb-2">Fair AAV by Contract Length</h3>
+      {ask !== null && (
+        <div className="text-xs text-slate-400 mb-1.5">
+          Asking <span className="font-mono text-slate-200">{money(ask)}</span> a year
+          {player._faSign ? <span className="text-slate-500"> · {player._faSign}</span> : null}
+        </div>
+      )}
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="text-slate-500 border-b border-slate-700">
+            <th className="text-left py-1">Years</th>
+            <th className="text-right py-1">Fair AAV</th>
+            <th className="text-right py-1">Range</th>
+            {ask !== null && <th className="text-right py-1">Fair − Ask</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((o) => {
+            const diff = ask !== null ? o.aav - ask : null;
+            return (
+              <tr key={o.years} className="border-b border-slate-800/40">
+                <td className="py-1 text-slate-300">{o.years}</td>
+                <td className="py-1 text-right font-mono text-green-400 font-semibold">{money(o.aav)}</td>
+                <td className="py-1 text-right font-mono text-slate-500">{money(o.low)}–{money(o.high)}</td>
+                {ask !== null && (
+                  <td className={`py-1 text-right font-mono ${diff >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {diff >= 0 ? '+' : '−'}{money(Math.abs(diff))}
+                  </td>
+                )}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <div className="text-[10px] text-slate-600 mt-1.5">
+        Each length averages his aged value over those seasons. Green = he asks less than that is worth.
+      </div>
+    </div>
+  );
+}
+
 export default function PlayerDetail({ player, onClose, type = 'hitter' }) {
   if (!player) return null;
 
@@ -633,6 +684,8 @@ export default function PlayerDetail({ player, onClose, type = 'hitter' }) {
               <DevSignalsLine player={player} />
               {type === 'hitter' && <TrainingLine player={player} />}
             </div>
+
+            <FairAAVByLength player={player} />
 
             {type === 'hitter' && (() => {
               const num = k => { const v = parseFloat(player[k]); return isNaN(v) ? null : v; };

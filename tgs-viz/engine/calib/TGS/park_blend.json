@@ -5,13 +5,40 @@
  "n_road": 27,
  "n_excluded": 12,
  "blend": {
-  "avg_rhb": 1.011111,
-  "avg_lhb": 0.995926,
-  "avg": 1.005963,
-  "doubles": 1.018889,
-  "triples": 1.009722,
-  "hr_rhb": 1.120741,
-  "hr_lhb": 1.09463,
-  "hr": 1.111722
+  "avg_rhb": 0.993293,
+  "avg_lhb": 0.990519,
+  "avg": 0.992253,
+  "doubles": 0.979766,
+  "triples": 0.946855,
+  "hr_rhb": 1.073282,
+  "hr_lhb": 1.081707,
+  "hr": 1.076108
+ },
+ "league_mean": {
+  "avg_rhb": 1.022143,
+  "avg_lhb": 1.011071,
+  "avg": 1.018571,
+  "hr_rhb": 1.035,
+  "hr_lhb": 0.999643,
+  "hr": 1.022857,
+  "doubles": 1.045179,
+  "triples": 1.096429
+ },
+ "pass_through": {
+  "hr": 0.87,
+  "avg": 0.62,
+  "doubles": 0.75,
+  "triples": 0.77,
+  "triples_per_doubles": -0.84
+ },
+ "raw_blend": {
+  "avg_rhb": 1.011481,
+  "avg_lhb": 0.996111,
+  "avg": 1.006259,
+  "doubles": 1.018611,
+  "triples": 1.009074,
+  "hr_rhb": 1.124074,
+  "hr_lhb": 1.096111,
+  "hr": 1.114407
  }
 }

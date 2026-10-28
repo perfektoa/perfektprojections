@@ -10,7 +10,7 @@ const PLAYER_FILES = new Set([
   'hitters_draft', 'pitchers_draft', 'hitters_draft_park', 'pitchers_draft_park',
   'hitters_draft_all', 'pitchers_draft_all', 'hitters_draft_all_park', 'pitchers_draft_all_park',
   'draft_picks', 'iafa', 'r5', 'parks', 'park_list', 'metadata', 'market_fit',
-  'dev_signals', 'dev_ml',
+  'dev_signals', 'dev_ml', 'draft_value', 'fa_demands',
 ].map((n) => n + '.json'))
 
 const LEAGUE_FILES = {

@@ -38,7 +38,7 @@ export default function PitchersPage({ players, isDraft = false, isFA = false, i
   const defaultGroups = isIAFA
     ? ['info', 'signing', 'value', 'draftValue']
     : isFA
-    ? ['info', 'value', 'marketCurrent']
+    ? ['info', 'value', 'faDemand', 'marketCurrent']
     : isDraft
     ? ['info', 'value', 'draftValue', 'ratingsVR']
     : ['info', 'value', 'valueRP', 'ratingsVR'];
@@ -65,7 +65,7 @@ export default function PitchersPage({ players, isDraft = false, isFA = false, i
               {lowConfidence && <p className="text-[10px] text-orange-400">Low data — few FA signings in sample</p>}
               {banked && (
                 <p className="text-[10px] text-amber-400">
-                  BANKED {banked.bankedAt} — live sample only n={banked.liveN}
+                  SAVED {banked.bankedAt} — live sample only n={banked.liveN}
                 </p>
               )}
             </div>

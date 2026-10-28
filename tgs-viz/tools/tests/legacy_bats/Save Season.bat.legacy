@@ -1,9 +1,9 @@
 @echo off
-title TGS - Bank Season
-cd /d "%~dp0.."
+title TGS - Save Season
+cd /d "%~dp0"
 
 echo ============================================================
-echo   BANK SEASON  -  save actuals + freeze projections
+echo   SAVE SEASON  -  save actuals + freeze projections
 echo ------------------------------------------------------------
 echo   THE ORDER MATTERS at a season end:
 echo    1. FIRST run "Get StatsPlus Ratings.bat"  (fresh ratings
@@ -18,9 +18,9 @@ echo    - A dated snapshot of the CURRENT projections + ratings
 echo      cache (backtest\snapshots\LEAGUE\in-game-date\)
 echo   A loud warning appears if the ratings cache is stale.
 echo   A league that is MID-SEASON is skipped automatically -
-echo   only completed seasons are ever banked. So it is always
+echo   only completed seasons are ever saved. So it is always
 echo   safe to run this: whichever league is at its season end
-echo   gets banked, the other is left alone.
+echo   gets saved, the other is left alone.
 echo ============================================================
 echo.
 

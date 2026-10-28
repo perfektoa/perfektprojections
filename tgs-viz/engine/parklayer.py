@@ -26,6 +26,8 @@ lives in calib/<LG>/park_factors.csv -> park_blend.json). Two states:
            Pushed through the sheet's own Ballparks chain. NO extra halving —
            the sheet's G3=0.5 implemented "half park / half neutral", and the
            50/50 now lives inside the factors themselves.
+           Each park enters as effective() factors, not the raw table values
+           (2026-10-26, see effective()).
 
 Fidelity proof (run this file): rebuilding the workbook's OWN knobs from the
 workbook's OWN factors with the OLD construction (x0.5 deltas, (x+1)/2 AA)
@@ -53,6 +55,54 @@ def load_blend(league):
     path = os.path.join(HERE, "calib", league, "park_blend.json")
     with open(path, encoding="utf-8") as fh:
         return json.load(fh)["blend"]
+
+
+def load_league_mean(league):
+    """calib/<LG>/park_blend.json 'league_mean' block: the raw factor mean the
+    effective() factors were measured against."""
+    path = os.path.join(HERE, "calib", league, "park_blend.json")
+    with open(path, encoding="utf-8") as fh:
+        return json.load(fh)["league_mean"]
+
+
+# How much of each park factor OOTP 27 plays, as an exponent on the factor's
+# ratio to the league-average park. Measured 2026-10-26 on DEV TESTS (OOTP 27,
+# 120 seasons, 21.3M PA, 30 parks): park rate / league rate fitted jointly on
+# log(factor / league-mean factor) for all four factors.
+#   hr       HR per (PA-BB-HBP): 0.87 (RHB 0.83, LHB 0.91, +-0.06; one value used)
+#   avg      BABIP 0.39, plus K/PA -0.53 and BB/PA +0.41. The engine has no park
+#            K or BB knob, so the three are folded into one BABIP exponent with
+#            the same wOBA change on the TGS chain: 0.62 (0.61-0.63 over the TGS
+#            factor range). TGS 2043-45 real games (OOTP 26): club hits per game
+#            home vs road gave 0.56 +-0.11.
+#   doubles  (2B+3B) share of non-HR hits: 0.75
+#   triples  3B share of (2B+3B): 0.77 on the triples factor and -0.84 on the
+#            doubles factor (the doubles factor adds doubles only, and the
+#            engine's doubles knob scales 2B and 3B together).
+# Per PA this gives 2B 0.84 / 3B 0.83 on their own factors (measured 0.82 / 0.83).
+PASS_THROUGH = {"hr": 0.87, "avg": 0.62, "doubles": 0.75, "triples": 0.77,
+                "triples_per_doubles": -0.84}
+_KIND = {"avg_rhb": "avg", "avg_lhb": "avg", "avg": "avg", "hr_rhb": "hr",
+         "hr_lhb": "hr", "hr": "hr", "doubles": "doubles", "triples": "triples"}
+
+
+def league_mean(rows):
+    """Plain mean of each raw factor over the league's MLB clubs (one row per
+    club). Every club plays half its games at home, so each park counts once."""
+    return {k: sum(float(r[k]) for r in rows) / len(rows) for k in _KIND}
+
+
+def effective(raw, mean):
+    """Raw park factors -> the factors the engine applies.
+
+    The engine's base rates come from the league's own games, which were
+    played in the league's parks, so a park is measured against the
+    league-average park (raw / mean), not against OOTP's 1.000 park. That
+    ratio is then scaled to what OOTP 27 plays (PASS_THROUGH)."""
+    rel = {k: float(raw[k]) / float(mean[k]) for k in _KIND}
+    out = {k: rel[k] ** PASS_THROUGH[_KIND[k]] for k in _KIND}
+    out["triples"] *= rel["doubles"] ** PASS_THROUGH["triples_per_doubles"]
+    return out
 
 
 def _chain(g, fhr=1.0, fba=1.0, f2=1.0, f3=1.0):

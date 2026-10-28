@@ -8,8 +8,10 @@ public/data/<LG>/parks.json (Lev MLB and AAA) in every club park at FULL
 weight, and once on the neutral basis. It writes the compact file
 public/data/<LG>/park_lineup_values.json.
 
-Every number is an engine output: ratings.run_hitters with the club's raw
-park factors passed as park_blend. One league per run. The leagues never mix.
+Every number is an engine output: ratings.run_hitters with the club's park
+factors passed as park_blend, after parklayer.effective() (measured against the
+league-average park, scaled to what OOTP 27 plays). One league per run. The
+leagues never mix.
 
 The file holds, per hitter and per park (FIELDS order):
   dF_vR  dF_vL    change in '<POS> WAA' vs neutral for 1B 2B 3B SS LF CF RF
@@ -20,6 +22,12 @@ Rebuild in the app:
   '<POS> WAA vR' in a park = hitters.json (neutral) value + the delta.
   Any wtd value = s * vR + (1 - s) * vL, with s = vr_share[B]
   (B = the hitter's bats; any other value reads vr_share['R']).
+
+Starting pitchers (2026-10-15): every MLB/AAA pitcher of those clubs with a
+starter line, projected as a starter in every club park at full weight
+(ratings.run_pitchers with park_blend). Per pitcher and per park (PIT_FIELDS
+order): WAA_vR WAA_vL as a starter, the values themselves (vR = against
+right-handed batters). 'pitchers_neutral' holds the neutral WAA vR / vL.
 
 GATE. Park changes batting only, so the WAA change must be the same number at
 1B 2B 3B SS LF CF RF (limit 1e-6). The build stops and writes nothing if it is
@@ -47,6 +55,7 @@ FIELD_POS = ("1B", "2B", "3B", "SS", "LF", "CF", "RF")
 SPLITS = ("vR", "vL")
 FIELDS = ["dF_vR", "dF_vL", "dC_vR", "dC_vL", "dDH_vR", "dDH_vL",
           "wOBA_vR", "wOBA_vL", "OBP_vR", "OBP_vL"]
+PIT_FIELDS = ["WAA_vR", "WAA_vL"]
 GATE_TOL = 1e-6
 WAA_DP = 4      # 0.0001 WAA
 RATE_DP = 5     # 0.00001 wOBA / OBP (batting-order ranks read these)
@@ -99,10 +108,56 @@ def _load(league, records=None):
     return parks, sel
 
 
+def park_factors(league, pk):
+    """One club's park as the engine applies it: its raw parks.json factors
+    through parklayer.effective(), against the league mean in park_blend.json."""
+    return R.PL.effective({k: float(pk[k]) for k in R.PARK_FACTOR_KEYS}, R.PL.load_league_mean(league))
+
+
 def _engine_kw(league):
     # the live pipeline's own layers (refresh.py passes the same three)
     return dict(currency=R.live_currency(league), tails=R.live_hitter_tails(league),
                 fielding=R.live_fielding(league))
+
+
+def _pitcher_kw(league):
+    # the live pipeline's own pitcher layers (refresh.py passes the same three)
+    return dict(scurves=R.live_scurves(league), currency=R.live_currency(league),
+                role_stuff=R.live_role_stuff(league))
+
+
+def _is_num(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def build_pitchers(league, parks, records=None):
+    """Starters in every club park. Returns (pitchers, neutral, count):
+    {id: [[WAA_vR, WAA_vL] per park]}, {id: [WAA_vR, WAA_vL]}.
+    records None: public/data/<LG>/pitchers.json. Only pitchers with a starter
+    line (the engine's Starter rule) are kept."""
+    if records is None:
+        path = os.path.join(_data_dir(league), "pitchers.json")
+        if not os.path.exists(path):
+            return {}, {}, 0
+        with open(path, encoding="utf-8") as fh:
+            records = json.load(fh)
+    clubs = {p["Name"] for p in parks}
+    sel = [r for r in records if r.get("ORG") in clubs and r.get("Lev") in LEVELS]
+    kw = _pitcher_kw(league)
+    neutral = {str(r["ID"]): r for r in R.run_pitchers(sel, league, park_mode="neutral", **kw)
+               if _is_num(r.get("WAA vR")) and _is_num(r.get("WAA vL"))}
+    keep = [r for r in sel if str(r.get("ID")) in neutral]
+    values = {i: [] for i in neutral}
+    for pk in parks:
+        blend = park_factors(league, pk)
+        out = {str(r["ID"]): r for r in R.run_pitchers(keep, league, park_blend=blend, **kw)}
+        if set(out) != set(neutral):
+            raise ValueError(f"{league} / {pk['Name']}: the engine returned a different pitcher set than neutral")
+        for i in neutral:
+            o = out[i]
+            values[i].append([_rnd(o["WAA vR"], WAA_DP), _rnd(o["WAA vL"], WAA_DP)])
+    base = {i: [_rnd(n["WAA vR"], WAA_DP), _rnd(n["WAA vL"], WAA_DP)] for i, n in neutral.items()}
+    return values, base, len(neutral)
 
 
 def _vr_share(league):
@@ -111,9 +166,10 @@ def _vr_share(league):
     return {"R": float(dp["H24"]), "L": float(dp["H23"]), "S": float(dp["H25"])}
 
 
-def build(league, records=None, write=False, quiet=False):
+def build(league, records=None, write=False, quiet=False, pitcher_records=None):
     """Project, gate, and (with write=True) save. Returns a report dict.
-    Raises GateError when the equal-change rule fails. Never calls sys.exit."""
+    Raises GateError when the equal-change rule fails. Never calls sys.exit.
+    pitcher_records None: the starters come from public/data/<LG>/pitchers.json."""
     t0 = time.time()
     say = (lambda *a: None) if quiet else print
     parks, sel = _load(league, records)
@@ -130,7 +186,7 @@ def build(league, records=None, write=False, quiet=False):
 
     for pk in parks:
         club = pk["Name"]
-        blend = {k: float(pk[k]) for k in R.PARK_FACTOR_KEYS}
+        blend = park_factors(league, pk)
         out = {str(r["ID"]): r for r in R.run_hitters(sel, league, park_blend=blend, **kw)}
         if set(out) != set(ids):
             raise ValueError(f"{league} / {club}: the engine returned a different hitter set than neutral")
@@ -177,11 +233,15 @@ def build(league, records=None, write=False, quiet=False):
             f"{league}: gate FAILED (field-position spread {worst_field:.3e}, wtd rule "
             f"{worst_wtd:.3e}, limit {GATE_TOL:g}). Nothing written.\n  " + "\n  ".join(failures))
 
+    pit_values, pit_neutral, n_pit = build_pitchers(league, parks, pitcher_records)
+    report["pitchers"] = n_pit
+
     doc = {
         "league": league,
         "generated": time.strftime("%Y-%m-%dT%H:%M:%S"),
-        "basis": ("Engine values. Each park = that club's raw parks.json factors at full weight. "
-                  "Deltas are park minus neutral (hitters.json)."),
+        "basis": ("Engine values. Each park = that club's parks.json factors at full weight, as "
+                  "parklayer.effective() factors (measured against the league-average park, scaled "
+                  "to what OOTP 27 plays). Deltas are park minus neutral (hitters.json)."),
         "levels": list(LEVELS),
         "field_positions": list(FIELD_POS),
         "fields": FIELDS,
@@ -194,6 +254,9 @@ def build(league, records=None, write=False, quiet=False):
         "neutral": {i: [_rnd(neutral[i]["wOBA vR"], RATE_DP), _rnd(neutral[i]["wOBA vL"], RATE_DP)]
                     for i in ids},
         "hitters": values,
+        "pitcher_fields": PIT_FIELDS,
+        "pitchers_neutral": pit_neutral,
+        "pitchers": pit_values,
     }
     path = os.path.join(_data_dir(league), OUT_NAME)
     size = len(json.dumps(doc, ensure_ascii=False, separators=(",", ":")).encode("utf-8"))
@@ -202,8 +265,8 @@ def build(league, records=None, write=False, quiet=False):
         _write_json(doc, path)
         report["written"] = path
     report["seconds"] = time.time() - t0
-    say(f"{league}: {len(ids)} hitters (Lev {'/'.join(LEVELS)}) x {len(parks)} parks + neutral, "
-        f"{report['seconds']:.1f}s")
+    say(f"{league}: {len(ids)} hitters and {n_pit} starters (Lev {'/'.join(LEVELS)}) x {len(parks)} parks "
+        f"+ neutral, {report['seconds']:.1f}s")
     say(f"  gate OK: WAA change equal across {' '.join(FIELD_POS)} to {worst_field:.2e} "
         f"(limit {GATE_TOL:g}); wtd rule to {worst_wtd:.2e}")
     say(f"  own deltas kept for C (up to {worst_c:.3f} WAA from the field change) "
@@ -245,7 +308,7 @@ def verify(league):
     cols += [f"{c} {s}" for c in ("wOBA", "OBP") for s in ("vR", "vL", "wtd")]
     worst, where = 0.0, None
     for pk in parks:
-        out = R.run_hitters(list(by_id.values()), league, park_blend=pk, **kw)
+        out = R.run_hitters(list(by_id.values()), league, park_blend=park_factors(league, pk), **kw)
         for o in out:
             h = by_id[str(o["ID"])]
             for col in cols:

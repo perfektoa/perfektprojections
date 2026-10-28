@@ -1,5 +1,5 @@
 @echo off
-title TGS - Bank Season
+title TGS - Save Season
 cd /d "%~dp0"
 set "TGS_PY=python"
 python -c "" >nul 2>nul && goto tgs_run

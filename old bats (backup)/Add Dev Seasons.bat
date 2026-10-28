@@ -1,23 +1,23 @@
 @echo off
-title DEV TESTS - bank the seasons already simmed (no simming)
+title DEV TESTS - save the seasons already simmed (no simming)
 cd /d "%~dp0.."
 
 echo ============================================================
-echo   BANK DEV SEASONS  -  no simming
+echo   ADD DEV SEASONS  -  no simming
 echo ------------------------------------------------------------
 echo   For when you sim DEV TESTS by hand inside OOTP. OOTP writes
 echo   the yearly CSV dump by itself at every new year. This bat
-echo   only picks up the dumps that are not banked yet, stores them
+echo   only picks up the dumps that are not saved yet, stores them
 echo   as ratings vintages, rebuilds the DEV trends file and makes
 echo   sure DEV is in the web app's league list. Then it retrains
-echo   the ML dev models on every banked season and rescores TGS
-echo   and BLM (step 4b is LONG: about an hour per 150 banked
+echo   the ML dev models on every saved season and rescores TGS
+echo   and BLM (step 4b is LONG: about an hour per 150 saved
 echo   seasons on this PC; let it finish).
-echo   Safe to run any time; already-banked years are skipped.
+echo   Safe to run any time; already-saved years are skipped.
 echo ============================================================
 echo.
 
-echo  --- 1. bank new yearly dumps ---
+echo  --- 1. save new yearly dumps ---
 python "tgs-viz\backtest\dump_vintages.py" --league DEV --write
 if errorlevel 1 goto :fail
 
@@ -65,9 +65,13 @@ py -3.14 "tgs-viz\backtest\ml\peak.py" fit-final --basis TGS
 if errorlevel 1 goto :fail
 py -3.14 "tgs-viz\backtest\ml\path.py" fit-final --basis TGS
 if errorlevel 1 goto :fail
+py -3.14 "tgs-viz\backtest\ml\draft_value.py" train --basis TGS
+if errorlevel 1 goto :fail
 py -3.14 "tgs-viz\backtest\ml\peak.py" fit-final --basis BLM
 if errorlevel 1 goto :fail
 py -3.14 "tgs-viz\backtest\ml\path.py" fit-final --basis BLM
+if errorlevel 1 goto :fail
+py -3.14 "tgs-viz\backtest\ml\draft_value.py" train --basis BLM
 if errorlevel 1 goto :fail
 py -3.14 "tgs-viz\backtest\ml\predict.py" check --basis TGS
 if errorlevel 1 goto :fail

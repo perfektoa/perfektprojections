@@ -58,3 +58,11 @@ pull_id,league,real_date,real_ts,source,source_files,n_players,content_hash,inge
 581,TGS,2045-06-05,2026-10-04T22:44:02,asof,"[""tgs-viz\\ingest\\.cache\\asof\\tgs\\2045-06-05.json""]",16596,f2784b86e2476bd3de8414bc0239ea84b86cf98a,2026-10-04T22:44:03,2045-06-05
 584,TGS,2026-10-06,2026-10-06T19:55:12,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_tgs_20261006-1955.json""]",16574,c8daff00ce0970fad17e040132c14b8e8e2d3cd3,2026-10-06T19:55:13,2045-08-28
 586,TGS,2026-10-07,2026-10-07T19:48:55,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_tgs_20261007-1948.json""]",16574,9d1786da5587cbb53cfe2aa0e130ae89bc2c30c9,2026-10-07T19:48:56,2045-09-04
+588,TGS,2026-10-09,2026-10-09T12:20:21,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_tgs_20261009-1220.json""]",16652,84f5182ea1aa66684303fa29ffdff2c83f26d676,2026-10-09T12:20:22,2045-09-11
+590,TGS,2026-10-12,2026-10-12T03:22:19,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_tgs_20261012-0322.json""]",16652,f752c0fa434c42c569c9c1dc2bd46ab7482f05b1,2026-10-12T03:22:20,2045-09-18
+594,TGS,2026-10-14,2026-10-14T20:50:58,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_tgs_20261014-2050.json""]",16325,08039cd493926bb269aabce63b79edba8d962a29,2026-10-14T20:50:59,2045-10-02
+596,TGS,2026-10-15,2026-10-15T17:58:40,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_tgs_20261015-1758.json""]",16325,08039cd493926bb269aabce63b79edba8d962a29,2026-10-15T17:58:40,2045-10-02
+598,TGS,2026-10-19,2026-10-19T23:49:19,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_tgs_20261019-2349.json""]",15247,ab2292d104046f1615681e89d7f14e4923987491,2026-10-19T23:49:20,2045-11-05
+600,TGS,2026-10-22,2026-10-22T16:17:40,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_tgs_20261022-1617.json""]",15258,4714f655514126a594fb42d85951f18801e91187,2026-10-22T16:17:41,2045-11-27
+602,TGS,2026-10-26,2026-10-26T17:50:34,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_tgs_20261026-1750.json""]",15258,8e143f5d0ad867d74277ca36bb78120fb7868e66,2026-10-26T17:50:35,2045-12-25
+604,TGS,2026-10-27,2026-10-27T19:08:02,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_tgs_20261027-1908.json""]",15258,540e7533d7f3c33862005b55ca28f8ce0e744d99,2026-10-27T19:08:03,2046-01-01

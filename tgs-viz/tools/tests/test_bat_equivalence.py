@@ -39,8 +39,8 @@ NO_RELOAD = "The open app updates itself; no reload needed."
 BATS = [
     ("Get StatsPlus Ratings.bat", "get_ratings"),
     ("Get StatsPlus History.bat", "get_history"),
-    ("Bank Season.bat", "bank_season"),
-    ("Bank Dev Seasons.bat", "bank_dev"),
+    ("Save Season.bat", "bank_season"),
+    ("Add Dev Seasons.bat", "bank_dev"),
     ("Grind TGS.bat", "grind_tgs"),
     ("Grind BLM.bat", "grind_blm"),
     ("Recalibrate TGS.bat", "recalibrate_tgs"),
@@ -59,10 +59,10 @@ BATS = [
 
 # Allowed text changes (6.5): (rule, bat, old lines, new lines). Lines are as cmd prints them.
 # Rules 7 to 10 (2026-10-02) fix stale bat text: 7 the dev signals header (ages 16-26; growth, gains and
-# chances), 8 the History check job (no fixed 5-minute wait), 9 Bank Dev Seasons step 2b (it also rebuilds
+# chances), 8 the History check job (no fixed 5-minute wait), 9 Add Dev Seasons step 2b (it also rebuilds
 # the DEV age curve), 10 the Recalibrate TGS steps and time. Rule 5 now names the 15-minute and daily limits.
 ALLOWED = [
-    (1, "Bank Dev Seasons.bat", ["  Done. Reload the web app and pick the DEV league."],
+    (1, "Add Dev Seasons.bat", ["  Done. Reload the web app and pick the DEV league."],
      ["  Done. " + NO_RELOAD + " Pick the DEV league."]),
     (1, "Sim Dev League.bat", ["  Done. Reload the web app and pick the DEV league."],
      ["  Done. " + NO_RELOAD + " Pick the DEV league."]),
@@ -82,11 +82,11 @@ ALLOWED = [
      ["  no browser cookies were given. Nothing was fetched or stored. Paste the",
       "  league's token into StatsPlus Tokens.txt, or run this again and paste",
       "  sessionid and csrftoken."]),
-    (4, "Bank Season.bat",
+    (4, "Save Season.bat",
      ["  A league that is MID-SEASON is skipped automatically -",
-      "  only completed seasons are ever banked. So it is always",
+      "  only completed seasons are ever saved. So it is always",
       "  safe to run this: whichever league is at its season end",
-      "  gets banked, the other is left alone."],
+      "  gets saved, the other is left alone."],
      ["  Mid-season, the actuals step skips that league. The",
       "  projection snapshot still runs."]),
     (5, "Get StatsPlus History.bat",
@@ -101,13 +101,13 @@ ALLOWED = [
     (7, "Get StatsPlus Ratings.bat",
      [" --- Dev signals (DEV-league odds of becoming a regular, per 16-22 year old) ---"],
      [" --- Dev signals (growth, gains and chances from the DEV grid, per 16-26 year old) ---"]),
-    (7, "Bank Dev Seasons.bat",
+    (7, "Add Dev Seasons.bat",
      [" --- 4. dev signals for TGS and BLM (the grid applied to each 16-22 year old) ---"],
      [" --- 4. dev signals for TGS and BLM (growth, gains and chances from the DEV grid, per 16-26 year old) ---"]),
     (8, "Get StatsPlus History.bat",
      [" one 5-minute check job only when no token is saved for the league, or"],
      [" one extra check job only when no token is saved for the league, or"]),
-    (9, "Bank Dev Seasons.bat",
+    (9, "Add Dev Seasons.bat",
      [" --- 2b. value the new DEV seasons with each league's engine (only new seasons) ---"],
      [" --- 2b. value the new DEV seasons with each league's engine (only new seasons) and rebuild the DEV age "
       "curve ---"]),
@@ -120,6 +120,15 @@ ALLOWED = [
       "     from the cached StatsPlus pull.",
       "  5. Offers to delete the clone saves (their data is archived).",
       "  No Excel needed. Takes 1 to 3 minutes plus your answers."]),
+    (11, "Sync Metadata.bat",
+     ["  TGS: use this after you refresh 25 Metadata.xlsx with new",
+      "  league exports: open it in Excel, recalculate, and SAVE.",
+      "  BLM: Recalibrate BLM builds its metadata from StatsPlus",
+      "  (metadata-latest.json); this just re-pushes that JSON."],
+     ["  Recalibrate BLM and Update TGS Metadata build each league's",
+      "  metadata from StatsPlus (metadata-latest.json); this just",
+      "  re-pushes that JSON. A league without one still uses its",
+      "  25 Metadata.xlsx: open it in Excel, recalculate, and SAVE."]),
 ]
 for _slug in ("tgs", "blm"):
     ALLOWED.append((3, "Get StatsPlus History.bat",
@@ -133,7 +142,7 @@ for _lg in ST.history_settings():
                     [f" --- {_lg} dev signals (growth, gains and chances from the DEV grid, per 16-26 year old) ---"]))
 for _lid in ST.extra_leagues():
     _name = (ST.league(_lid) or {}).get("name") or _lid
-    ALLOWED.append((6, "Bank Dev Seasons.bat", [],
+    ALLOWED.append((6, "Add Dev Seasons.bat", [],
                     [f"  {_name} still uses its old dev numbers. Run Update {_name} to refresh them."]))
 
 GOLDEN = [
@@ -213,14 +222,14 @@ def scenarios():
                     out.append(Scenario("Get StatsPlus History.bat", "get_history",
                                         f"typed={'/'.join(typed)} token={tok} history={hx} fail={fail}", codes, ans))
     # simple fails-style and fail-fast bats: all pass, each command failing alone
-    for bat, tid in [("Bank Season.bat", "bank_season"), ("Update Draft Board.bat", "draft_board"),
+    for bat, tid in [("Save Season.bat", "bank_season"), ("Update Draft Board.bat", "draft_board"),
                      ("Update Regular Game.bat", "update.RG"), ("Update Dispersal Board.bat", "dispersal_board"),
-                     ("Bank Dev Seasons.bat", "bank_dev"), ("Recalibrate TGS.bat", "recalibrate_tgs"),
+                     ("Add Dev Seasons.bat", "bank_dev"), ("Recalibrate TGS.bat", "recalibrate_tgs"),
                      ("Recalibrate BLM.bat", "recalibrate_blm")]:
         out.append(Scenario(bat, tid, "all pass"))
         for st in command_steps(tid):
             out.append(Scenario(bat, tid, f"{st}=1", {st: 1}))
-    out.append(Scenario("Bank Dev Seasons.bat", "bank_dev", "ctrl+c in dev_odds", {"dev_odds": CTRL_C},
+    out.append(Scenario("Add Dev Seasons.bat", "bank_dev", "ctrl+c in dev_odds", {"dev_odds": CTRL_C},
                         bat_exit_codes={"dev_odds": 1}, expect={"exit": 1, "status": "failed"}))
     # Sync Metadata x metadata-latest.json
     for ex in (True, False):

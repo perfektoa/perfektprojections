@@ -26,6 +26,7 @@ GROUPS = [
     {"id": "calibration", "title": "Calibration and clone sims"},
     {"id": "dev", "title": "DEV research league and ML"},
     {"id": "ootp", "title": "OOTP tools"},
+    {"id": "rare", "title": "Rarely used"},
     {"id": "setup", "title": "Setup and checks"},
     {"id": "selftest", "title": "Self tests"},
 ]
@@ -264,7 +265,7 @@ T = {
     ],
     'bank_season.banner_a': [
         '============================================================',
-        '  BANK SEASON  -  save actuals + freeze projections',
+        '  SAVE SEASON  -  save actuals + freeze projections',
         '------------------------------------------------------------',
         '  THE ORDER MATTERS at a season end:',
         '   1. FIRST run "Get StatsPlus Ratings.bat"  (fresh ratings',
@@ -323,22 +324,22 @@ T = {
     ],
     'bank_dev.banner': [
         '============================================================',
-        '  BANK DEV SEASONS  -  no simming',
+        '  ADD DEV SEASONS  -  no simming',
         '------------------------------------------------------------',
         '  For when you sim DEV TESTS by hand inside OOTP. OOTP writes',
         '  the yearly CSV dump by itself at every new year. This bat',
-        '  only picks up the dumps that are not banked yet, stores them',
+        '  only picks up the dumps that are not saved yet, stores them',
         '  as ratings vintages, rebuilds the DEV trends file and makes',
         "  sure DEV is in the web app's league list. Then it retrains",
-        '  the ML dev models on every banked season and rescores TGS',
-        '  and BLM (step 4b is LONG: about an hour per 150 banked',
+        '  the ML dev models on every saved season and rescores TGS',
+        '  and BLM (step 4b is LONG: about an hour per 150 saved',
         '  seasons on this PC; let it finish).',
-        '  Safe to run any time; already-banked years are skipped.',
+        '  Safe to run any time; already-saved years are skipped.',
         '============================================================',
         '',
     ],
     'bank_dev.dump': [
-        ' --- 1. bank new yearly dumps ---',
+        ' --- 1. save new yearly dumps ---',
     ],
     'bank_dev.trends': [
         '',
@@ -395,7 +396,7 @@ T = {
         '',
         {"console": '  STOP: close this window (or Ctrl+C). Every finished cycle',
          "job": '  STOP: press Stop after this cycle on the page. Every finished cycle'},
-        '  is already banked, so stopping never loses banked seasons',
+        '  is already saved, so stopping never loses saved seasons',
         '  (at worst the current in-progress clone is discarded).',
         '============================================================',
         '',
@@ -415,7 +416,7 @@ T = {
         '',
         '============================================================',
         '  Stopped after a sim problem - everything that finished IS',
-        '  banked. Check the messages above, fix, and rerun.',
+        '  saved. Check the messages above, fix, and rerun.',
         '============================================================',
     ],
     'grind.fail': [
@@ -441,7 +442,7 @@ T = {
         '',
         {"console": '  STOP: close this window (or Ctrl+C). Every finished cycle',
          "job": '  STOP: press Stop after this cycle on the page. Every finished cycle'},
-        '  is already banked.',
+        '  is already saved.',
         '============================================================',
         '',
     ],
@@ -457,7 +458,7 @@ T = {
         '',
         '============================================================',
         '  Stopped after a sim problem - everything that finished IS',
-        '  banked. Check the messages above, fix, and rerun.',
+        '  saved. Check the messages above, fix, and rerun.',
         '============================================================',
     ],
     'grind_blm.fail': [
@@ -577,6 +578,43 @@ T = {
         '',
         '  Something failed above - nothing further was changed.',
     ],
+    'meta_tgs.banner': [
+        '============================================================',
+        '  UPDATE TGS METADATA  -  real season  ->  sheets  ->  webapp',
+        '------------------------------------------------------------',
+        '  Run it once per season, after the regular season ends.',
+        '  A. METADATA = the real TGS season, MLB only (the JPBO and KBO',
+        '     rows are dropped). The StatsPlus stats API and your last',
+        '     ratings pull of the regular season build 7 of the 9 input',
+        "     tabs. YOU paste the MLB pitchers' AS-STARTER stats into",
+        "     'SP Data' and AS-RELIEVER stats into 'RP Data' in",
+        '     The Sheets TGS\\25 Metadata.xlsx (StatsPlus has no stats',
+        '     split by role). Your paste is used as it is.',
+        '  B. REGRESSIONS = the TGS clone archive (plus any NEW complete',
+        "     clone sims in OOTP 26's saved_games, *tgs*.lg), stated at",
+        '     the league-average ratings the metadata just moved. This',
+        '     step never sims anything itself.',
+        '  Then: moves both into The Sheet Hitters / Pitchers (backups made,',
+        '  every change listed), refits the fitted layers, promotes the',
+        '  S-curves if they pass their gates, rebuilds the webapp data.',
+        '  It does not stop to ask. Running it means update everything.',
+        '============================================================',
+        '',
+    ],
+    'meta_tgs.reminder': [
+        '',
+        ' ============================================================',
+        '  REMINDER: paste MLB pitchers only (no JPBO or KBO rows):',
+        "  'SP Data' (as starter) and 'RP Data' (as reliever) into",
+        '  The Sheets TGS\\25 Metadata.xlsx, save, and',
+        {"console": '  CLOSE Excel. Already done? Just press a key.',
+         "job": '  CLOSE Excel. Already done? Press Continue on the page.'},
+        ' ============================================================',
+    ],
+    'meta_tgs.b': [
+        '',
+        ' --- B. regressions from the TGS clone archive, centred on the NEW anchors ---',
+    ],
     'sim_dev.banner': [
         '============================================================',
         '  SIM DEV LEAGUE  -  {years} seasons of "DEV TESTS"  ->  ratings archive',
@@ -585,7 +623,7 @@ T = {
         '  simmed in place year after year. Its yearly CSV dump gives',
         '  true ratings and personalities: no scouting, no StatsPlus.',
         '  Each run: load DEV TESTS, auto-play {years} seasons, wait for the',
-        '  last dump, bank the dumps as ratings vintages, rebuild the DEV',
+        '  last dump, save the dumps as ratings vintages, rebuild the DEV',
         '  trends file for the web app. Run it again any time: it starts',
         '  from the last dump on disk. Dumps are never deleted or moved.',
         '',
@@ -594,7 +632,7 @@ T = {
         '  it from disk). The main menu alone is NOT enough: the tool',
         '  drives FILE -> Load Game. Not running as administrator.',
         '  In DEV TESTS, "Export CSV files after each simulated season"',
-        '  must be ON in the game settings, or nothing gets banked.',
+        '  must be ON in the game settings, or nothing gets saved.',
         '',
         '  FIRST TIME ONLY, before this bat, check the Load Game row and',
         '  the date picker on the real league (neither one sims):',
@@ -615,12 +653,12 @@ T = {
         '',
         ' --- 1. sim {years} season(s) ---',
     ],
-    'sim_dev.bank': [
+    'sim_dev.save': [
         '',
-        ' --- 2. bank the yearly dumps as ratings vintages ---',
+        ' --- 2. save the yearly dumps as ratings vintages ---',
     ],
     'sim_dev.missing': [
-        '  tgs-viz\\backtest\\dump_vintages.py is missing. The seasons are simmed and on disk; nothing was banked.',
+        '  tgs-viz\\backtest\\dump_vintages.py is missing. The seasons are simmed and on disk; nothing was saved.',
     ],
     'sim_dev.trends': [
         '',
@@ -648,10 +686,10 @@ T = {
         '  Sync Data Points  -  Metadata  ->  Sheets',
         '============================================================',
         '',
-        '  TGS: use this after you refresh 25 Metadata.xlsx with new',
-        '  league exports: open it in Excel, recalculate, and SAVE.',
-        '  BLM: Recalibrate BLM builds its metadata from StatsPlus',
-        '  (metadata-latest.json); this just re-pushes that JSON.',
+        '  Recalibrate BLM and Update TGS Metadata build each league\'s',
+        '  metadata from StatsPlus (metadata-latest.json); this just',
+        '  re-pushes that JSON. A league without one still uses its',
+        '  25 Metadata.xlsx: open it in Excel, recalculate, and SAVE.',
         '',
         '  This copies the metadata constants (anchors, league rates,',
         '  fielding ratings, positional adjustments) into The Sheet',
@@ -1169,6 +1207,8 @@ RATINGS_DB = r"tgs-viz\backtest\ratings_db.py"
 DEV_SIGNALS = r"tgs-viz\backtest\dev_signals.py"
 DEV_ODDS, DEV_RATING_ODDS = r"tgs-viz\backtest\dev_odds.py", r"tgs-viz\backtest\dev_rating_odds.py"
 ML_DATASET, ML_SCORE = r"tgs-viz\backtest\ml\dataset.py", r"tgs-viz\backtest\ml\score.py"
+# Draft value (Ctrl wins): trained with the other ML models; score.py scores it on every pull.
+DRAFT_VALUE = r"tgs-viz\backtest\ml\draft_value.py"
 REPRICE = r"tgs-viz\backtest\ml\reprice.py"
 RATING_PATH = r"tgs-viz\backtest\ml\rating_path.py"
 TOKEN = r"tgs-viz\ingest\statsplus_token.py"
@@ -1325,10 +1365,10 @@ def t_bank_season():
         "  Mid-season, the actuals step skips that league. The",
         "  projection snapshot still runs.",
     ] + T["bank_season.banner_b"]
-    return task("bank_season", "Bank Season",
+    return task("bank_season", "Save Season",
                 "Saves each league's finished season stats and a dated snapshot of the current projections. "
                 "Run Get StatsPlus Ratings first. A league that is mid-season is skipped.",
-                "season", steps, leagues=["TGS", "BLM"], bat="Bank Season.bat", requires=["TGS", "BLM"],
+                "season", steps, leagues=["TGS", "BLM"], bat="Save Season.bat", requires=["TGS", "BLM"],
                 fl=flags(network=True), time="1 to 3 minutes", banner=banner,
                 finish=fin("fails", ok=T["bank_season.ok"], fails=T["bank_season.fails"], exit_ok=None))
 
@@ -1339,7 +1379,7 @@ def t_bank_dev(ST):
         s["on_error"] = "fail"
     ml_steps[0]["echo"] = T["bank_dev.ml"]
     steps = [
-        step("dump_vintages", "Bank new yearly dumps", py(r"tgs-viz\backtest\dump_vintages.py", "--league", "DEV", "--write"),
+        step("dump_vintages", "Save new yearly dumps", py(r"tgs-viz\backtest\dump_vintages.py", "--league", "DEV", "--write"),
              echo=T["bank_dev.dump"]),
         step("dev_trends", "DEV trends file", py(RATINGS_DB, "--export", "--league", "DEV"),
              echo=T["bank_dev.trends"], app=True),
@@ -1363,10 +1403,10 @@ def t_bank_dev(ST):
         reminders.append(f"  {name} still uses its old dev numbers. Run Update {name} to refresh them.")
     ok = reminders + T["bank_dev.ok"][:2] + [
         "  Done. " + NO_RELOAD + " Pick the DEV league."] + T["bank_dev.ok"][2:]
-    return task("bank_dev", "Bank Dev Seasons",
-                "Banks the DEV seasons you simmed by hand, rebuilds the DEV trends, odds and age curve, retrains "
+    return task("bank_dev", "Add Dev Seasons",
+                "Adds the DEV seasons you simmed by hand, rebuilds the DEV trends, odds and age curve, retrains "
                 "the ML dev models and rescores TGS and BLM. Needs about 13 GB of memory.",
-                "dev", steps, leagues=["DEV", "TGS", "BLM"], bat="Bank Dev Seasons.bat",
+                "dev", steps, leagues=["DEV", "TGS", "BLM"], bat="Add Dev Seasons.bat",
                 requires=["DEV", "TGS", "BLM"],
                 fl=flags(heavy=True, long=True, writes_app_data=True, needs_archive=True),
                 locks=["dumps.DEV"], time="Hours (retrains the ML models; needs about 13 GB of memory)",
@@ -1375,7 +1415,7 @@ def t_bank_dev(ST):
 
 
 def dev_price_argv(basis):
-    """The DEV re-price of Bank Dev Seasons on one basis. BLM: agecurve_fit,
+    """The DEV re-price of Add Dev Seasons on one basis. BLM: agecurve_fit,
     which also rewrites the DEV age curve that every league's path uses. TGS:
     ml/reprice.py (its prices live in .dev_cache/ml/waa_TGS)."""
     if basis == "BLM":
@@ -1384,7 +1424,7 @@ def dev_price_argv(basis):
 
 
 def dev_price_steps(ST, bases):
-    """What a retrain on these bases runs before its ML steps, in Bank Dev
+    """What a retrain on these bases runs before its ML steps, in Save Dev
     Seasons order. First the DEV re-price on each basis: a recalibration gives
     the DEV prices a new tag, and dataset.py stops until DEV is priced with it.
     The odds grid, the Make-it odds tables and the dev signals read the BLM
@@ -1421,13 +1461,15 @@ def ml_extra_steps(leagues):
 
 
 def ml_retrain_steps(bases=("TGS", "BLM")):
-    """The 10 ML steps of Bank Dev Seasons, in bat order."""
+    """The 12 ML steps of Add Dev Seasons, in bat order (the draft value model
+    trains with the peak and path models since 2026-10-27)."""
     peak, path = r"tgs-viz\backtest\ml\peak.py", r"tgs-viz\backtest\ml\path.py"
     predict = r"tgs-viz\backtest\ml\predict.py"
     out = [step(f"{b.lower()}_ml_dataset", f"{b} ML training rows", ml(ML_DATASET, "--basis", b, "--write")) for b in bases]
     for b in bases:
         out.append(step(f"{b.lower()}_ml_peak", f"{b} ML peak model", ml(peak, "fit-final", "--basis", b)))
         out.append(step(f"{b.lower()}_ml_path", f"{b} ML path model", ml(path, "fit-final", "--basis", b)))
+        out.append(step(f"{b.lower()}_ml_draft", f"{b} ML draft value model", ml(DRAFT_VALUE, "train", "--basis", b)))
     out += [step(f"{b.lower()}_ml_check", f"{b} ML model check", ml(predict, "check", "--basis", b)) for b in bases]
     out += [step(f"{b.lower()}_ml_score", f"{b} ML scores", ml(ML_SCORE, "--league", b, "--write"), app=True)
             for b in bases]
@@ -1446,7 +1488,7 @@ def rating_path_step(lg, echo=None, sid=None, title=None, tag=None, **kw):
 
 
 def rating_path_train_steps():
-    """Rebuild the DEV ratings table from every banked DEV season, then train
+    """Rebuild the DEV ratings table from every saved DEV season, then train
     the rating-path models (GPU). One model set for every league: the models
     read ratings only, no WAA."""
     return [step("rating_path_build", "DEV ratings table (rating paths)", ml(RATING_PATH, "build")),
@@ -1595,14 +1637,60 @@ def t_recalibrate_blm():
                 finish=fin("failfast", ok=ok, fail=T["recal_blm.fail"], exit_ok=0, exit_fail=1))
 
 
+def t_metadata_tgs():
+    """Recalibrate BLM's flow for TGS, without the clone cleanup (Recalibrate TGS
+    owns the clone saves). The regressions rerun after the metadata because the
+    pitching intercepts are stated at its league-average ratings (calibrate.py
+    pitch_anchors)."""
+    inputs_dir = r"tgs-viz\engine\calib\TGS\metadata_inputs"
+    meta = r"tgs-viz\engine\calib\TGS\metadata-latest.json"
+    const = r"tgs-viz\engine\calib\TGS\constants-latest.json"
+    mi = r"tgs-viz\ingest\metadata_inputs.py"
+    steps = [
+        gate(),
+        step("metadata_auto", "Metadata inputs from StatsPlus",
+             py(mi, "--league", "TGS", "--out", inputs_dir, "--stage", "auto"), echo=T["recal_blm.a1"]),
+        gate("paste_reminder",
+             text="Paste the MLB pitchers' 'SP Data' (as starter) and 'RP Data' (as reliever) into "
+                  "The Sheets TGS\\25 Metadata.xlsx, save, and close Excel. No JPBO or KBO rows.",
+             echo=T["meta_tgs.reminder"]),
+        step("metadata_roles", "Your SP/RP paste",
+             py(mi, "--league", "TGS", "--out", inputs_dir, "--stage", "roles", "--accept-paste"), echo=T["recal_blm.a2"]),
+        step("metadata_calibrate", "Metadata data points",
+             py(r"tgs-viz\engine\metadata_calibrate.py", "--inputs-dir", inputs_dir, "--json", meta), echo=T["recal_blm.a3"]),
+        step("calibrate", "Regressions from the TGS clone archive",
+             calibrate_argv("TGS", "{saved_games:26}/*tgs*.lg"), echo=T["meta_tgs.b"]),
+        excel_check("excel", "The Sheets TGS"),
+        step("sync", "Move the metadata and regressions into The Sheets TGS",
+             py(SYNC, "--league", "TGS", "--calib", const, "--metadata-calib", meta, "--write", "--yes"),
+             echo=T["recal_blm.sync"]),
+    ] + fit_steps("TGS") + [
+        step("export_calibration", "Calibration page data",
+             py(r"tgs-viz\engine\export_calibration.py", "--league", "TGS", "--write"), app=True),
+    ] + extract_steps("TGS") + [
+        step("refresh", "Rebuild the app data from the cached pull",
+             py(REFRESH, "--statsplus", "--from-cache", "--league", "TGS", "--write"),
+             echo=T["recal_blm.refresh"], app=True),
+    ]
+    ok = T["recal_blm.ok"][:2] + ["  Done. " + NO_RELOAD] + T["recal_blm.ok"][2:]
+    return task("metadata_tgs", "Update TGS Metadata",
+                "Run this after the TGS regular season ends: the metadata step refuses in game months 4 to 9. "
+                "Builds the TGS metadata from StatsPlus (MLB stats only) and your SP/RP paste, reruns the "
+                "regressions on the new league averages, moves both into The Sheets TGS and rebuilds the app data.",
+                "season", steps, leagues=["TGS"], bat="Update TGS Metadata.bat", requires=["TGS"],
+                fl=flags(network=True, needs_excel_closed=True, writes_app_data=True, needs_archive=True),
+                locks=["clones.TGS"], time="A few minutes plus your SP/RP paste", banner=T["meta_tgs.banner"],
+                finish=fin("failfast", ok=ok, fail=T["recal_blm.fail"], exit_ok=0, exit_fail=1))
+
+
 def t_sim_dev():
     steps = [
         gate(input="ootp_ready"),
         step("winsim", "Sim the DEV seasons", py(WINSIM, "--league", "DEV", "--sim", "--years", "{years}"),
              echo=T["sim_dev.sim"]),
-        step("dump_script", "Check the banking script", kind="exists_check",
-             path=r"tgs-viz\backtest\dump_vintages.py", echo=T["sim_dev.bank"], missing_echo=T["sim_dev.missing"]),
-        step("dump_vintages", "Bank the yearly dumps", py(r"tgs-viz\backtest\dump_vintages.py", "--league", "DEV", "--write")),
+        step("dump_script", "Check the save script", kind="exists_check",
+             path=r"tgs-viz\backtest\dump_vintages.py", echo=T["sim_dev.save"], missing_echo=T["sim_dev.missing"]),
+        step("dump_vintages", "Save the yearly dumps", py(r"tgs-viz\backtest\dump_vintages.py", "--league", "DEV", "--write")),
         step("dev_trends", "DEV trends file", py(RATINGS_DB, "--export", "--league", "DEV"),
              echo=T["sim_dev.trends"], app=True),
         step("manifest", "Register DEV in the app's league list", py(EXTRACT_DATA, "--manifest-only"),
@@ -1610,7 +1698,7 @@ def t_sim_dev():
     ]
     ok = T["sim_dev.ok"][:2] + ["  Done. " + NO_RELOAD + " Pick the DEV league."] + T["sim_dev.ok"][2:]
     return task("sim_dev", "Sim Dev League",
-                "Sims DEV TESTS in OOTP 27 for the number of seasons you choose, then banks the yearly dumps "
+                "Sims DEV TESTS in OOTP 27 for the number of seasons you choose, then saves the yearly dumps "
                 "and rebuilds the DEV trends file.",
                 "dev", steps, leagues=["DEV"], bat="Sim Dev League.bat", requires=["DEV"],
                 fl=flags(drives_ootp=True, long=True, writes_app_data=True, needs_archive=True),
@@ -1656,7 +1744,9 @@ def t_dispersal(ST):
     return task("dispersal_board", "Update Dispersal Board",
                 "Builds the TGS dispersal draft board from the cached StatsPlus pull: every player in the folding "
                 "orgs. Add each drafted player's name to dispersal_drafted.txt and run it again.",
-                "everyday", steps, leagues=["TGS"], bat="Update Dispersal Board.bat", requires=["TGS"],
+                # "Rarely used", not Everyday (user, 2026-10-09: the TGS dispersal draft was a one-time
+                # event); the task, its bat and its code stay, so a future dispersal can still run it
+                "rare", steps, leagues=["TGS"], bat="Update Dispersal Board.bat", requires=["TGS"],
                 fl=flags(network=True, writes_app_data=True), time="Under a minute",
                 inputs=[inp("orgs", "text", "Folding orgs", "Org names, separated by commas.", default=orgs)],
                 banner=T["dispersal.banner"],
@@ -1845,7 +1935,7 @@ def dev_update_steps(ST, lid):
         reg = step("manifest", "Register in the app's league list",
                    py(NEW_LEAGUE, "register-manifest", "--league", lid), app=True)
     return [
-        step("dump_vintages", "Bank new yearly dumps", py(r"tgs-viz\backtest\dump_vintages.py", "--league", lid, "--write")),
+        step("dump_vintages", "Save new yearly dumps", py(r"tgs-viz\backtest\dump_vintages.py", "--league", lid, "--write")),
         step("trends", "Trends file", py(RATINGS_DB, "--export", "--league", lid), app=True),
         reg,
     ]
@@ -1856,7 +1946,7 @@ def t_update_dev(ST, lg):
     name = lg.get("name") or lid
     steps = headers(dev_update_steps(ST, lid))
     return task(f"update.{lid}", f"Update {name}" if lid != "DEV" else "Update DEV",
-                f"Banks the yearly dumps of {name} that are not banked yet and rebuilds its trends file. "
+                f"Saves the yearly dumps of {name} that are not saved yet and rebuilds its trends file. "
                 "No simming.",
                 "dev", steps, leagues=[lid], requires=[lid], fl=flags(writes_app_data=True, needs_archive=True),
                 locks=[f"dumps.{lid}"], time="About 20 seconds per new season",
@@ -1874,7 +1964,7 @@ def t_sim_dev_other(ST, lg):
              ] + dev_update_steps(ST, lid)
     headers(steps)
     return task(f"sim_dev.{lid}", f"Sim {name}",
-                f"Sims {name} in OOTP {ver} for the number of seasons you choose, then banks the yearly dumps "
+                f"Sims {name} in OOTP {ver} for the number of seasons you choose, then saves the yearly dumps "
                 "and rebuilds its trends file.",
                 "dev", steps, leagues=[lid], requires=[lid],
                 fl=flags(drives_ootp=True, long=True, writes_app_data=True, needs_archive=True),
@@ -1918,17 +2008,17 @@ def t_clone_tasks(ST, lg):
 # ---------------------------------------------------------------- tasks with no bat (4.6)
 
 def t_ml_tasks(ST):
-    """The retrain cards price DEV first, the way Bank Dev Seasons does (see
+    """The retrain cards price DEV first, the way Add Dev Seasons does (see
     dev_price_steps). A card that reruns the DEV odds reads the DEV dump folder
     (dev_odds sums the playing time from its per-game files), so it holds
-    dumps.DEV like Bank Dev Seasons and never runs while Sim Dev League sims."""
+    dumps.DEV like Add Dev Seasons and never runs while Sim Dev League sims."""
     extras = ST.extra_leagues()
     out = []
     steps = (dev_price_steps(ST, ("TGS", "BLM")) + ml_retrain_steps() + ml_extra_steps(extras)
              + [rating_path_step(lg) for lg in ["TGS", "BLM"] + list(extras)])
     out.append(task("retrain_ml", "Retrain the ML dev models",
                     "Values the DEV seasons with the current TGS and BLM engines, then rebuilds the DEV age curve, "
-                    "odds and dev signals. Retrains the ML dev models for TGS and BLM on every banked DEV season and "
+                    "odds and dev signals. Retrains the ML dev models for TGS and BLM on every saved DEV season and "
                     "rescores TGS, BLM and the leagues that use their models. Needs about 13 GB of memory.",
                     "dev", headers(steps), leagues=["DEV", "TGS", "BLM"] + list(extras), requires=["TGS", "BLM"],
                     fl=flags(heavy=True, long=True, writes_app_data=True, needs_archive=True),
@@ -1941,6 +2031,7 @@ def t_ml_tasks(ST):
             step("ml_dataset", f"{b} ML training rows", ml(ML_DATASET, "--basis", b, "--write")),
             step("ml_peak", f"{b} ML peak model", ml(peak, "fit-final", "--basis", b)),
             step("ml_path", f"{b} ML path model", ml(path, "fit-final", "--basis", b)),
+            step("ml_draft", f"{b} ML draft value model", ml(DRAFT_VALUE, "train", "--basis", b)),
             step("ml_check", f"{b} ML model check", ml(r"tgs-viz\backtest\ml\predict.py", "check", "--basis", b)),
             step("ml_score", f"{b} ML scores", ml(ML_SCORE, "--league", b, "--write"), app=True),
         ] + ml_extra_steps(xs) + [rating_path_step(lg, sid=f"{lg.lower()}_rating_paths") for lg in [b] + xs]
@@ -1972,8 +2063,8 @@ def t_ml_tasks(ST):
         ]
     rp = rating_path_train_steps() + [rating_path_step(lg) for lg in ["TGS", "BLM"] + list(extras)]
     out.append(task("rating_paths_train", "Train the rating-path models",
-                    "Rebuilds the DEV ratings table from every banked DEV season and trains the year-by-year "
-                    "rating models on the GPU, then projects every league's players. Run it after Bank Dev "
+                    "Rebuilds the DEV ratings table from every saved DEV season and trains the year-by-year "
+                    "rating models on the GPU, then projects every league's players. Run it after Save Dev "
                     "Seasons adds seasons. It does not touch the ML dev models or any WAA.",
                     "dev", headers(rp), leagues=["DEV", "TGS", "BLM"] + list(extras), requires=["TGS", "BLM"],
                     fl=flags(heavy=True, long=True, writes_app_data=True, needs_archive=True),
@@ -1996,7 +2087,7 @@ def t_everyday_extra(ST):
     players = player_leagues(ST)
     choices = [{"value": "all", "label": "All leagues"}] + [
         {"value": l, "label": (ST.league(l) or {}).get("name") or l} for l in players]
-    out.append(task("bank_market_fit", "Bank market fit",
+    out.append(task("bank_market_fit", "Save market fit",
                     "Refits the market value model of each league from its current players. It is the only writer of "
                     "market_fit.json.",
                     "everyday", headers([step(f"market_{l.lower()}", f"{l} market fit",
@@ -2016,6 +2107,16 @@ def t_everyday_extra(ST):
                                                       default=iafa_lgs[0],
                                                       choices=[{"value": l, "label": l} for l in iafa_lgs])],
                         fl=flags(writes_app_data=True), time="Under a minute"))
+        out.append(task("fa_demands", "Update free agent demands",
+                        "Reads each free agent's asking salary and signability from your OOTP Free Agents export, "
+                        "so the FA pages can show Demand next to Fair AAV. Export the FA screen in OOTP first.",
+                        "everyday", headers([step("fa_demands", "Free agent demands",
+                                                  py(r"tgs-viz\ingest\fa_demands.py", "--league", "{league}", "--write"),
+                                                  app=True)]),
+                        leagues=iafa_lgs, inputs=[inp("league", "choice", "League", "", required=True,
+                                                      default=iafa_lgs[0],
+                                                      choices=[{"value": l, "label": l} for l in iafa_lgs])],
+                        fl=flags(writes_app_data=True), time="Seconds"))
     if "TGS" in ST.slug_map() and "BLM" in ST.slug_map():
         out.append(task("parks_update", "Update park factors",
                         "Rebuilds the park factors for TGS and BLM from each league's home team, then rebuilds both "
@@ -2203,7 +2304,7 @@ def new_league_steps(inputs):
             dump += ["--dump-dir", "{dump_dir}"]
         steps = [
             check, profile,
-            step("dump_vintages", "Bank its yearly dumps", dump),
+            step("dump_vintages", "Save its yearly dumps", dump),
             step("trends", "Trends file", py(RATINGS_DB, "--export", "--league", "{id}"), "ignore", app=True,
                  app_leagues=["{id}"]),
             register,
@@ -2352,7 +2453,7 @@ def all_tasks(ST, state=None):
     if h:
         out.append(h)
     out += [t_bank_season(), t_bank_dev(ST), t_grind(ST, "TGS"), t_grind(ST, "BLM"), t_recalibrate_tgs(),
-            t_recalibrate_blm(), t_sim_dev(), t_sync_metadata(), t_dispersal(ST), t_draft_board()]
+            t_recalibrate_blm(), t_metadata_tgs(), t_sim_dev(), t_sync_metadata(), t_dispersal(ST), t_draft_board()]
     out += t_ootp_tools()
     defaults_ids = defaults_league_ids(ST)
     for lid, lg in ST.leagues(include_disabled=True).items():

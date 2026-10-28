@@ -1,13 +1,13 @@
 {
  "league": "TGS",
- "fitted_at": "2026-08-18T14:56:50",
- "source": "engine/fielding_curves_fit.py over calib/TGS archive + 25 Metadata.xlsx live population (offsets)",
+ "fitted_at": "2026-10-15T19:44:48",
+ "source": "engine/fielding_curves_fit.py over calib/TGS archive + live population (offsets) from tgs-viz\\engine\\calib\\TGS\\metadata_inputs CSVs (season 2045, in-game date 2045-10-07, ratings pull statsplus_tgs_20261012-0322.json, CSVs saved 2026-10-15 19:44)",
  "positions": {
   "1B": {
    "rng": "IF RNG",
    "x2": "HT",
    "m2": 0.0004434140708865336,
-   "offset": 0.08303250066301417,
+   "offset": 0.08423019543017714,
    "knots": [
     [
      35.0,
@@ -43,7 +43,7 @@
     ]
    ],
    "gt_pm": 0.856929859030795,
-   "live_ip_coverage": 0.999655674555067,
+   "live_ip_coverage": 0.9988875979531803,
    "plays_cell": "T5",
    "rpp_cell": "H38",
    "elig_min_rng": 20,
@@ -102,7 +102,7 @@
    "rng": "IF RNG",
    "x2": "IF ARM",
    "m2": 0.00036894002943831816,
-   "offset": 0.04163006487566668,
+   "offset": 0.040140749770517924,
    "knots": [
     [
      45.0,
@@ -138,7 +138,7 @@
     ]
    ],
    "gt_pm": 0.6068715540369181,
-   "live_ip_coverage": 0.9999138642644367,
+   "live_ip_coverage": 1.0,
    "plays_cell": "T8",
    "rpp_cell": "H38",
    "elig_min_rng": 50,
@@ -197,7 +197,7 @@
    "rng": "IF RNG",
    "x2": "IF ARM",
    "m2": 0.0014733105983138713,
-   "offset": 0.1110326935606288,
+   "offset": 0.1122784842725977,
    "knots": [
     [
      35.0,
@@ -233,7 +233,7 @@
     ]
    ],
    "gt_pm": 0.825551416222986,
-   "live_ip_coverage": 1.0,
+   "live_ip_coverage": 0.9997775195906361,
    "plays_cell": "T12",
    "rpp_cell": "H38",
    "elig_min_rng": 40,
@@ -292,7 +292,7 @@
    "rng": "IF RNG",
    "x2": "IF ARM",
    "m2": 0.0016495304828979794,
-   "offset": 0.13745976477966018,
+   "offset": 0.14011082234385194,
    "knots": [
     [
      55.0,
@@ -320,7 +320,7 @@
     ]
    ],
    "gt_pm": 0.697559313779818,
-   "live_ip_coverage": 0.9993754352211461,
+   "live_ip_coverage": 1.0,
    "plays_cell": "T15",
    "rpp_cell": "H38",
    "elig_min_rng": 60,
@@ -367,7 +367,7 @@
    "rng": "OF RNG",
    "x2": null,
    "m2": null,
-   "offset": 0.0008626431801911502,
+   "offset": 0.006341845928792609,
    "knots": [
     [
      35.0,
@@ -403,7 +403,7 @@
     ]
    ],
    "gt_pm": 0.584789091115412,
-   "live_ip_coverage": 0.9993762233550579,
+   "live_ip_coverage": 0.9999505599090303,
    "plays_cell": "T18",
    "rpp_cell": "H39",
    "elig_min_rng": 50,
@@ -462,7 +462,7 @@
    "rng": "OF RNG",
    "x2": null,
    "m2": null,
-   "offset": -0.0006842182537429653,
+   "offset": 0.004019081079414937,
    "knots": [
     [
      60.0,
@@ -527,7 +527,7 @@
    "rng": "OF RNG",
    "x2": null,
    "m2": null,
-   "offset": 0.013378110348328701,
+   "offset": 0.01172175113245626,
    "knots": [
     [
      40.0,
@@ -563,7 +563,7 @@
     ]
    ],
    "gt_pm": 0.6049679017445875,
-   "live_ip_coverage": 0.9999784765717483,
+   "live_ip_coverage": 0.9999752799545151,
    "plays_cell": "T26",
    "rpp_cell": "H39",
    "elig_min_rng": 50,

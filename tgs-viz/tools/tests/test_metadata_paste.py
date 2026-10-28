@@ -118,7 +118,7 @@ class PasteSeason(unittest.TestCase):
     def test_other_seasons_are_read_only_for_a_paste_that_does_not_match(self):
         asked = []
 
-        def fake(base, slug, year, refresh=False):
+        def fake(base, slug, year, refresh=False, league=None):
             asked.append(year)
             return {2057: P_2057}.get(year)
 
@@ -139,6 +139,20 @@ class PasteSeason(unittest.TestCase):
             self.assertIsNone(M.season_pitching("base", "zz-test-no-cache", 1900))
         self.assertIn("1900 is not checked", out.getvalue())
         self.assertFalse(os.path.exists(cache))
+
+
+class ForeignRows(unittest.TestCase):
+    """The TGS feeds carry the JPBO season (league 117) next to MLB (100)."""
+
+    ROWS = [{"player_id": "1", "league_id": "100"}, {"player_id": "2", "league_id": 117},
+            {"player_id": "3", "league_id": "119"}, {"player_id": "4", "league_id": "100"}]
+
+    def test_tgs_keeps_mlb_only(self):
+        self.assertEqual([r["player_id"] for r in M.mlb_only(self.ROWS, "TGS")], ["1", "4"])
+
+    def test_blm_and_no_league_keep_every_row(self):
+        self.assertEqual(len(M.mlb_only(self.ROWS, "BLM")), 4)
+        self.assertEqual(len(M.mlb_only(self.ROWS, None)), 4)
 
 
 if __name__ == "__main__":

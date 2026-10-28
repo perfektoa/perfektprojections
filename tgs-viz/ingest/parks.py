@@ -11,6 +11,9 @@ The park spec (final, 2026-08-14):
            (hits / doubles / triples / HR) and per batter handedness.
            NPB parks are excluded everywhere — Japan is a different finance and
            park environment and never enters an MLB comparison.
+           Each park enters as engine/parklayer.effective() factors (2026-10-26):
+           measured against the league-average park, scaled to what OOTP 27
+           plays. The raw table values stay in parks.json for display.
 
 This module only produces the FACTORS. Converting a multiplicative factor into
 the sheet's additive rate-delta units needs the league baseline rates, which
@@ -40,6 +43,8 @@ NPB = {"Fukuoka Vipers", "Hiroshima Phoenix", "Kansai Cubs", "Kyoto Aces",
 REPO = os.path.dirname(VIZ)
 sys.path.insert(0, os.path.join(VIZ, "tools"))
 import settings as ST  # noqa: E402
+sys.path.insert(0, os.path.join(VIZ, "engine"))
+import parklayer as PL  # noqa: E402
 
 
 def _home(lg):
@@ -118,11 +123,14 @@ def build(league, write=False):
     home = home[0]
     road = [r for r in mlb if r["Team"].strip() != cfg["home"]]
 
-    blend = {}
+    keyed = lambda r: {key: float(r[col]) for col, key in COLS.items()}
+    lg_mean = PL.league_mean([keyed(x) for x in mlb])
+    eff_home = PL.effective(keyed(home), lg_mean)
+    eff_road = [PL.effective(keyed(x), lg_mean) for x in road]
+    blend, raw_blend = {}, {}
     for col, key in COLS.items():
-        h = float(home[col])
-        r = mean(float(x[col]) for x in road)
-        blend[key] = round(0.5 * h + 0.5 * r, 6)
+        blend[key] = round(0.5 * eff_home[key] + 0.5 * mean(e[key] for e in eff_road), 6)
+        raw_blend[key] = round(0.5 * float(home[col]) + 0.5 * mean(float(x[col]) for x in road), 6)
 
     out = {
         "league": league,
@@ -130,15 +138,21 @@ def build(league, write=False):
         "n_parks": len(mlb),
         "n_road": len(road),
         "n_excluded": len(rows) - len(mlb),
-        # MY PARK state: 50% home + 50% mean(other MLB parks), per outcome/hand.
+        # MY PARK state: 50% home + 50% mean(other MLB parks), per outcome/hand,
+        # on the effective() factors. This is what the engine reads.
         "blend": blend,
+        # the raw factor mean of the league's MLB parks (effective() divides by it)
+        "league_mean": {k: round(v, 6) for k, v in lg_mean.items()},
+        "pass_through": PL.PASS_THROUGH,
+        # the same 50/50 on the raw table values, for reference only
+        "raw_blend": raw_blend,
         # DEFAULT state is all parks equal: factor 1.0 everywhere, by definition.
         # It is not listed because it is not data — the engine hard-codes it.
     }
     print(f"{league}: home={cfg['home']}  parks={len(mlb)} MLB "
           f"({out['n_excluded']} excluded)  road avg over {len(road)}")
     for key in COLS.values():
-        print(f"    {key:<9} {blend[key]:.4f}")
+        print(f"    {key:<9} {blend[key]:.4f}   (raw 50/50 {raw_blend[key]:.4f}, league mean {lg_mean[key]:.4f})")
     dst = os.path.join(VIZ, "engine", "calib", league, "park_blend.json")
     if write:
         with open(dst, "w", encoding="utf-8") as fh:

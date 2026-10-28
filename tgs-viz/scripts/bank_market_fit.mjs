@@ -53,7 +53,7 @@ if (!leagues.length) {
   leagues.push(...list.map(lg => lg.id).filter(Boolean));
 }
 if (fromStamp && leagues.length !== 1) {
-  console.error('--from banks one specific snapshot — name exactly one league.');
+  console.error('--from saves one specific snapshot — name exactly one league.');
   process.exit(1);
 }
 
@@ -91,7 +91,7 @@ for (const league of leagues) {
   const fit = fitFAMarket(load(league, hFile), load(league, pFile));
   const n = marketFitSupport(fit);
   if (!n || !fit.pooled || !(fit.pooled.slope > 0)) {
-    console.log(`${league}: SKIP — nothing worth banking (n=${n}, no usable pooled slope)`);
+    console.log(`${league}: SKIP — nothing worth saving (n=${n}, no usable pooled slope)`);
     continue;
   }
 
@@ -106,7 +106,7 @@ for (const league of leagues) {
     + `r2 ${fit.pooled.r2.toFixed(3)}${fromStamp ? ` (from backup ${fromStamp})` : ''}`;
 
   if (prev && n < prevN && !force) {
-    console.log(`${league}: KEPT the banked fit — banked n=${prevN} `
+    console.log(`${league}: KEPT the saved fit — saved n=${prevN} `
       + `slope ${m(prev.fit.pooled.slope)}/WAR from ${prev.bankedAt}; new fit is only ${what}`);
     continue;
   }

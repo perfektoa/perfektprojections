@@ -142,6 +142,21 @@ def _scan_consts_cached(hpath):
     return dict(dp), dict(filt), dict(park)
 
 
+_P_CONSTS_CACHE = {}
+
+
+def _scan_pitcher_consts_cached(ppath):
+    """P.scan_consts(ppath), loaded once per version of the workbook, like
+    _scan_consts_cached. park_values.py calls run_pitchers once per park."""
+    st = os.stat(ppath)
+    key = (ppath, st.st_mtime_ns, st.st_size)
+    hit = _P_CONSTS_CACHE.get(ppath)
+    if not hit or hit[0] != key:
+        _P_CONSTS_CACHE[ppath] = hit = (key, P.scan_consts(ppath))
+    dp, filt, park_aa = hit[1]
+    return dict(dp), dict(filt), park_aa
+
+
 def run_hitters(records, league, currency=None, tails=None, fielding=None,
                 park_mode="neutral", park_blend=None):
     """Export records -> engine -> full computed records.
@@ -405,7 +420,7 @@ def _hitter_dp(league):
 
 
 def run_pitchers(records, league, scurves=None, currency=None, park_mode="neutral", role_stuff=None,
-                 observed=True):
+                 observed=True, park_blend=None):
     """scurves (audit D1): a pitchers.load_scurves() dict — when given, the four
     pitching rate blocks use the fitted logistic curves instead of the
     two-segment lines. Deliberately opt-in (callers pass live_scurves(league)):
@@ -419,12 +434,23 @@ def run_pitchers(records, league, scurves=None, currency=None, park_mode="neutra
     id and name ("_id", "_name") for the pitcher's own archived switch.
     observed=False drops that per-pitcher table: pass it when the records are
     NOT this league's players (DEV priced with a borrowed calibration), whose
-    ids could collide with the league's."""
+    ids could collide with the league's.
+    park_blend (series starters 2026-10-15): an explicit park-factor dict with
+    the eight PARK_FACTOR_KEYS, as in run_hitters. When given, it replaces the
+    park_blend.json file and park_mode is not read. Default None: every
+    existing call behaves exactly as before."""
     if role_stuff and not observed and role_stuff.get("observed"):
         role_stuff = {k: v for k, v in role_stuff.items() if k != "observed"}
     ppath = os.path.join(REPO, f"The Sheets {league}", "The Sheet Pitchers.xlsx")
-    dp, filt, park_aa = P.scan_consts(ppath)
-    if park_mode != "sheet":
+    dp, filt, park_aa = _scan_pitcher_consts_cached(ppath)
+    if park_blend is not None:
+        missing = [k for k in PARK_FACTOR_KEYS if k not in park_blend]
+        if missing:
+            raise ValueError(f"park_blend is missing factor(s): {', '.join(missing)}")
+        blend = {k: float(park_blend[k]) for k in PARK_FACTOR_KEYS}
+        _park, filt_over, park_aa = PL.knobs(_hitter_dp(league), blend)
+        filt = {**filt, **filt_over}
+    elif park_mode != "sheet":
         # the park chain constants live in the HITTER workbook's Data Points;
         # _hitter_dp caches the scan so both modes share one workbook load
         blend = PL.load_blend(league) if park_mode == "blend" else None

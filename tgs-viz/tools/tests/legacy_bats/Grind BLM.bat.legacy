@@ -16,7 +16,7 @@ echo   (Grind TGS and Grind BLM cannot run at the same time -
 echo    they share your mouse.)
 echo.
 echo   STOP: close this window (or Ctrl+C). Every finished cycle
-echo   is already banked.
+echo   is already saved.
 echo ============================================================
 echo.
 pause
@@ -60,7 +60,7 @@ python "tgs-viz\engine\export_calibration.py" --league BLM --write
 python "tgs-viz\ingest\refresh.py" --statsplus --from-cache --league BLM --slug blm --write
 if errorlevel 1 goto :fail
 
-rem archive is banked by calibrate above; now delete the spent clone saves.
+rem archive is saved by calibrate above; now delete the spent clone saves.
 rem the clone OOTP still has loaded is skipped and swept next cycle.
 python "ootp\cleanup_clones.py" --league BLM --junk --yes
 
@@ -71,7 +71,7 @@ goto :loop
 echo.
 echo ============================================================
 echo   Stopped after a sim problem - everything that finished IS
-echo   banked. Check the messages above, fix, and rerun.
+echo   saved. Check the messages above, fix, and rerun.
 echo ============================================================
 pause
 exit /b 1

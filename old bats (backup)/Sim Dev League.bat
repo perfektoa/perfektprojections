@@ -1,5 +1,5 @@
 @echo off
-title DEV TESTS - sim seasons + bank the dumps (OOTP 27)
+title DEV TESTS - sim seasons + save the dumps (OOTP 27)
 cd /d "%~dp0.."
 
 set "YEARS=%~1"
@@ -12,7 +12,7 @@ echo   DEV TESTS is a plain OOTP 27 league, every team AI-controlled,
 echo   simmed in place year after year. Its yearly CSV dump gives
 echo   true ratings and personalities: no scouting, no StatsPlus.
 echo   Each run: load DEV TESTS, auto-play %YEARS% seasons, wait for the
-echo   last dump, bank the dumps as ratings vintages, rebuild the DEV
+echo   last dump, save the dumps as ratings vintages, rebuild the DEV
 echo   trends file for the web app. Run it again any time: it starts
 echo   from the last dump on disk. Dumps are never deleted or moved.
 echo.
@@ -21,7 +21,7 @@ echo   fine, DEV TESTS itself too (save it first: the tool reloads
 echo   it from disk). The main menu alone is NOT enough: the tool
 echo   drives FILE -^> Load Game. Not running as administrator.
 echo   In DEV TESTS, "Export CSV files after each simulated season"
-echo   must be ON in the game settings, or nothing gets banked.
+echo   must be ON in the game settings, or nothing gets saved.
 echo.
 echo   FIRST TIME ONLY, before this bat, check the Load Game row and
 echo   the date picker on the real league (neither one sims):
@@ -43,9 +43,9 @@ python "ootp\winsim.py" --league DEV --sim --years %YEARS%
 if errorlevel 1 goto :fail
 
 echo.
-echo  --- 2. bank the yearly dumps as ratings vintages ---
+echo  --- 2. save the yearly dumps as ratings vintages ---
 if not exist "tgs-viz\backtest\dump_vintages.py" (
-  echo   tgs-viz\backtest\dump_vintages.py is missing. The seasons are simmed and on disk; nothing was banked.
+  echo   tgs-viz\backtest\dump_vintages.py is missing. The seasons are simmed and on disk; nothing was saved.
   goto :fail
 )
 python "tgs-viz\backtest\dump_vintages.py" --league DEV --write

@@ -308,7 +308,7 @@ class Flow(unittest.TestCase):
         self.assertEqual((prof["folder"], prof["years"], prof["source"], prof["mode"]), ("AllAI", 3, "dump", "continuous"))
         code, out = nl("register", "--spec", sp, "--manifest", MAN)
         self.assertEqual(code, 0, out)
-        self.assertIn("first banked season", out)
+        self.assertIn("first saved season", out)
         self.assertNotIn("ZTD", {x["id"] for x in X.load_manifest_entries(MAN)})
         _mk(DATA, "ZTD", "rating_trends.json", text='{"v": 1, "players": {}}')
         code, out = nl("register-manifest", "--league", "ZTD", "--manifest", MAN)

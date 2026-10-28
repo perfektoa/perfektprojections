@@ -14,7 +14,7 @@
   "leagues": {
     "TGS": {
       "type": "statsplus", "name": "TGS", "slug": "tgs", "basis": "TGS",
-      "ootp_version": "26", "ootp_save": "TheGrandestSalami",
+      "ootp_version": "27", "ootp_save": "The Grandest Salami",
       "my_team": "Chicago Cubs", "my_org": "Chicago Cubs",
       "history": { "first_date": "2038-01-01", "probe_years": 0 },
       "dispersal_orgs": ["Atlanta Hammers", "Detroit Tigers", "San Francisco Giants", "Seattle Mariners"]

@@ -15,7 +15,7 @@ echo   START STATE: OOTP 26 open INSIDE any league EXCEPT the
 echo   Baseline master. Then hands off the mouse/keyboard.
 echo.
 echo   STOP: close this window (or Ctrl+C). Every finished cycle
-echo   is already banked, so stopping never loses banked seasons
+echo   is already saved, so stopping never loses saved seasons
 echo   (at worst the current in-progress clone is discarded).
 echo ============================================================
 echo.
@@ -58,7 +58,7 @@ python "tgs-viz\engine\export_calibration.py" --league TGS --write
 python "tgs-viz\ingest\refresh.py" --statsplus --from-cache --league TGS --write
 if errorlevel 1 goto :fail
 
-rem archive is banked by calibrate above; now delete the spent clone saves.
+rem archive is saved by calibrate above; now delete the spent clone saves.
 rem the clone OOTP still has loaded is skipped and swept next cycle.
 python "ootp\cleanup_clones.py" --league TGS --junk --yes
 
@@ -69,7 +69,7 @@ goto :loop
 echo.
 echo ============================================================
 echo   Stopped after a sim problem - everything that finished IS
-echo   banked. Check the messages above, fix, and rerun.
+echo   saved. Check the messages above, fix, and rerun.
 echo ============================================================
 pause
 exit /b 1

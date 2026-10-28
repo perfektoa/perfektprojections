@@ -10,6 +10,7 @@ import { DEFAULT_FEATURES, FALLBACK_LEAGUES, normalizeLeagues, isTrendsOnly } fr
 import { loadRatingTrends } from '../lib/ratingTrends';
 import { applyDevSignals, fetchDevSignals } from '../lib/devSignals';
 import { applyDevMl, fetchDevMl, devMlStaleReason } from '../lib/devMl';
+import { applyDraftValue, fetchDraftValue, draftValueStaleReason } from '../lib/draftValue';
 import { loadAgeCurve, MEASURED_CURVE_LEAGUE } from '../lib/ageCurve';
 import { useDataVersion, useAnyDataVersion, registerInvalidator, changedFilesSince, currentTick } from '../lib/dataVersion';
 import { keysToFetch, mergeRaw } from '../lib/softMerge';
@@ -62,6 +63,9 @@ function getDataFiles(league, parkMode = 'neutral') {
     // Membership + signing terms for the international amateur class. Absent for a
     // league with no international phase, which the loader already treats as empty.
     iafa: `${prefix}/iafa.json`,
+    // Free agent demands from the in-game FA screen export (ingest/fa_demands.py).
+    // Absent file -> no demands shown.
+    fa_demands: `${prefix}/fa_demands.json`,
     // Rule 5 pool membership (ingest/r5.py). Absent file -> empty pool.
     r5: `${prefix}/r5.json`,
     // Stadiums + park factors + occupancy (ingest/parks.py). Absent -> [].
@@ -76,7 +80,7 @@ function emptyData() {
     hitters_draft: [], pitchers_draft: [],
     hitters_draft_all: [], pitchers_draft_all: [],
     draft_picks: [], parks: [], park_list: [],
-    hitters_fa: [], pitchers_fa: [], iafa: [], r5: [],
+    hitters_fa: [], pitchers_fa: [], iafa: [], fa_demands: [], r5: [],
     metadata: null,
     marketBank: null,
   };
@@ -225,6 +229,23 @@ function buildFromRaw(raw, listKeys, league) {
       }
     }
   }
+  // Draft value (backtest/ml/draft_value.py; user, 2026-10-27): Ctrl wins on
+  // the same lists, with the same stale guard as the ML file.
+  const draftValue = raw.draftValue || null;
+  if (draftValue) {
+    const stale = draftValueStaleReason(draftValue, devSignals);
+    if (stale) {
+      const line = `draft_value.json not used for ${league || 'default'}: ${stale}`;
+      if (!devMlStaleLogged.has(line)) {
+        devMlStaleLogged.add(line);
+        console.info(line);
+      }
+    } else {
+      for (const key of DEV_SIGNAL_LISTS) {
+        results[key] = applyDraftValue(results[key], draftValue, devSignals);
+      }
+    }
+  }
   return results;
 }
 
@@ -291,8 +312,10 @@ export function usePlayerData(league, parkMode = 'neutral', wantPlayers = true) 
               const res = await fetchObjectFile(`${base}/${key === 'metadata' ? 'metadata' : 'market_fit'}.json`);
               if (res.ok) fetched[key] = res.value;
               else failed.push(key);
-            } else if (key === 'devSignals' || key === 'devMl') {
-              const v = key === 'devSignals' ? await fetchDevSignals(base) : await fetchDevMl(base);
+            } else if (key === 'devSignals' || key === 'devMl' || key === 'draftValue') {
+              const v = key === 'devSignals' ? await fetchDevSignals(base)
+                : key === 'devMl' ? await fetchDevMl(base)
+                : await fetchDraftValue(base);
               if (v) fetched[key] = v;
               else failed.push(key);
             }
@@ -362,16 +385,18 @@ export function usePlayerData(league, parkMode = 'neutral', wantPlayers = true) 
         }
       }));
 
-      const [metadata, marketBank, devSignals, devMl] = await Promise.all([
+      const [metadata, marketBank, devSignals, devMl, draftValue] = await Promise.all([
         fetchObjectFile(`${base}/metadata.json`),
         fetchObjectFile(`${base}/market_fit.json`),
         fetchDevSignals(base),
         fetchDevMl(base),
+        fetchDraftValue(base),
       ]);
       raw.metadata = metadata.value;
       raw.marketBank = marketBank.value;
       raw.devSignals = devSignals;
       raw.devMl = devMl;
+      raw.draftValue = draftValue;
 
       if (!cancelled) {
         const results = buildFromRaw(raw, listKeys, league);
@@ -949,6 +974,10 @@ function withMarketValue(p, val, war) {
     _mktTier: val.tier,                     // 'replaceable' | 'scarcity'
     _offerFloor: val.offerFloor,
     _offerMid: val.offerMid,
+    _offerByLength: val.offerByLength,     // fair AAV for 1..N-year deals (player card)
+    // Fair AAV minus the free agent's asking salary (App.jsx joins _faDem):
+    // positive = he asks less than he is worth.
+    _faDemDiff: Number.isFinite(p._faDem) && Number.isFinite(val.offerMid) ? Math.round(val.offerMid - p._faDem) : null,
     _offerCeiling: val.offerCeiling,
     _surplus: val.surplus,
     _ctrSurplus: val.contract ? val.contract.surplus : null,

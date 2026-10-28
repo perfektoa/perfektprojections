@@ -34,3 +34,11 @@ pull_id,league,real_date,real_ts,source,source_files,n_players,content_hash,inge
 574,BLM,2053-01-01,2026-10-01T10:49:30,asof,"[""tgs-viz\\ingest\\.cache\\asof\\blm\\2053-01-01.json""]",11453,d40dd3c845a5c01a068b96ed3b4b93f33f082bb8,2026-10-01T10:49:30,2053-01-01
 585,BLM,2026-10-06,2026-10-06T19:55:59,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_blm_20261006-1955.json""]",13119,f6edf04feff6c4cae8f31883d21e2e292a95ad3b,2026-10-06T19:56:00,2059-02-02
 587,BLM,2026-10-07,2026-10-07T19:50:12,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_blm_20261007-1950.json""]",13119,f6edf04feff6c4cae8f31883d21e2e292a95ad3b,2026-10-07T19:50:13,2059-02-02
+589,BLM,2026-10-09,2026-10-09T12:21:42,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_blm_20261009-1221.json""]",13146,4f934ce5e52a90ef18a94a71da4ecb348902477a,2026-10-09T12:21:42,2059-02-16
+591,BLM,2026-10-12,2026-10-12T03:23:39,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_blm_20261012-0323.json""]",13242,853b85c7ed88e9e36494a5a3c846e178a5f10fe5,2026-10-12T03:23:39,2059-03-27
+595,BLM,2026-10-14,2026-10-14T20:52:16,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_blm_20261014-2052.json""]",13254,52c1f2de7659cf603027776fa30e896b210a1f70,2026-10-14T20:52:17,2059-04-02
+597,BLM,2026-10-15,2026-10-15T18:00:22,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_blm_20261015-1800.json""]",13254,52c1f2de7659cf603027776fa30e896b210a1f70,2026-10-15T18:00:23,2059-04-02
+599,BLM,2026-10-19,2026-10-19T23:50:53,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_blm_20261019-2350.json""]",14013,4266723d4e677a26a548933d74f7cf2fe113eebd,2026-10-19T23:50:55,2059-04-21
+601,BLM,2026-10-22,2026-10-22T16:19:02,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_blm_20261022-1619.json""]",14031,c0b2dee28fffc75a75792b6d328812d30062832e,2026-10-22T16:19:03,2059-04-28
+603,BLM,2026-10-26,2026-10-26T17:52:03,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_blm_20261026-1752.json""]",14065,46af6c3bd2a4cc934b345cbd482aad52211570eb,2026-10-26T17:52:04,2059-05-12
+605,BLM,2026-10-27,2026-10-27T19:09:24,live,"[""tgs-viz\\ingest\\.cache\\history\\statsplus_blm_20261027-1909.json""]",14079,e59520ed1088c64440a35ec5c7e23b042b96b9eb,2026-10-27T19:09:26,2059-05-19

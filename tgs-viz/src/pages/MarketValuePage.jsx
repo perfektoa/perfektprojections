@@ -185,7 +185,7 @@ export default function MarketValuePage({ hitters, pitchers, marketBank }) {
         {/* Banked-fit notice — never price off a stale line silently */}
         {prov?.used === 'banked' && (
           <div className="bg-amber-950/40 rounded-lg border border-amber-800/60 p-3 text-sm text-amber-200">
-            <span className="font-semibold">Market fit: banked {prov.bankedAt}</span>
+            <span className="font-semibold">Market fit: saved {prov.bankedAt}</span>
             {' '}(n={prov.bankedN}) — the live sample is only n={prov.liveN}, too small to
             re-price a win. Free agency resets every contract to year 1, which empties the
             open-market sample. The live fit takes over again by itself once it rests on at
@@ -200,7 +200,7 @@ export default function MarketValuePage({ hitters, pitchers, marketBank }) {
             value={fit?.pooled ? fmtSlope(fit.pooled.slope) : '-'}
             sub={fit?.pooled
               ? `pooled, n=${fit.pooled.n}`
-                + (prov?.used === 'banked' ? ` · BANKED ${prov.bankedAt}` : '')
+                + (prov?.used === 'banked' ? ` · SAVED ${prov.bankedAt}` : '')
               : 'no FA sample'}
             color="text-green-400"
           />

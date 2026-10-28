@@ -103,32 +103,59 @@ def _calib(league):
 
 
 # OOTP draft-pool export(s), per league. Override with --csv (repeatable).
-# TGS exports ONE combined file; BLM's screen exports hitters and pitchers
-# SEPARATELY — both are read and merged, and the file a row came from decides
-# whether it is projected as a hitter or a pitcher (more reliable than POS).
+# OOTP names the export after the screen and the view it came from
+# (draft_pool_-_draft_pool_default, draft_pool_-_draft_pool_hitter_export,
+# draft_list_fa_screen, ...). Any of them is the class, so every
+# major_league_baseball_draft_*.csv in the save's import_export counts and the
+# NEWEST wins (user, 2026-10-27: "i need it to accept whichever"). A hitter
+# export and a pitcher export are read together, and the file a row came from
+# decides whether it is projected as a hitter or a pitcher (more reliable than
+# POS). The Rule 5 pool comes off the same screen (r5.FNAME) and is never this
+# board's.
 import glob as _glob
-POOL_DEFAULT = "major_league_baseball_draft_pool_-_draft_pool_default.csv"
-POOL_HITTERS = "major_league_baseball_draft_pool_-_draft_pool_hitter_export.csv"
-POOL_PITCHERS = "major_league_baseball_draft_pool_-_draft_pool_pitcher_export.csv"
+import r5 as _r5
+POOL_GLOB = "major_league_baseball_draft_*.csv"
+POOL_DEFAULT = "major_league_baseball_draft_pool_-_draft_pool_default.csv"   # the name the docs cite
+R5_FNAME = _r5.FNAME.lower()
+
+
+def _pool_dir(lg):
+    """The league's OOTP save import_export folder (settings ootp_version +
+    ootp_save), or None when the league has no save."""
+    save = ST.ootp_save_dir(lg)
+    return os.path.join(save, "import_export") if save else None
 
 
 def _pool_groups(lg):
-    """The league's default export groups, in its OOTP save's import_export folder
-    (settings ootp_version + ootp_save). TGS exports one combined file; every other
-    league may also export hitters and pitchers separately."""
-    save = ST.ootp_save_dir(lg)
-    if not save:
+    """The league's draft exports as groups, newest first. A hitter or pitcher
+    export and its partner (same name, hitter <-> pitcher) form one group; every
+    other export is a group of its own. None when the league has no save."""
+    ie = _pool_dir(lg)
+    if not ie:
         return None
-    ie = os.path.join(save, "import_export")
-    groups = [[os.path.join(ie, POOL_DEFAULT)]]
-    if lg != "TGS":
-        groups.append([os.path.join(ie, POOL_HITTERS), os.path.join(ie, POOL_PITCHERS)])
+    files = sorted((p for p in _glob.glob(os.path.join(ie, POOL_GLOB))
+                    if os.path.basename(p).lower() != R5_FNAME),
+                   key=os.path.getmtime, reverse=True)
+    by_low = {os.path.basename(p).lower(): p for p in files}
+    groups, used = [], set()
+    for p in files:
+        if p in used:
+            continue
+        low = os.path.basename(p).lower()
+        g = [p]
+        for a, b in (("hitter", "pitcher"), ("pitcher", "hitter")):
+            mate = by_low.get(low.replace(a, b)) if a in low else None
+            if mate and mate != p and mate not in used:
+                g.append(mate)
+        groups.append(g)
+        used.update(g)
     return groups
 
 
 DEFAULT_CSV = {
-    # Each league is a LIST OF GROUPS. The first group with a file present wins, so a
-    # fresh combined export is never merged with a stale split pair (or vice versa).
+    # Each league is a LIST OF GROUPS, newest first. The first group with a file
+    # present wins, so a fresh combined export is never merged with a stale split
+    # pair (or vice versa). Read at import: a run always starts fresh.
     lg: g for lg, g in ((lg, _pool_groups(lg)) for lg, e in ST.leagues(include_disabled=True).items()
                         if e.get("type") == "statsplus") if g
 }
@@ -222,10 +249,9 @@ def main():
             print(f"  WARNING: StatsPlus /players draft_eligible fetch failed ({type(e).__name__}: {e})")
     if not by_id:
         print(f"No draft pool for {league}. Looked for:")
-        for g in (DEFAULT_CSV.get(league) or _pool_groups(league) or []):
-          for p in (g if isinstance(g, list) else [g]):
-            print("   " + str(p))
-        print("Export the pool from OOTP's Amateur Draft screen (Draft Pool report -> CSV),")
+        ie = _pool_dir(league)
+        print("   " + (os.path.join(ie, POOL_GLOB) if ie else "(no OOTP save set for this league in settings)"))
+        print("Export the pool from OOTP's Amateur Draft screen (any view, hitters and pitchers together or apart),")
         print("or pass --csv <path> (repeat --csv for separate hitter/pitcher exports).")
         if league not in API_POOL_FALLBACK:
             print("(The StatsPlus draft_eligible flag is NOT used for this league - it marks "
@@ -270,12 +296,17 @@ def main():
         else:
             print(f"  WARNING: couldn't fetch draft results ({type(e).__name__}: {e}); board may still show drafted players")
     for p in picks:
-        pid = str(p.get("ID"))
+        pid = str(p.get("ID") or "").strip()
         pname = (p.get("Player Name") or "").strip().lower()
-        dids.add(pid); dnames.add(pname)
         info = {"overall": p.get("Overall"), "round": p.get("Round"),
                 "pick": p.get("Pick In Round"), "team": p.get("Team")}
-        pick_by_id[pid] = info; pick_by_name[pname] = info
+        # A pick with an ID matches by ID only. The name match is for a pick with no ID,
+        # never a second route: it hid 4 BLM pool players who share a name with a
+        # drafted player (two Josh Taylors in the 2026-10-27 class).
+        if pid and pid != "0":
+            dids.add(pid); pick_by_id[pid] = info
+        else:
+            dnames.add(pname); pick_by_name[pname] = info
     if picks:
         print(f"  {len(picks)} picks ({picks_src}) - full class kept, drafted stamped + dropped from the live board")
 

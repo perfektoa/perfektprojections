@@ -3,205 +3,197 @@
  "calibration": "TGS",
  "window": [
   "2040-07-01_p575.csv.gz",
-  "2026-10-07_p586.csv.gz"
+  "2026-10-27_p604.csv.gz"
  ],
- "span_years": 1.608,
+ "span_years": 1.917,
  "pairs": {
-  "used": 43,
-  "zero_time": 15,
+  "used": 50,
+  "zero_time": 16,
   "contaminated": 0
  },
- "players": 10227,
+ "players": 9239,
  "curve": {
   "16": {
-   "n": 962,
-   "players": 112,
-   "years": 36.2,
-   "mean": 0.1933,
-   "closure": 0.0246,
-   "n_gap": 962
+   "n": 988,
+   "players": 132,
+   "years": 36.5,
+   "mean": 0.2247,
+   "closure": 0.0282,
+   "n_gap": 988
   },
   "17": {
-   "n": 3653,
-   "players": 384,
-   "years": 127.8,
-   "mean": 0.1953,
-   "closure": 0.0271,
-   "n_gap": 3653
+   "n": 4270,
+   "players": 407,
+   "years": 152.9,
+   "mean": -0.1523,
+   "closure": -0.0233,
+   "n_gap": 4270
   },
   "18": {
-   "n": 18732,
-   "players": 1903,
-   "years": 663.5,
-   "mean": 0.8296,
-   "closure": 0.171,
-   "n_gap": 18732
+   "n": 22094,
+   "players": 1927,
+   "years": 804.6,
+   "mean": 0.4692,
+   "closure": 0.0792,
+   "n_gap": 22094
   },
   "19": {
-   "n": 37748,
-   "players": 2523,
-   "years": 1347.6,
-   "mean": 0.7071,
-   "closure": 0.1711,
-   "n_gap": 37748
+   "n": 43251,
+   "players": 2701,
+   "years": 1582.9,
+   "mean": 0.3903,
+   "closure": 0.0813,
+   "n_gap": 43251
   },
   "20": {
-   "n": 38383,
-   "players": 2498,
-   "years": 1360.7,
-   "mean": 0.7636,
-   "closure": 0.2311,
-   "n_gap": 38379
+   "n": 43440,
+   "players": 2645,
+   "years": 1585.0,
+   "mean": 0.428,
+   "closure": 0.1146,
+   "n_gap": 43436
   },
   "21": {
-   "n": 35611,
-   "players": 2418,
-   "years": 1258.9,
-   "mean": 0.5699,
-   "closure": 0.233,
-   "n_gap": 35383
+   "n": 41163,
+   "players": 2564,
+   "years": 1496.3,
+   "mean": 0.2539,
+   "closure": 0.0855,
+   "n_gap": 40890
   },
   "22": {
-   "n": 33923,
-   "players": 2330,
-   "years": 1207.5,
-   "mean": 0.44,
-   "closure": 0.2543,
-   "n_gap": 32628
+   "n": 39471,
+   "players": 2510,
+   "years": 1442.3,
+   "mean": 0.1351,
+   "closure": 0.0711,
+   "n_gap": 37969
   },
   "23": {
-   "n": 32316,
-   "players": 2177,
-   "years": 1155.6,
-   "mean": 0.2544,
-   "closure": 0.2017,
-   "n_gap": 28892
+   "n": 37041,
+   "players": 2345,
+   "years": 1357.8,
+   "mean": -0.0174,
+   "closure": 0.0019,
+   "n_gap": 33067
   },
   "24": {
-   "n": 29002,
-   "players": 2038,
-   "years": 1043.9,
-   "mean": 0.1244,
-   "closure": 0.1394,
-   "n_gap": 23031
+   "n": 32404,
+   "players": 2116,
+   "years": 1192.4,
+   "mean": -0.0939,
+   "closure": -0.0535,
+   "n_gap": 25546
   },
   "25": {
-   "n": 26488,
-   "players": 1951,
-   "years": 964.2,
-   "mean": -0.0026,
-   "closure": 0.0636,
-   "n_gap": 17520
+   "n": 27300,
+   "players": 1776,
+   "years": 1003.0,
+   "mean": -0.2098,
+   "closure": -0.1562,
+   "n_gap": 17807
   },
   "26": {
-   "n": 26320,
-   "players": 1880,
-   "years": 945.7,
-   "mean": -0.0527,
-   "closure": 0.0133,
-   "n_gap": 14181
+   "n": 24398,
+   "players": 1660,
+   "years": 898.7,
+   "mean": -0.2317,
+   "closure": -0.2256,
+   "n_gap": 12795
   },
   "27": {
-   "n": 23022,
-   "players": 1697,
-   "years": 837.2,
-   "mean": -0.1222,
-   "closure": -0.095,
-   "n_gap": 10336
+   "n": 22165,
+   "players": 1520,
+   "years": 823.1,
+   "mean": -0.2017,
+   "closure": -0.2255,
+   "n_gap": 9738
   },
   "28": {
-   "n": 18464,
-   "players": 1181,
-   "years": 657.2,
-   "mean": -0.1471,
-   "closure": -0.1108,
-   "n_gap": 8339
+   "n": 19543,
+   "players": 1169,
+   "years": 709.4,
+   "mean": -0.2583,
+   "closure": -0.2766,
+   "n_gap": 8749
   },
   "29": {
-   "n": 10194,
-   "players": 746,
-   "years": 351.0,
-   "mean": -0.1746,
-   "closure": -0.1863,
-   "n_gap": 4996
+   "n": 12138,
+   "players": 805,
+   "years": 440.8,
+   "mean": -0.3354,
+   "closure": -0.3561,
+   "n_gap": 5753
   },
   "30": {
-   "n": 4352,
-   "players": 350,
-   "years": 153.8,
-   "mean": -0.1435,
-   "closure": 0.2269,
-   "n_gap": 209
+   "n": 5223,
+   "players": 391,
+   "years": 192.9,
+   "mean": -0.3717,
+   "closure": 0.2133,
+   "n_gap": 263
   },
   "31": {
-   "n": 2667,
-   "players": 196,
-   "years": 93.9,
-   "mean": -0.2304,
-   "closure": 1.4164,
-   "n_gap": 58
+   "n": 2922,
+   "players": 198,
+   "years": 106.4,
+   "mean": -0.416,
+   "closure": -0.2111,
+   "n_gap": 73
   },
   "32": {
-   "n": 1557,
-   "players": 119,
-   "years": 56.7,
-   "mean": -0.2513,
-   "closure": 2.7524,
-   "n_gap": 27
+   "n": 1520,
+   "players": 117,
+   "years": 55.8,
+   "mean": -0.3848,
+   "closure": null,
+   "n_gap": 15
   },
   "33": {
-   "n": 1405,
-   "players": 101,
-   "years": 51.3,
-   "mean": -0.1436,
-   "closure": null,
-   "n_gap": 11
-  },
-  "34": {
-   "n": 1005,
-   "players": 63,
-   "years": 35.7,
-   "mean": -0.1819,
-   "closure": -0.3005,
-   "n_gap": 25
-  },
-  "35": {
-   "n": 492,
-   "players": 37,
-   "years": 16.9,
-   "mean": -0.2124,
-   "closure": 0.0323,
-   "n_gap": 28
-  },
-  "36": {
-   "n": 181,
-   "players": 14,
-   "years": 6.2,
-   "mean": -0.0116,
-   "closure": null,
-   "n_gap": 1
-  },
-  "37": {
-   "n": 71,
-   "players": 5,
-   "years": 2.4,
-   "mean": 0.0895,
-   "closure": null,
-   "n_gap": 4
-  },
-  "38": {
-   "n": 34,
-   "players": 2,
-   "years": 1.1,
-   "mean": 0.0774,
+   "n": 1095,
+   "players": 64,
+   "years": 39.5,
+   "mean": -0.3448,
    "closure": null,
    "n_gap": 0
   },
-  "41": {
-   "n": 53,
-   "players": 3,
-   "years": 1.9,
-   "mean": 0.0636,
+  "34": {
+   "n": 524,
+   "players": 35,
+   "years": 19.0,
+   "mean": -0.5731,
+   "closure": null,
+   "n_gap": 14
+  },
+  "35": {
+   "n": 201,
+   "players": 18,
+   "years": 7.5,
+   "mean": -0.5253,
+   "closure": null,
+   "n_gap": 22
+  },
+  "36": {
+   "n": 126,
+   "players": 8,
+   "years": 4.6,
+   "mean": -0.1163,
+   "closure": null,
+   "n_gap": 5
+  },
+  "37": {
+   "n": 79,
+   "players": 5,
+   "years": 3.0,
+   "mean": -0.1477,
+   "closure": null,
+   "n_gap": 0
+  },
+  "38": {
+   "n": 48,
+   "players": 2,
+   "years": 1.7,
+   "mean": 0.3352,
    "closure": null,
    "n_gap": 0
   }

@@ -24,9 +24,19 @@
  *
  * Only the lineup columns are rebuilt. BatR, BSR, Off Runs and the P columns
  * stay on the neutral basis, so do not display them from these records.
+ *
+ * Starters (2026-10-15): the same file holds each starter's 'WAA vR' / 'WAA vL'
+ * as a starter in every club park (vR = against right-handed batters). A
+ * start against the opponent = his park WAA against the bat sides of their
+ * lineup for his throwing hand: lhb * WAA vL + (1 - lhb) * WAA vR, where lhb is
+ * the share of their nine batting left against him (switch hitters bat
+ * opposite his hand). Four rotation slots, slot k starts games k, k+4, ...
+ * The order is best-first on his average start of the series (user,
+ * 2026-10-15: the best arm takes game 1 and game 5). Matching arms to parks
+ * slot by slot moved the ace for about 0.002 real wins, so it is not done.
  */
 
-import { optimizeRoster } from './rosterOptimizer.js';
+import { optimizeRoster, isInjured, leagueGames } from './rosterOptimizer.js';
 
 const LINEUP_POSITIONS = ['C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH'];
 const SPLITS = ['vR', 'vL'];
@@ -38,12 +48,13 @@ const STALE_TOL = 1e-5;
 // ============================================================
 
 /**
- * Chance that game 1..bestOf is played when each game is an even coin flip.
- * Exact dynamic programme over the live (wins, losses) states. A state leaves
- * the table when one side reaches the clinching win count.
- * bestOf 7 -> [1, 1, 1, 1, 0.875, 0.625, 0.3125].
+ * Chance that game 1..bestOf is played, and my chance to win the series.
+ * winProbs[g] = my chance to win game g+1; omitted = every game an even coin
+ * flip. Exact dynamic programme over the live (my wins, their wins) states. A
+ * state leaves the table when one side reaches the clinching win count.
+ * bestOf 7, even -> chances [1, 1, 1, 1, 0.875, 0.625, 0.3125], seriesWin 0.5.
  */
-export function gameChances(bestOf) {
+export function seriesOdds(bestOf, winProbs = null) {
   const n = Number(bestOf);
   if (!Number.isInteger(n) || n < 1 || n % 2 === 0) {
     throw new Error(`Series length must be an odd whole number, got ${bestOf}.`);
@@ -51,22 +62,30 @@ export function gameChances(bestOf) {
   const need = (n + 1) / 2;
   let live = new Map([['0,0', 1]]);
   const chances = [];
+  let seriesWin = 0;
   for (let g = 1; g <= n; g++) {
+    const p = winProbs ? winProbs[g - 1] : 0.5;
     let played = 0;
     const next = new Map();
-    for (const [key, p] of live) {
-      played += p;
+    for (const [key, pr] of live) {
+      played += pr;
       const [a, b] = key.split(',').map(Number);
-      for (const [na, nb] of [[a + 1, b], [a, b + 1]]) {
-        if (na >= need || nb >= need) continue;   // series over, no more games from here
+      for (const [na, nb, q] of [[a + 1, b, p], [a, b + 1, 1 - p]]) {
+        if (na >= need) { seriesWin += pr * q; continue; }   // series over, no more games from here
+        if (nb >= need) continue;
         const k = `${na},${nb}`;
-        next.set(k, (next.get(k) || 0) + p / 2);
+        next.set(k, (next.get(k) || 0) + pr * q);
       }
     }
     chances.push(played);
     live = next;
   }
-  return chances;
+  return { chances, seriesWin };
+}
+
+/** Chance that game 1..bestOf is played when each game is an even coin flip. */
+export function gameChances(bestOf) {
+  return seriesOdds(bestOf).chances;
 }
 
 // ============================================================
@@ -99,8 +118,7 @@ export function presetPattern(presetId, firstHost, otherHost) {
  *   mode 'scheduled' each game counts 1 (the series goes the distance)
  * Returns { games: [{game, host, chance, weight}], byClub: {club: weight}, total }.
  */
-export function parkWeights(pattern, bestOf, mode = 'expected') {
-  const chances = gameChances(bestOf);
+export function parkWeights(pattern, bestOf, mode = 'expected', chances = gameChances(bestOf)) {
   if (!Array.isArray(pattern) || pattern.length !== chances.length) {
     throw new Error(`The home pattern needs one host for each of the ${chances.length} games.`);
   }
@@ -282,6 +300,94 @@ function lineupSwaps(lockedOrder, parkOrder, recById, split) {
   return swaps;
 }
 
+// ============================================================
+// (e) Starting pitchers
+// ============================================================
+
+export const ROTATION_SIZE = 4;
+
+/** Share of a lineup that bats left against a pitcher who throws `hand`. */
+export function leftyShare(order, hand) {
+  if (!order || !order.length) return null;
+  const left = order.filter(e => {
+    const b = String(e.player?.B || '').trim().toUpperCase();
+    return b === 'L' || (b === 'S' && hand !== 'L');
+  }).length;
+  return left / order.length;
+}
+
+/** Value of one start: his WAA in that park against that bat-side mix. */
+function startValue(row, lhb) {
+  return lhb * row[1] + (1 - lhb) * row[0];
+}
+
+/**
+ * The four starters and the games they start.
+ *   games       parkWeights().games (host, chance, weight per game)
+ *   oppLineups  { vR: order, vL: order } the opponent's lineups vs RHP / vs LHP
+ * Returns { slots: [{slot, pitcher, starts: [{game, host, weight, waa}], total}],
+ *           candidates: [{pitcher, hand, lhb, avgWAA, slot}], missing }
+ * missing = my starters the park file does not hold.
+ */
+export function planStarters({ pitchers, parkValues, team, level, games, oppLineups, excludeInjured = false }) {
+  const ix = indexOf(parkValues);
+  const pv = parkValues.pitchers || {};
+  // Who can start is the engine's Starter rule (an SP line), not OOTP's SP/RP label.
+  const canStart = (p) => Number.isFinite(parseFloat(p['WAA wtd']));
+  const pool = (pitchers || []).filter(p => {
+    if (p.ORG !== team || (level && p.Lev !== level)) return false;
+    if (!canStart(p)) return false;
+    return !(excludeInjured && isInjured(p));
+  });
+  const missing = pool.filter(p => !pv[String(p.ID)]);
+  const lhbByHand = {
+    R: leftyShare(oppLineups?.vR, 'R'),
+    L: leftyShare(oppLineups?.vL, 'L'),
+  };
+
+  const parkIndex = games.map(g => {
+    if (!ix.park.has(g.host)) throw new Error(`"${g.host}" is not a park in the park values file.`);
+    return ix.park.get(g.host);
+  });
+  const slotGames = Array.from({ length: Math.min(ROTATION_SIZE, games.length) }, (_, k) =>
+    games.map((g, i) => i).filter(i => i % ROTATION_SIZE === k));
+
+  const candidates = pool.filter(p => pv[String(p.ID)]).map(p => {
+    const rows = pv[String(p.ID)];
+    const hand = String(p.T || 'R').toUpperCase() === 'L' ? 'L' : 'R';
+    const lhb = lhbByHand[hand] ?? 0.5;
+    const perGame = games.map((g, i) => startValue(rows[parkIndex[i]], lhb));
+    const wsum = games.reduce((s, g) => s + g.weight, 0);
+    const avgWAA = games.reduce((s, g, i) => s + g.weight * perGame[i], 0) / (wsum || 1);
+    return { pitcher: p, hand, lhb, perGame, avgWAA };
+  }).sort((a, b) => b.avgWAA - a.avgWAA);
+
+  // Best-first: the best average start takes slot 1 (games 1 and 5), and so on.
+  const slotOf = new Map();
+  const slots = candidates.slice(0, slotGames.length).map((cand, k) => {
+    slotOf.set(idOf(cand.pitcher), k + 1);
+    return {
+      slot: k + 1,
+      pitcher: cand.pitcher,
+      hand: cand.hand,
+      lhb: cand.lhb,
+      avgWAA: cand.avgWAA,
+      starts: slotGames[k].map(i => ({
+        game: games[i].game, host: games[i].host, chance: games[i].chance, waa: cand.perGame[i],
+      })),
+    };
+  });
+  return {
+    slots,
+    candidates: candidates.map(c => ({
+      pitcher: c.pitcher, hand: c.hand, lhb: c.lhb, avgWAA: c.avgWAA,
+      slot: slotOf.get(idOf(c.pitcher)) || null,
+    })),
+    lhbByHand,
+    missing,
+  };
+}
+
 /**
  * Plan a series.
  *
@@ -297,6 +403,8 @@ function lineupSwaps(lockedOrder, parkOrder, recById, split) {
  *   level        'MLB' (default) | 'AAA' | null for every level in the file
  *   winNow       default true: starters only where the position rating has reached potential
  *   excludeInjured, clearedInjured, vrShare, league: passed to optimizeRoster
+ *   opponent     their club: their best lineups vs RHP / vs LHP (Win now off)
+ *                give the bat sides each of my starters faces
  *
  * @returns {Object}
  *   games, weights          the game strip and the games per park
@@ -306,16 +414,56 @@ function lineupSwaps(lockedOrder, parkOrder, recById, split) {
  *                           the locked lineup's value there, the cost of the lock
  *                           and the swaps the park alone would make
  *   missing, stale          hitters of the pool that kept neutral values
+ *   opp                     their lineups { vR, vL } (null without an opponent)
+ *   starters                planStarters() (null when the file has no starters)
+ *   oppStarters             the same for their club against my two lineups
+ *   odds                    per game { game, host, mySP, oppSP, myWin } and seriesWin,
+ *                           or null when a side is missing (then games 5+ use even odds)
+ *
+ * Win odds (2026-10-15). Each team's strength in a game, as wins above an
+ * average team per game, on the engine's full-season scales:
+ *   (lineup WAA vs the other starter's hand, in that park
+ *    + 5 x the starter's WAA against the other lineup, in that park
+ *    + the bullpen's WAA, workload-scaled as in the optimizer) / G
+ * The 5 is the engine's starter basis (a season = 1 of 5 rotation turns).
+ * The two strengths combine by log5. No home bonus: a team built for its park
+ * is better there through the park values themselves (user, 2026-10-15). In
+ * 'expected' mode the game chances come from these odds; the plan is built
+ * again on them until the chances stop moving.
  */
-export function planSeries({
+export function planSeries(o) {
+  const { bestOf, weightMode = 'expected' } = o;
+  let chances = gameChances(bestOf);
+  let plan = null;
+  for (let pass = 0; pass < 4; pass++) {
+    plan = planOnce(o, chances);
+    if (!plan.odds || weightMode !== 'expected') break;
+    const next = plan.odds.chances;
+    const moved = Math.max(...next.map((c, i) => Math.abs(c - chances[i])));
+    chances = next;
+    if (moved < 1e-3) break;
+  }
+  return plan;
+}
+
+const ROTATION_TURNS = 5;   // the engine prices a starter's season as 1 of 5 rotation turns
+
+function log5(a, b) {
+  const x = a * (1 - b), y = b * (1 - a);
+  return x + y > 0 ? x / (x + y) : 0.5;
+}
+const clampPct = (v) => Math.min(0.99, Math.max(0.01, v));
+
+function planOnce({
   hitters, pitchers = [], parkValues, team, pattern, bestOf,
   weightMode = 'expected', level = 'MLB', winNow = true,
   excludeInjured = false, clearedInjured = null, vrShare = null, league = null,
-}) {
+  opponent = null,
+}, chances) {
   if (!parkValues || !parkValues.hitters) throw new Error('No park values file.');
   if (!team) throw new Error('Pick your club.');
 
-  const w = parkWeights(pattern, bestOf, weightMode);
+  const w = parkWeights(pattern, bestOf, weightMode, chances);
   const clubs = Object.keys(w.byClub);
   const weights = clubs.map(club => ({ club, games: w.byClub[club], share: w.byClub[club] / w.total }));
 
@@ -350,9 +498,15 @@ export function planSeries({
       const bestValue = lineupValue(view.order, recById, split);
       const lockedValue = lineupValue(locked[split].order, recById, split);
       const swaps = lineupSwaps(locked[split].order, view.order, recById, split);
+      // each locked player's WAA at his locked position in this park, by player id
+      const lockedEach = {};
+      for (const e of locked[split].order) {
+        const v = recById.get(idOf(e.player))?.[`${e.position} WAA ${split}`];
+        lockedEach[idOf(e.player)] = finite(v) ? v : null;
+      }
       out[split] = {
         order: view.order, bench: view.bench,
-        bestValue, lockedValue,
+        bestValue, lockedValue, lockedEach,
         // the park's own nine is optimal there, so this cannot be negative beyond float noise
         cost: Math.max(0, bestValue - lockedValue),
         swaps,
@@ -361,10 +515,63 @@ export function planSeries({
     return out;
   });
 
+  // Their lineups, on the same games-weighted blend. Their own best nine:
+  // Win now is my roster rule, not theirs.
+  let opp = null, oppRun = null, oppParkValue = null;
+  const oppPool = opponent ? (hitters || []).filter(h => h.ORG === opponent && (!level || h.Lev === level)) : [];
+  if (oppPool.length) {
+    const oppBlend = blendedRecords(oppPool, parkValues, clubs.map(c => [c, w.byClub[c]]));
+    oppRun = optimizeRoster(oppBlend.records, pitchers, {
+      ...opts, teamOrg: opponent, winNow: false, clearedInjured: null,
+    });
+    opp = { vR: lineupView(oppRun.lineupVsRHP, 'vR'), vL: lineupView(oppRun.lineupVsLHP, 'vL') };
+    // their two lineups valued in each park
+    oppParkValue = Object.fromEntries(clubs.map(club => {
+      const recById = new Map(recordsInPark(oppPool, parkValues, club).records.map(r => [idOf(r), r]));
+      return [club, { vR: lineupValue(opp.vR.order, recById, 'vR'), vL: lineupValue(opp.vL.order, recById, 'vL') }];
+    }));
+  }
+  const starters = parkValues.pitchers ? planStarters({
+    pitchers, parkValues, team, level, games: w.games, excludeInjured,
+    oppLineups: opp ? { vR: opp.vR.order, vL: opp.vL.order } : null,
+  }) : null;
+  const oppStarters = parkValues.pitchers && opp ? planStarters({
+    pitchers, parkValues, team: opponent, level, games: w.games, excludeInjured,
+    oppLineups: { vR: locked.vR.order, vL: locked.vL.order },
+  }) : null;
+
+  // Win odds per game (see planSeries).
+  let odds = null;
+  // every game needs a starter on both sides (4 slots cover a best of 7)
+  const covered = (s) => s && s.slots.length === Math.min(ROTATION_SIZE, w.games.length);
+  if (covered(starters) && covered(oppStarters) && oppParkValue) {
+    const G = leagueGames(league);
+    const myPen = Number(lockedRun.totals?.totalRPWAAeff) || 0;
+    const oppPen = Number(oppRun.totals?.totalRPWAAeff) || 0;
+    const startOf = (s) => {
+      const m = new Map();
+      for (const sl of s.slots) for (const g of sl.starts) m.set(g.game, { pitcher: sl.pitcher, hand: sl.hand, waa: g.waa });
+      return m;
+    };
+    const mine = startOf(starters), theirs = startOf(oppStarters);
+    const myPark = Object.fromEntries(parks.map(pk => [pk.club, { vR: pk.vR.lockedValue, vL: pk.vL.lockedValue }]));
+    const perGame = w.games.map(g => {
+      const me = mine.get(g.game), them = theirs.get(g.game);
+      const mySplit = them.hand === 'L' ? 'vL' : 'vR';
+      const oppSplit = me.hand === 'L' ? 'vL' : 'vR';
+      const myWAA = (myPark[g.host][mySplit] + ROTATION_TURNS * me.waa + myPen) / G;
+      const oppWAA = (oppParkValue[g.host][oppSplit] + ROTATION_TURNS * them.waa + oppPen) / G;
+      const myWin = log5(clampPct(0.5 + myWAA), clampPct(0.5 + oppWAA));
+      return { game: g.game, host: g.host, mySP: me.pitcher, oppSP: them.pitcher, myWAA, oppWAA, myWin };
+    });
+    const so = seriesOdds(bestOf, perGame.map(x => x.myWin));
+    odds = { games: perGame, chances: so.chances, seriesWin: so.seriesWin, myPen, oppPen };
+  }
+
   return {
     team, level, bestOf, weightMode,
     games: w.games, weights, totalGames: w.total,
-    roster, locked, parks,
+    roster, locked, parks, opp, starters, oppStarters, odds,
     missing: blend.missing, stale: blend.stale,
     poolSize: pool.length,
   };

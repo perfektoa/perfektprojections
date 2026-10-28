@@ -1,0 +1,1443 @@
+{
+ "groups": {
+  "anchors": [
+   {
+    "section": "hitting",
+    "label": "Eye",
+    "cell": "F2",
+    "value": 50.272643836402224
+   },
+   {
+    "section": "hitting",
+    "label": "Power",
+    "cell": "F3",
+    "value": 50.30631560832904
+   },
+   {
+    "section": "hitting",
+    "label": "AvK",
+    "cell": "F4",
+    "value": 51.81268284288418
+   },
+   {
+    "section": "hitting",
+    "label": "BABIP",
+    "cell": "F5",
+    "value": 51.031807491539034
+   },
+   {
+    "section": "hitting",
+    "label": "Gap",
+    "cell": "F6",
+    "value": 51.36648884299891
+   },
+   {
+    "section": "hitting",
+    "label": "Speed",
+    "cell": "F7",
+    "value": 55.02271553949406
+   },
+   {
+    "section": "hitting",
+    "label": "Stealing",
+    "cell": "F8",
+    "value": 48.988011243044795
+   },
+   {
+    "section": "hitting",
+    "label": "Baserunning",
+    "cell": "F9",
+    "value": 56.05503929329433
+   },
+   {
+    "section": "sp",
+    "label": "STU",
+    "cell": "T2",
+    "value": 46.43221831700447
+   },
+   {
+    "section": "sp",
+    "label": "Hold",
+    "cell": "U2",
+    "value": 58.576629301038174
+   },
+   {
+    "section": "sp",
+    "label": "HRA",
+    "cell": "T3",
+    "value": 50.957572018799155
+   },
+   {
+    "section": "sp",
+    "label": "pBABIP",
+    "cell": "T4",
+    "value": 52.535086081641595
+   },
+   {
+    "section": "sp",
+    "label": "CON",
+    "cell": "T5",
+    "value": 50.189980275493724
+   },
+   {
+    "section": "rp",
+    "label": "STU",
+    "cell": "T7",
+    "value": 49.41786418412424
+   },
+   {
+    "section": "rp",
+    "label": "Hold",
+    "cell": "U7",
+    "value": 57.31214878385644
+   },
+   {
+    "section": "rp",
+    "label": "HRA",
+    "cell": "T8",
+    "value": 49.627987643517585
+   },
+   {
+    "section": "rp",
+    "label": "pBABIP",
+    "cell": "T9",
+    "value": 51.75642336766862
+   },
+   {
+    "section": "rp",
+    "label": "CON",
+    "cell": "T10",
+    "value": 47.88421596432224
+   }
+  ],
+  "woba_weights": [
+   {
+    "section": "hitting",
+    "label": "HBP",
+    "cell": "F12",
+    "value": 0.7284965473768305
+   },
+   {
+    "section": "hitting",
+    "label": "BB",
+    "cell": "F13",
+    "value": 0.6985850248023968
+   },
+   {
+    "section": "hitting",
+    "label": "1B",
+    "cell": "F14",
+    "value": 0.8840364647638851
+   },
+   {
+    "section": "hitting",
+    "label": "2B",
+    "cell": "F15",
+    "value": 1.242974735657088
+   },
+   {
+    "section": "hitting",
+    "label": "3B",
+    "cell": "F16",
+    "value": 1.5660191794609706
+   },
+   {
+    "section": "hitting",
+    "label": "HR",
+    "cell": "F17",
+    "value": 1.999086774690044
+   },
+   {
+    "section": "hitting",
+    "label": "SB",
+    "cell": "F18",
+    "value": 0.2392921805954686
+   },
+   {
+    "section": "hitting",
+    "label": "CS",
+    "cell": "F19",
+    "value": -0.50381254345091
+   },
+   {
+    "section": "hitting",
+    "label": "Scale",
+    "cell": "F20",
+    "value": 1.196460902977343
+   },
+   {
+    "section": "sp",
+    "label": "wOBA",
+    "cell": "T11",
+    "value": 0.32504186538442703
+   },
+   {
+    "section": "sp",
+    "label": "HBP",
+    "cell": "T12",
+    "value": 0.729586771383707
+   },
+   {
+    "section": "sp",
+    "label": "BB",
+    "cell": "T13",
+    "value": 0.7000752845075945
+   },
+   {
+    "section": "sp",
+    "label": "1B",
+    "cell": "T14",
+    "value": 0.8830465031394908
+   },
+   {
+    "section": "sp",
+    "label": "2B",
+    "cell": "T15",
+    "value": 1.2371843456528386
+   },
+   {
+    "section": "sp",
+    "label": "3B",
+    "cell": "T16",
+    "value": 1.5559084039148516
+   },
+   {
+    "section": "sp",
+    "label": "HR",
+    "cell": "T17",
+    "value": 1.9776851304467162
+   },
+   {
+    "section": "sp",
+    "label": "SB",
+    "cell": "T18",
+    "value": 0.2360918950088985
+   },
+   {
+    "section": "sp",
+    "label": "CS",
+    "cell": "T19",
+    "value": -0.508072645862214
+   },
+   {
+    "section": "sp",
+    "label": "Scale",
+    "cell": "T20",
+    "value": 1.1804594750444923
+   },
+   {
+    "section": "rp",
+    "label": "wOBA RP",
+    "cell": "W28",
+    "value": 0.3163096234063848
+   },
+   {
+    "section": "rp",
+    "label": "HBP",
+    "cell": "W29",
+    "value": 0.716407981822375
+   },
+   {
+    "section": "rp",
+    "label": "BB",
+    "cell": "W30",
+    "value": 0.6868964949462628
+   },
+   {
+    "section": "rp",
+    "label": "1B",
+    "cell": "W31",
+    "value": 0.8698677135781592
+   },
+   {
+    "section": "rp",
+    "label": "2B",
+    "cell": "W32",
+    "value": 1.2240055560915066
+   },
+   {
+    "section": "rp",
+    "label": "3B",
+    "cell": "W33",
+    "value": 1.5427296143535196
+   },
+   {
+    "section": "rp",
+    "label": "HR",
+    "cell": "W34",
+    "value": 1.9776851304467162
+   },
+   {
+    "section": "rp",
+    "label": "SB",
+    "cell": "W35",
+    "value": 0.2360918950088985
+   },
+   {
+    "section": "rp",
+    "label": "CS",
+    "cell": "W36",
+    "value": -0.4817150667395504
+   },
+   {
+    "section": "rp",
+    "label": "Scale",
+    "cell": "W37",
+    "value": 1.220438222268378
+   }
+  ],
+  "matchups": [
+   {
+    "section": "hitting",
+    "label": "LvR",
+    "cell": "F23",
+    "value": 0.8171919367329219
+   },
+   {
+    "section": "hitting",
+    "label": "RvR",
+    "cell": "F24",
+    "value": 0.6995744680851064
+   },
+   {
+    "section": "hitting",
+    "label": "SvR",
+    "cell": "F25",
+    "value": 0.7497141889317017
+   },
+   {
+    "section": "hitting",
+    "label": "OVR vR",
+    "cell": "F26",
+    "value": 0.7351173062582459
+   },
+   {
+    "section": "pitching",
+    "label": "LvR",
+    "cell": "T23",
+    "value": 0.8381049861090802
+   },
+   {
+    "section": "pitching",
+    "label": "RvR",
+    "cell": "T24",
+    "value": 0.586436259859329
+   },
+   {
+    "section": "pitching",
+    "label": "SvR",
+    "cell": "T25",
+    "value": 0.6562903317450912
+   },
+   {
+    "section": "pitching",
+    "label": "OVR vR",
+    "cell": "T26",
+    "value": 0.6562903317450912
+   }
+  ],
+  "league_stats": [
+   {
+    "section": "hitting",
+    "label": "wOBA",
+    "cell": "F29",
+    "value": 0.32192714375228654
+   },
+   {
+    "section": "hitting",
+    "label": "WAA Constant",
+    "cell": "F30",
+    "value": 10.037166588386523
+   },
+   {
+    "section": "hitting",
+    "label": "PA",
+    "cell": "F31",
+    "value": 600.0
+   },
+   {
+    "section": "hitting",
+    "label": "PA Catcher",
+    "cell": "F32",
+    "value": 500.0
+   },
+   {
+    "section": "hitting",
+    "label": "IP",
+    "cell": "F33",
+    "value": 1200.0
+   },
+   {
+    "section": "hitting",
+    "label": "IP Catcher",
+    "cell": "F34",
+    "value": 1000.0
+   },
+   {
+    "section": "hitting",
+    "label": "RunCS",
+    "cell": "F35",
+    "value": -0.4210856720827179
+   },
+   {
+    "section": "hitting",
+    "label": "wSB",
+    "cell": "F36",
+    "value": 0.00721388784501558
+   },
+   {
+    "section": "hitting",
+    "label": "HBP",
+    "cell": "F37",
+    "value": 0.008862502151092756
+   },
+   {
+    "section": "hitting",
+    "label": "Infield Out",
+    "cell": "F38",
+    "value": 0.75
+   },
+   {
+    "section": "hitting",
+    "label": "Outfield Out",
+    "cell": "F39",
+    "value": 0.9
+   },
+   {
+    "section": "hitting",
+    "label": "R/PA",
+    "cell": "F40",
+    "value": 0.12096024780588539
+   },
+   {
+    "section": "pitching",
+    "label": "wOBA",
+    "cell": "T29",
+    "value": 0.32504186538442703
+   },
+   {
+    "section": "pitching",
+    "label": "WAA Constant",
+    "cell": "T30",
+    "value": 10.037166588386523
+   },
+   {
+    "section": "pitching",
+    "label": "BF",
+    "cell": "T31",
+    "value": 800.0
+   },
+   {
+    "section": "pitching",
+    "label": "BF RP",
+    "cell": "T32",
+    "value": 300.0
+   },
+   {
+    "section": "pitching",
+    "label": "IP",
+    "cell": "T33",
+    "value": 185.63873114208684
+   },
+   {
+    "section": "pitching",
+    "label": "IP RP",
+    "cell": "T34",
+    "value": 69.61452417828257
+   },
+   {
+    "section": "pitching",
+    "label": "RunCS",
+    "cell": "T35",
+    "value": -0.4048885881
+   },
+   {
+    "section": "pitching",
+    "label": "wSB",
+    "cell": "T36",
+    "value": 0.00751768004778114
+   },
+   {
+    "section": "pitching",
+    "label": "BF/IP",
+    "cell": "T37",
+    "value": 4.309445529379774
+   },
+   {
+    "section": "pitching",
+    "label": "Team IP",
+    "cell": "T38",
+    "value": 1348.4333333333334
+   },
+   {
+    "section": "pitching",
+    "label": "Pen IP",
+    "cell": "T39",
+    "value": 420.2396776228992
+   },
+   {
+    "section": "pitching",
+    "label": "R/PA",
+    "cell": "T40",
+    "value": 0.12096024780588539
+   },
+   {
+    "section": "pitching",
+    "label": "RA/9 SP",
+    "cell": "T41",
+    "value": 4.818362630436305
+   },
+   {
+    "section": "pitching",
+    "label": "RA/9 RP",
+    "cell": "T42",
+    "value": 4.51422796766189
+   },
+   {
+    "section": "pitching",
+    "label": "RA/9",
+    "cell": "T43",
+    "value": 4.691444392257682
+   }
+  ],
+  "rates": [
+   {
+    "section": "hitting",
+    "label": "BB%",
+    "cell": "B33",
+    "value": 0.08406784381763638
+   },
+   {
+    "section": "hitting",
+    "label": "HR%",
+    "cell": "B34",
+    "value": 0.03262368091689379
+   },
+   {
+    "section": "hitting",
+    "label": "SO%",
+    "cell": "B35",
+    "value": 0.23107858272819104
+   },
+   {
+    "section": "hitting",
+    "label": "BABIP",
+    "cell": "B36",
+    "value": 0.3022776291950651
+   },
+   {
+    "section": "hitting",
+    "label": "XBH%",
+    "cell": "B37",
+    "value": 0.24488397979279047
+   },
+   {
+    "section": "hitting",
+    "label": "3B%",
+    "cell": "B38",
+    "value": 0.09836829836829837
+   },
+   {
+    "section": "hitting",
+    "label": "SB%",
+    "cell": "B39",
+    "value": 0.7931839402427637
+   },
+   {
+    "section": "hitting",
+    "label": "UBR",
+    "cell": "B40",
+    "value": -0.0006876073169679451
+   },
+   {
+    "section": "hitting",
+    "label": "SBA%",
+    "cell": "B41",
+    "value": 0.09977176393870231
+   },
+   {
+    "section": "sp",
+    "label": "BB%",
+    "cell": "W3",
+    "value": 0.08159325506264281
+   },
+   {
+    "section": "sp",
+    "label": "HR%",
+    "cell": "W4",
+    "value": 0.032237999227832353
+   },
+   {
+    "section": "sp",
+    "label": "SO%",
+    "cell": "W5",
+    "value": 0.22065762944532624
+   },
+   {
+    "section": "sp",
+    "label": "BABIP",
+    "cell": "W6",
+    "value": 0.30285508291276136
+   },
+   {
+    "section": "sp",
+    "label": "XBH%",
+    "cell": "W7",
+    "value": 0.24977384183211923
+   },
+   {
+    "section": "sp",
+    "label": "3B%",
+    "cell": "W8",
+    "value": 0.09912314144109798
+   },
+   {
+    "section": "sp",
+    "label": "SB%",
+    "cell": "W9",
+    "value": 0.7924041297935103
+   },
+   {
+    "section": "sp",
+    "label": "HBP%",
+    "cell": "W10",
+    "value": 0.008759266484588373
+   },
+   {
+    "section": "sp",
+    "label": "IBB",
+    "cell": "W11",
+    "value": 0.0009168942645337495
+   },
+   {
+    "section": "sp",
+    "label": "SBA%",
+    "cell": "W12",
+    "value": 0.10833699516638037
+   },
+   {
+    "section": "rp",
+    "label": "BB%",
+    "cell": "W15",
+    "value": 0.08764647748129324
+   },
+   {
+    "section": "rp",
+    "label": "HR%",
+    "cell": "W16",
+    "value": 0.03296091114481137
+   },
+   {
+    "section": "rp",
+    "label": "SO%",
+    "cell": "W17",
+    "value": 0.24449877750611246
+   },
+   {
+    "section": "rp",
+    "label": "BABIP",
+    "cell": "W18",
+    "value": 0.3015116378940136
+   },
+   {
+    "section": "rp",
+    "label": "XBH%",
+    "cell": "W19",
+    "value": 0.23750178037316622
+   },
+   {
+    "section": "rp",
+    "label": "3B%",
+    "cell": "W20",
+    "value": 0.09745127436281859
+   },
+   {
+    "section": "rp",
+    "label": "SB%",
+    "cell": "W21",
+    "value": 0.7895765472312704
+   },
+   {
+    "section": "rp",
+    "label": "HBP%",
+    "cell": "W22",
+    "value": 0.009034844709256192
+   },
+   {
+    "section": "rp",
+    "label": "IBB",
+    "cell": "W23",
+    "value": 0.00492809711413974
+   },
+   {
+    "section": "rp",
+    "label": "SBA%",
+    "cell": "W24",
+    "value": 0.08566804330840495
+   },
+   {
+    "section": "fielding",
+    "label": "C FRM/1000",
+    "cell": "M2",
+    "value": 0.6140459298445109
+   },
+   {
+    "section": "fielding",
+    "label": "C SBA/1000",
+    "cell": "M3",
+    "value": 102.39042839838825
+   },
+   {
+    "section": "fielding",
+    "label": "C RTO%",
+    "cell": "M4",
+    "value": 0.18976339932399808
+   },
+   {
+    "section": "fielding",
+    "label": "1B PA/1200",
+    "cell": "M5",
+    "value": 275.84604355672013
+   },
+   {
+    "section": "fielding",
+    "label": "1B PM%",
+    "cell": "M6",
+    "value": 0.8393375631788365
+   },
+   {
+    "section": "fielding",
+    "label": "1B E%",
+    "cell": "M7",
+    "value": 0.026137091607943627
+   },
+   {
+    "section": "fielding",
+    "label": "2B PA/1200",
+    "cell": "M8",
+    "value": 587.88223370331
+   },
+   {
+    "section": "fielding",
+    "label": "2B PM%",
+    "cell": "M9",
+    "value": 0.6557674841053588
+   },
+   {
+    "section": "fielding",
+    "label": "2B E%",
+    "cell": "M10",
+    "value": 0.025700215450907973
+   },
+   {
+    "section": "fielding",
+    "label": "2B DP/1200",
+    "cell": "M11",
+    "value": 89.79309321929152
+   },
+   {
+    "section": "fielding",
+    "label": "3B PA/1200",
+    "cell": "M12",
+    "value": 371.66093985612935
+   },
+   {
+    "section": "fielding",
+    "label": "3B PM%",
+    "cell": "M13",
+    "value": 0.8234495969351106
+   },
+   {
+    "section": "fielding",
+    "label": "3B E%",
+    "cell": "M14",
+    "value": 0.04332654841523699
+   },
+   {
+    "section": "fielding",
+    "label": "SS PA/1200",
+    "cell": "M15",
+    "value": 641.6038365510592
+   },
+   {
+    "section": "fielding",
+    "label": "SS PM%",
+    "cell": "M16",
+    "value": 0.6822784224883258
+   },
+   {
+    "section": "fielding",
+    "label": "SS E%",
+    "cell": "M17",
+    "value": 0.03652503896455919
+   },
+   {
+    "section": "fielding",
+    "label": "LF PA/1200",
+    "cell": "M18",
+    "value": 413.8432254715348
+   },
+   {
+    "section": "fielding",
+    "label": "LF PM%",
+    "cell": "M19",
+    "value": 0.5833990394953766
+   },
+   {
+    "section": "fielding",
+    "label": "LF E%",
+    "cell": "M20",
+    "value": 0.011917926035139453
+   },
+   {
+    "section": "fielding",
+    "label": "LF ARM",
+    "cell": "M21",
+    "value": -0.8169243319407707
+   },
+   {
+    "section": "fielding",
+    "label": "CF PA/1200",
+    "cell": "M22",
+    "value": 576.3132524163844
+   },
+   {
+    "section": "fielding",
+    "label": "CF PM%",
+    "cell": "M23",
+    "value": 0.6546221947704344
+   },
+   {
+    "section": "fielding",
+    "label": "CF E%",
+    "cell": "M24",
+    "value": 0.007233841799025004
+   },
+   {
+    "section": "fielding",
+    "label": "CF ARM",
+    "cell": "M25",
+    "value": -0.674637727733419
+   },
+   {
+    "section": "fielding",
+    "label": "RF PA/1200",
+    "cell": "M26",
+    "value": 435.5573134254567
+   },
+   {
+    "section": "fielding",
+    "label": "RF PM%",
+    "cell": "M27",
+    "value": 0.5791050875161752
+   },
+   {
+    "section": "fielding",
+    "label": "RF E%",
+    "cell": "M28",
+    "value": 0.011878160649182642
+   },
+   {
+    "section": "fielding",
+    "label": "RF ARM",
+    "cell": "M29",
+    "value": 2.937993226707537
+   },
+   {
+    "section": "fielding",
+    "label": "SS DP/1200",
+    "cell": "M30",
+    "value": 78.66907275109385
+   }
+  ],
+  "fielding_anchors": [
+   {
+    "section": "C",
+    "label": "Framing",
+    "cell": "I3",
+    "value": 64.19631012121063
+   },
+   {
+    "section": "C",
+    "label": "Arm",
+    "cell": "I5",
+    "value": 55.867838396822656
+   },
+   {
+    "section": "C",
+    "label": "Arm",
+    "cell": "I7",
+    "value": 55.867838396822656
+   },
+   {
+    "section": "1B",
+    "label": "Range",
+    "cell": "I9",
+    "value": 47.89150372036685
+   },
+   {
+    "section": "1B",
+    "label": "Height",
+    "cell": "J9",
+    "value": 189.72526850089403
+   },
+   {
+    "section": "1B",
+    "label": "Error",
+    "cell": "I11",
+    "value": 45.69401527698811
+   },
+   {
+    "section": "2B",
+    "label": "Range",
+    "cell": "I13",
+    "value": 66.75281602518149
+   },
+   {
+    "section": "2B",
+    "label": "Arm",
+    "cell": "J13",
+    "value": 59.82572367933157
+   },
+   {
+    "section": "2B",
+    "label": "Error",
+    "cell": "I15",
+    "value": 62.81445957860563
+   },
+   {
+    "section": "2B",
+    "label": "TDP",
+    "cell": "I17",
+    "value": 62.53590586606679
+   },
+   {
+    "section": "3B",
+    "label": "Range",
+    "cell": "I19",
+    "value": 63.18872106724677
+   },
+   {
+    "section": "3B",
+    "label": "Arm",
+    "cell": "J19",
+    "value": 67.01983371649405
+   },
+   {
+    "section": "3B",
+    "label": "Error",
+    "cell": "I21",
+    "value": 59.932225875295615
+   },
+   {
+    "section": "SS",
+    "label": "Range",
+    "cell": "I23",
+    "value": 74.25440222810009
+   },
+   {
+    "section": "SS",
+    "label": "Arm",
+    "cell": "J23",
+    "value": 69.31208233423149
+   },
+   {
+    "section": "SS",
+    "label": "Error",
+    "cell": "I25",
+    "value": 67.02889773317183
+   },
+   {
+    "section": "SS",
+    "label": "TDP",
+    "cell": "J25",
+    "value": 65.45991644624627
+   },
+   {
+    "section": "LF",
+    "label": "Range",
+    "cell": "I27",
+    "value": 61.4663930981633
+   },
+   {
+    "section": "LF",
+    "label": "Error",
+    "cell": "I29",
+    "value": 54.561837193780434
+   },
+   {
+    "section": "LF",
+    "label": "Arm",
+    "cell": "I31",
+    "value": 56.69381751662423
+   },
+   {
+    "section": "CF",
+    "label": "Range",
+    "cell": "I33",
+    "value": 70.60934912120238
+   },
+   {
+    "section": "CF",
+    "label": "Error",
+    "cell": "I35",
+    "value": 59.29280069875328
+   },
+   {
+    "section": "CF",
+    "label": "Arm",
+    "cell": "I37",
+    "value": 61.34472927430187
+   },
+   {
+    "section": "RF",
+    "label": "Range",
+    "cell": "I39",
+    "value": 62.50162740299442
+   },
+   {
+    "section": "RF",
+    "label": "Error",
+    "cell": "I41",
+    "value": 57.97130826720721
+   },
+   {
+    "section": "RF",
+    "label": "Arm",
+    "cell": "I43",
+    "value": 62.31247785495926
+   }
+  ],
+  "pos_adj": [
+   {
+    "section": "pos_adj",
+    "label": "C",
+    "cell": "P2",
+    "value": 9.849866687869525
+   },
+   {
+    "section": "pos_adj",
+    "label": "1B",
+    "cell": "P3",
+    "value": -9.727548557313066
+   },
+   {
+    "section": "pos_adj",
+    "label": "2B",
+    "cell": "P4",
+    "value": 2.840876518433677
+   },
+   {
+    "section": "pos_adj",
+    "label": "3B",
+    "cell": "P5",
+    "value": -0.9334356129224546
+   },
+   {
+    "section": "pos_adj",
+    "label": "SS",
+    "cell": "P6",
+    "value": 13.323943100680227
+   },
+   {
+    "section": "pos_adj",
+    "label": "LF",
+    "cell": "P7",
+    "value": -7.996812670399582
+   },
+   {
+    "section": "pos_adj",
+    "label": "CF",
+    "cell": "P8",
+    "value": 5.353007236524047
+   },
+   {
+    "section": "pos_adj",
+    "label": "RF",
+    "cell": "P9",
+    "value": -7.996812670399582
+   },
+   {
+    "section": "pos_adj",
+    "label": "DH",
+    "cell": "P10",
+    "value": -8.094092002318325
+   }
+  ]
+ },
+ "cells": {
+  "A32": "Hitting Stats",
+  "A33": "BB%",
+  "A34": "HR%",
+  "A35": "SO%",
+  "A36": "BABIP",
+  "A37": "XBH%",
+  "A38": "3B%",
+  "A39": "SB%",
+  "A40": "UBR",
+  "A41": "SBA%",
+  "E1": "Hitting Ratings",
+  "E2": "Eye",
+  "E3": "Power",
+  "E4": "AvK",
+  "E5": "BABIP",
+  "E6": "Gap",
+  "E7": "Speed",
+  "E8": "Stealing",
+  "E9": "Baserunning",
+  "E11": "wOBA",
+  "E12": "HBP",
+  "E13": "BB",
+  "E14": "1B",
+  "E15": "2B",
+  "E16": "3B",
+  "E17": "HR",
+  "E18": "SB",
+  "E19": "CS",
+  "E20": "Scale",
+  "E22": "Matchups",
+  "E23": "LvR",
+  "E24": "RvR",
+  "E25": "SvR",
+  "E26": "OVR vR",
+  "E28": "League Measurements",
+  "E29": "wOBA",
+  "E30": "WAA Constant",
+  "E31": "PA",
+  "E32": "PA Catcher",
+  "E33": "IP",
+  "E34": "IP Catcher",
+  "E35": "RunCS",
+  "E36": "wSB",
+  "E37": "HBP",
+  "E38": "Infield Out",
+  "E39": "Outfield Out",
+  "E40": "R/PA",
+  "H2": "C",
+  "H8": "1B",
+  "H12": "2B",
+  "H18": "3B",
+  "H22": "SS",
+  "H26": "LF",
+  "H32": "CF",
+  "H38": "RF",
+  "I1": "Fielding Ratings",
+  "I2": "Framing",
+  "I4": "Arm",
+  "I6": "Arm",
+  "I8": "Range",
+  "I10": "Error",
+  "I12": "Range",
+  "I14": "Error",
+  "I16": "TDP",
+  "I18": "Range",
+  "I20": "Error",
+  "I22": "Range",
+  "I24": "Error",
+  "I26": "Range",
+  "I28": "Error",
+  "I30": "Arm",
+  "I32": "Range",
+  "I34": "Error",
+  "I36": "Arm",
+  "I38": "Range",
+  "I40": "Error",
+  "I42": "Arm",
+  "J8": "Height",
+  "J12": "Arm",
+  "J18": "Arm",
+  "J22": "Arm",
+  "J24": "TDP",
+  "L1": "Fielding Stats",
+  "L2": "C FRM/1000",
+  "L3": "C SBA/1000",
+  "L4": "C RTO%",
+  "L5": "1B PA/1200",
+  "L6": "1B PM%",
+  "L7": "1B E%",
+  "L8": "2B PA/1200",
+  "L9": "2B PM%",
+  "L10": "2B E%",
+  "L11": "2B DP/1200",
+  "L12": "3B PA/1200",
+  "L13": "3B PM%",
+  "L14": "3B E%",
+  "L15": "SS PA/1200",
+  "L16": "SS PM%",
+  "L17": "SS E%",
+  "L18": "LF PA/1200",
+  "L19": "LF PM%",
+  "L20": "LF E%",
+  "L21": "LF ARM",
+  "L22": "CF PA/1200",
+  "L23": "CF PM%",
+  "L24": "CF E%",
+  "L25": "CF ARM",
+  "L26": "RF PA/1200",
+  "L27": "RF PM%",
+  "L28": "RF E%",
+  "L29": "RF ARM",
+  "L30": "SS DP/1200",
+  "O1": "Pos ADJ",
+  "O2": "C",
+  "O3": "1B",
+  "O4": "2B",
+  "O5": "3B",
+  "O6": "SS",
+  "O7": "LF",
+  "O8": "CF",
+  "O9": "RF",
+  "O10": "DH",
+  "S1": "Starter Ratings",
+  "S2": "STU",
+  "S3": "HRA",
+  "S4": "pBABIP",
+  "S5": "CON",
+  "S6": "Reliever Ratings",
+  "S7": "STU",
+  "S8": "HRA",
+  "S9": "pBABIP",
+  "S10": "CON",
+  "S11": "wOBA",
+  "S12": "HBP",
+  "S13": "BB",
+  "S14": "1B",
+  "S15": "2B",
+  "S16": "3B",
+  "S17": "HR",
+  "S18": "SB",
+  "S19": "CS",
+  "S20": "Scale",
+  "S22": "Matchups",
+  "S23": "LvR",
+  "S24": "RvR",
+  "S25": "SvR",
+  "S26": "OVR vR",
+  "S28": "League Stats",
+  "S29": "wOBA",
+  "S30": "WAA Constant",
+  "S31": "BF",
+  "S32": "BF RP",
+  "S33": "IP",
+  "S34": "IP RP",
+  "S35": "RunCS",
+  "S36": "wSB",
+  "S37": "BF/IP",
+  "S38": "Team IP",
+  "S39": "Pen IP",
+  "S40": "R/PA",
+  "S41": "RA/9 SP",
+  "S42": "RA/9 RP",
+  "S43": "RA/9",
+  "U1": "Hold",
+  "U6": "Hold",
+  "V1": "Pitching Stats",
+  "V2": "SP",
+  "V3": "BB%",
+  "V4": "HR%",
+  "V5": "SO%",
+  "V6": "BABIP",
+  "V7": "XBH%",
+  "V8": "3B%",
+  "V9": "SB%",
+  "V10": "HBP%",
+  "V11": "IBB",
+  "V12": "SBA%",
+  "V14": "RP",
+  "V15": "BB%",
+  "V16": "HR%",
+  "V17": "SO%",
+  "V18": "BABIP",
+  "V19": "XBH%",
+  "V20": "3B%",
+  "V21": "SB%",
+  "V22": "HBP%",
+  "V23": "IBB",
+  "V24": "SBA%",
+  "V28": "wOBA RP",
+  "V29": "HBP",
+  "V30": "BB",
+  "V31": "1B",
+  "V32": "2B",
+  "V33": "3B",
+  "V34": "HR",
+  "V35": "SB",
+  "V36": "CS",
+  "V37": "Scale",
+  "F31": 600.0,
+  "F32": 500.0,
+  "F33": 1200.0,
+  "F34": 1000.0,
+  "F38": 0.75,
+  "F39": 0.9,
+  "T31": 800.0,
+  "T32": 300.0,
+  "T35": -0.4048885881,
+  "F2": 50.272643836402224,
+  "F3": 50.30631560832904,
+  "F4": 51.81268284288418,
+  "F5": 51.031807491539034,
+  "F6": 51.36648884299891,
+  "F7": 55.02271553949406,
+  "F8": 48.988011243044795,
+  "F9": 56.05503929329433,
+  "F12": 0.7284965473768305,
+  "F13": 0.6985850248023968,
+  "F14": 0.8840364647638851,
+  "F15": 1.242974735657088,
+  "F16": 1.5660191794609706,
+  "F17": 1.999086774690044,
+  "F18": 0.2392921805954686,
+  "F19": -0.50381254345091,
+  "F20": 1.196460902977343,
+  "F23": 0.8171919367329219,
+  "F24": 0.6995744680851064,
+  "F25": 0.7497141889317017,
+  "F26": 0.7351173062582459,
+  "F29": 0.32192714375228654,
+  "F30": 10.037166588386523,
+  "F35": -0.4210856720827179,
+  "F36": 0.00721388784501558,
+  "F37": 0.008862502151092756,
+  "F40": 0.12096024780588539,
+  "B33": 0.08406784381763638,
+  "B34": 0.03262368091689379,
+  "B35": 0.23107858272819104,
+  "B36": 0.3022776291950651,
+  "B37": 0.24488397979279047,
+  "B38": 0.09836829836829837,
+  "B39": 0.7931839402427637,
+  "B40": -0.0006876073169679451,
+  "B41": 0.09977176393870231,
+  "I3": 64.19631012121063,
+  "I5": 55.867838396822656,
+  "I7": 55.867838396822656,
+  "I9": 47.89150372036685,
+  "J9": 189.72526850089403,
+  "I11": 45.69401527698811,
+  "I13": 66.75281602518149,
+  "J13": 59.82572367933157,
+  "I15": 62.81445957860563,
+  "I17": 62.53590586606679,
+  "I19": 63.18872106724677,
+  "J19": 67.01983371649405,
+  "I21": 59.932225875295615,
+  "I23": 74.25440222810009,
+  "J23": 69.31208233423149,
+  "I25": 67.02889773317183,
+  "J25": 65.45991644624627,
+  "I27": 61.4663930981633,
+  "I29": 54.561837193780434,
+  "I31": 56.69381751662423,
+  "I33": 70.60934912120238,
+  "I35": 59.29280069875328,
+  "I37": 61.34472927430187,
+  "I39": 62.50162740299442,
+  "I41": 57.97130826720721,
+  "I43": 62.31247785495926,
+  "M2": 0.6140459298445109,
+  "M3": 102.39042839838825,
+  "M4": 0.18976339932399808,
+  "M5": 275.84604355672013,
+  "M6": 0.8393375631788365,
+  "M7": 0.026137091607943627,
+  "M8": 587.88223370331,
+  "M9": 0.6557674841053588,
+  "M10": 0.025700215450907973,
+  "M11": 89.79309321929152,
+  "M12": 371.66093985612935,
+  "M13": 0.8234495969351106,
+  "M14": 0.04332654841523699,
+  "M15": 641.6038365510592,
+  "M16": 0.6822784224883258,
+  "M17": 0.03652503896455919,
+  "M18": 413.8432254715348,
+  "M19": 0.5833990394953766,
+  "M20": 0.011917926035139453,
+  "M21": -0.8169243319407707,
+  "M22": 576.3132524163844,
+  "M23": 0.6546221947704344,
+  "M24": 0.007233841799025004,
+  "M25": -0.674637727733419,
+  "M26": 435.5573134254567,
+  "M27": 0.5791050875161752,
+  "M28": 0.011878160649182642,
+  "M29": 2.937993226707537,
+  "M30": 78.66907275109385,
+  "P2": 9.849866687869525,
+  "P3": -9.727548557313066,
+  "P4": 2.840876518433677,
+  "P5": -0.9334356129224546,
+  "P6": 13.323943100680227,
+  "P7": -7.996812670399582,
+  "P8": 5.353007236524047,
+  "P9": -7.996812670399582,
+  "P10": -8.094092002318325,
+  "T2": 46.43221831700447,
+  "U2": 58.576629301038174,
+  "T3": 50.957572018799155,
+  "T4": 52.535086081641595,
+  "T5": 50.189980275493724,
+  "T7": 49.41786418412424,
+  "U7": 57.31214878385644,
+  "T8": 49.627987643517585,
+  "T9": 51.75642336766862,
+  "T10": 47.88421596432224,
+  "T11": 0.32504186538442703,
+  "T12": 0.729586771383707,
+  "T13": 0.7000752845075945,
+  "T14": 0.8830465031394908,
+  "T15": 1.2371843456528386,
+  "T16": 1.5559084039148516,
+  "T17": 1.9776851304467162,
+  "T18": 0.2360918950088985,
+  "T19": -0.508072645862214,
+  "T20": 1.1804594750444923,
+  "T23": 0.8381049861090802,
+  "T24": 0.586436259859329,
+  "T25": 0.6562903317450912,
+  "T26": 0.6562903317450912,
+  "T29": 0.32504186538442703,
+  "T30": 10.037166588386523,
+  "T33": 185.63873114208684,
+  "T34": 69.61452417828257,
+  "T36": 0.00751768004778114,
+  "T37": 4.309445529379774,
+  "T38": 1348.4333333333334,
+  "T39": 420.2396776228992,
+  "T40": 0.12096024780588539,
+  "T41": 4.818362630436305,
+  "T42": 4.51422796766189,
+  "T43": 4.691444392257682,
+  "W3": 0.08159325506264281,
+  "W4": 0.032237999227832353,
+  "W5": 0.22065762944532624,
+  "W6": 0.30285508291276136,
+  "W7": 0.24977384183211923,
+  "W8": 0.09912314144109798,
+  "W9": 0.7924041297935103,
+  "W10": 0.008759266484588373,
+  "W11": 0.0009168942645337495,
+  "W12": 0.10833699516638037,
+  "W15": 0.08764647748129324,
+  "W16": 0.03296091114481137,
+  "W17": 0.24449877750611246,
+  "W18": 0.3015116378940136,
+  "W19": 0.23750178037316622,
+  "W20": 0.09745127436281859,
+  "W21": 0.7895765472312704,
+  "W22": 0.009034844709256192,
+  "W23": 0.00492809711413974,
+  "W24": 0.08566804330840495,
+  "W28": 0.3163096234063848,
+  "W29": 0.716407981822375,
+  "W30": 0.6868964949462628,
+  "W31": 0.8698677135781592,
+  "W32": 1.2240055560915066,
+  "W33": 1.5427296143535196,
+  "W34": 1.9776851304467162,
+  "W35": 0.2360918950088985,
+  "W36": -0.4817150667395504,
+  "W37": 1.220438222268378
+ }
+}

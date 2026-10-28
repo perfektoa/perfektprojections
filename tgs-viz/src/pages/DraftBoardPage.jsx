@@ -3,12 +3,16 @@ import { usePlayersWithFV, usePlayersWithDraftFV, usePlayersWithG5FV, usePlayers
 import PlayerDetail from '../components/PlayerDetail';
 import { useSelectedById } from '../hooks/useSelectedById';
 import { formatCellValue, getCellColorClass } from '../lib/columns';
+import { boardScores, boardWords } from '../lib/draftValue';
+import { useBoardWeights } from '../hooks/useBoardWeights';
+import BoardWeights from '../components/BoardWeights';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ScatterChart, Scatter, ZAxis } from 'recharts';
 import { TrendingUp, Users, Zap, Download } from 'lucide-react';
 
 export default function DraftBoardPage({ hitters, pitchers, allHitters, allPitchers }) {
   const [viewMode, setViewMode] = useState('combined'); // combined, hitters, pitchers
-  const [sortBy, setSortBy] = useState('_draftRawFV'); // default to Draft FV Raw
+  // 'auto' = Ctrl wins when the league has draft_value.json, else Draft FV.
+  const [sortBy, setSortBy] = useState('auto');
   const [maxAge, setMaxAge] = useState(30);
   const [minFV, setMinFV] = useState(20);
   const [hideWrecked, setHideWrecked] = useState(true);
@@ -27,15 +31,21 @@ export default function DraftBoardPage({ hitters, pitchers, allHitters, allPitch
   const rowsByKind = useMemo(() => ({ hitter: hittersWithHybrid, pitcher: pitchersWithHybrid }), [hittersWithHybrid, pitchersWithHybrid]);
   const { selected: selectedPlayer, kind: playerType, select, clear } = useSelectedById(rowsByKind);
 
+  // Board score over the whole class (both types), so a hitters-only view keeps
+  // the same numbers. The weights are the user's (saved in the browser).
+  const [weights, applyWeights] = useBoardWeights();
+  const words = boardWords(weights);
+  const scores = useMemo(() => boardScores([...hittersWithHybrid, ...pitchersWithHybrid], weights), [hittersWithHybrid, pitchersWithHybrid, weights]);
+
   // Combined and sorted draft board
   const draftBoard = useMemo(() => {
     let players = [];
 
     if (viewMode !== 'pitchers') {
-      players.push(...hittersWithHybrid.map(p => ({ ...p, _type: 'H' })));
+      players.push(...hittersWithHybrid.map(p => ({ ...p, _type: 'H', _boardScore: scores.get(String(p.ID)) ?? null })));
     }
     if (viewMode !== 'hitters') {
-      players.push(...pitchersWithHybrid.map(p => ({ ...p, _type: 'P' })));
+      players.push(...pitchersWithHybrid.map(p => ({ ...p, _type: 'P', _boardScore: scores.get(String(p.ID)) ?? null })));
     }
 
     // Filter (draft files are already pre-filtered to draftable players by extract_data.py)
@@ -50,18 +60,28 @@ export default function DraftBoardPage({ hitters, pitchers, allHitters, allPitch
       return true;
     });
 
-    // Sort — players with raw ceiling > 0 always rank above players with ceiling <= 0
+    // The board score (Ctrl wins 40% + Upside 20% + Draft FV 20% + Ceiling 20%,
+    // in wins; draftValue.js)
+    // ranks the board when the league has draft_value.json: no ceiling tier,
+    // Draft FV breaks ties and orders the rows without a score. Any other sort
+    // keeps the old rule: players with raw ceiling > 0 rank above ceiling <= 0.
+    const hasScore = players.some(p => Number.isFinite(p._boardScore));
+    const key = sortBy === 'auto' ? (hasScore ? '_boardScore' : '_draftRawFV') : sortBy;
     players.sort((a, b) => {
+      if (key === '_boardScore' || key === 'Dev_CtrlWins') {
+        const d = (b[key] ?? -99) - (a[key] ?? -99);
+        return d !== 0 ? d : (parseFloat(b._draftRawFV) || 0) - (parseFloat(a._draftRawFV) || 0);
+      }
       const aAbove = (a._draftCeiling ?? -Infinity) > 0;
       const bAbove = (b._draftCeiling ?? -Infinity) > 0;
       if (aAbove !== bAbove) return aAbove ? -1 : 1;
-      const aVal = parseFloat(a[sortBy]) || 0;
-      const bVal = parseFloat(b[sortBy]) || 0;
+      const aVal = parseFloat(a[key]) || 0;
+      const bVal = parseFloat(b[key]) || 0;
       return bVal - aVal;
     });
 
     return players.slice(0, 200);
-  }, [hittersWithHybrid, pitchersWithHybrid, viewMode, sortBy, maxAge, minFV, hideWrecked, hideImpossible]);
+  }, [hittersWithHybrid, pitchersWithHybrid, scores, viewMode, sortBy, maxAge, minFV, hideWrecked, hideImpossible]);
 
   // Age distribution chart
   const ageDistribution = useMemo(() => {
@@ -85,6 +105,16 @@ export default function DraftBoardPage({ hitters, pitchers, allHitters, allPitch
       pos: p.POS,
     }));
   }, [draftBoard]);
+
+  // Ctrl wins in wins: 3+ a core piece, 2+ a regular, 1+ a useful player.
+  const ctrlColor = (w) => {
+    if (!Number.isFinite(w)) return '#64748b';
+    if (w >= 3) return '#8b5cf6';
+    if (w >= 2) return '#06b6d4';
+    if (w >= 1) return '#22c55e';
+    if (w >= 0.5) return '#eab308';
+    return '#94a3b8';
+  };
 
   const fvColor = (fv) => {
     if (fv >= 70) return '#8b5cf6';
@@ -116,7 +146,10 @@ export default function DraftBoardPage({ hitters, pitchers, allHitters, allPitch
       <div className="p-4">
         <h1 className="text-2xl font-bold text-white">Draft Board</h1>
         <p className="text-sm text-slate-400 mt-1">
-          Draft FV: age percentile 30% + ceiling 60% + projected peak 10%, all in WAA | Fragile, work ethic and intelligence adjust it
+          Board = {words}. The board ranks on it.
+          <span className="block text-xs text-slate-500 mt-0.5">
+            Ctrl wins = the wins above a replacement-level player he gives over his first six MLB seasons, measured on the DEV league's real careers from his card today; Upside = its 90th percentile. Draft FV (age percentile 30% + ceiling 60% + projected peak 10%, Fragile / work ethic / intelligence adjust it) is put on the Ctrl wins scale before the blend; it ranks alone for a league with no draft value file.
+          </span>
           <span className="block text-xs text-slate-500 mt-0.5">
             Value columns display WAA (vs average). <b>Ceiling</b> = best case, no haircut. <b>Proj Peak</b> = where we project him to top out (Proj Potential): from the ML model when the row has it (his WAA today + the ML median gain, washouts counted), else his WAA today + the DEV cell gain or the measured curve. Ceiling is the payoff, Age Pctl is the probability.
           </span>
@@ -138,6 +171,9 @@ export default function DraftBoardPage({ hitters, pitchers, allHitters, allPitch
 
         <select value={sortBy} onChange={e => setSortBy(e.target.value)}
           className="py-1.5 px-2 bg-slate-800 border border-slate-600 rounded-lg text-sm text-slate-200">
+          <option value="auto">Sort by Board</option>
+          <option value="Dev_CtrlWins">Sort by Ctrl wins</option>
+          <option value="Dev_CtrlQ90">Sort by Upside</option>
           <option value="_draftRawFV">Sort by Draft FV</option>
           <option value="_draftCeilingWAA">Sort by Ceiling (WAA)</option>
           <option value="_agePercentile">Sort by Age Percentile</option>
@@ -148,6 +184,8 @@ export default function DraftBoardPage({ hitters, pitchers, allHitters, allPitch
           <option value="_potentialWAA">Sort by Proj Peak (WAA)</option>
           <option value="_peakWAA">Sort by Peak WAA</option>
         </select>
+
+        <BoardWeights weights={weights} onApply={applyWeights} />
 
         <div className="flex items-center gap-2">
           <label className="text-xs text-slate-500">Max Age:</label>
@@ -240,6 +278,9 @@ export default function DraftBoardPage({ hitters, pitchers, allHitters, allPitch
                 <th>POS</th>
                 <th>ORG</th>
                 <th>Age</th>
+                <th title={`${words}. The board ranks on this.`}>Board</th>
+                <th title="Expected wins above a replacement-level player (-1 WAA) over his first six MLB-level seasons, from his card today. Learned from the DEV league's real careers (draft_value.json).">Ctrl wins</th>
+                <th title="The 90th percentile of Ctrl wins: his upside.">Upside</th>
                 <th title="Age percentile x 0.30 + ceiling x 0.60 + projected peak x 0.10 (ceiling x 0.70 when there is no projected peak), then the durability, work ethic and intelligence modifiers.">Draft FV</th>
                 <th title="Percentile vs the whole league at this age, on current performance. The PROBABILITY half of Draft FV.">Age Pctl</th>
                 <th title="Best-case peak, WAA (vs average): the sheet's own MAX WAA P / WAP. No risk haircut. The PAYOFF half of Draft FV.">Ceiling</th>
@@ -280,6 +321,24 @@ export default function DraftBoardPage({ hitters, pitchers, allHitters, allPitch
                   <td>{player.POS}</td>
                   <td className="text-slate-400">{player.ORG}</td>
                   <td>{Math.round(parseFloat(player.Age) || 0)}</td>
+                  <td title={words}>
+                    {Number.isFinite(player._boardScore) ? (
+                      <span className="px-2 py-0.5 rounded font-bold text-sm"
+                        style={{ color: ctrlColor(player._boardScore), background: `${ctrlColor(player._boardScore)}15` }}>
+                        {player._boardScore.toFixed(1)}
+                      </span>
+                    ) : <span className="text-slate-600">—</span>}
+                  </td>
+                  <td title={player.Dev_CtrlWords || 'no draft value for this row'}>
+                    {Number.isFinite(player.Dev_CtrlWins) ? (
+                      <span style={{ color: ctrlColor(player.Dev_CtrlWins) }} className="font-semibold">
+                        {player.Dev_CtrlWins.toFixed(1)}
+                      </span>
+                    ) : <span className="text-slate-600">—</span>}
+                  </td>
+                  <td className="text-slate-300">
+                    {Number.isFinite(player.Dev_CtrlQ90) ? player.Dev_CtrlQ90.toFixed(1) : ''}
+                  </td>
                   <td>
                     <span className="px-2 py-0.5 rounded font-bold text-sm"
                       style={{ color: fvColor(player._draftFV), background: `${fvColor(player._draftFV)}15` }}>

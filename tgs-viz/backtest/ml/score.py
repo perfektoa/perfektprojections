@@ -248,6 +248,15 @@ def main(argv=None):
                 raise
             time.sleep(0.2)
     log(f"wrote {dst} [{time.time() - t0:.0f}s]")
+    # Draft value (draft_value.py; user, 2026-10-27): the same scoring rows through the
+    # basis' draft models, so every pull and rescore carries Ctrl wins. A basis with no
+    # draft models yet (draft_value.py --basis <B> train) keeps its old file.
+    import draft_value as DV
+    if DV.models_ready(basis):
+        DV.score(lg, True, basis)
+    else:
+        log(f"no draft value models for {basis}; run: py -3.14 tgs-viz/backtest/ml/draft_value.py "
+            f"--basis {basis} train (draft_value.json left as it is)")
 
 
 if __name__ == "__main__":

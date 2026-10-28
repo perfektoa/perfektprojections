@@ -408,11 +408,18 @@ export default function App() {
     const isFA = stamped
       ? (p) => p.FA === true
       : (p) => { const org = String(p.ORG ?? '').trim(); return !org || org === '0'; };
-    return {
-      hitters: (data.hitters || []).filter(isFA),
-      pitchers: (data.pitchers || []).filter(isFA),
+    // Asking salary + signability from the in-game FA screen export
+    // (ingest/fa_demands.py), joined on ID. StatsPlus carries neither.
+    const dem = new Map((data.fa_demands || []).map(r => [String(r.ID), r]));
+    const withDemand = (p) => {
+      const d = dem.get(String(p.ID));
+      return d ? { ...p, _faDem: Number.isFinite(d.Demand) ? d.Demand : null, _faSign: d.Sign } : p;
     };
-  }, [data.hitters, data.pitchers]);
+    return {
+      hitters: (data.hitters || []).filter(isFA).map(withDemand),
+      pitchers: (data.pitchers || []).filter(isFA).map(withDemand),
+    };
+  }, [data.hitters, data.pitchers, data.fa_demands]);
 
   // Today's layout: the sidebar and the page. Every state below the first
   // manifest load keeps the sidebar, so the league menu and Control stay usable.
